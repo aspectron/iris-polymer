@@ -1,0 +1,38 @@
+{
+  "name": "zetta-polymer",
+  "version": "0.0.1",
+  "authors": [
+    "CryptoMechanics Inc. <contact@cryptomechanics.com"
+  ],
+  "moduleType": [
+    "node"
+  ],
+  "license": "Private",
+  "homepage": "http://dcp",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.0.0",
+    "iron-form": "PolymerElements/iron-form",
+    "iron-pages": "PolymerElements/iron-pages",
+    "iron-collapse": "PolymerElements/iron-collapse",
+    "paper-tabs": "PolymerElements/paper-tabs",
+    "paper-item": "PolymerElements/paper-item",
+    "paper-dialog": "PolymerElements/paper-dialog",
+    "paper-checkbox": "PolymerElements/paper-checkbox",
+    "paper-input": "PolymerElements/paper-input",
+    "paper-slider": "PolymerElements/paper-slider",
+    "neon-animation": "PolymerElements/neon-animation",
+    "paper-toolbar": "PolymerElements/paper-toolbar",
+    "paper-item": "PolymerElements/paper-item",
+    "paper-dialog": "PolymerElements/paper-dialog",
+    "paper-menu": "PolymerElements/paper-menu",
+    "paper-button": "PolymerElements/paper-button",
+    "paper-icon-button": "PolymerElements/paper-icon-button"
+  }
+}

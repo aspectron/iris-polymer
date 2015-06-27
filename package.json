@@ -1,0 +1,17 @@
+{
+  "name": "zetta-polymer",
+  "version": "0.0.1",
+  "author": {
+    "name": "ASPECTRON Inc.",
+    "email": "info@aspectron.com"
+  },
+  "description": "Zetta Polymer Library",
+  "main" : "zetta-polymer.js",
+  "scripts": {
+      "start": "node zetta-polymer"
+  },
+  "dependencies": {
+    "underscore" : "*",
+    "serve-static" : "*"
+  }
+}
