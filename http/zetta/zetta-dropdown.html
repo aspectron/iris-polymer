@@ -1,0 +1,140 @@
+<link rel="import" href="/deps/iron-icons/iron-icons.html" />
+<link rel="import" href="/deps/iron-icon/iron-icon.html" />
+<link rel="import" href="/deps/neon-animation/neon-animation-runner-behavior.html" />
+<dom-module id="zetta-dropdown" attributes="selected label items">
+	<style>
+		:host{display: inline-block; position: relative; cursor: pointer;}
+		#menu{
+			display: none;
+			padding: 10px;
+			background: white;
+			color: black;
+			@apply(--shadow-elevation-2dp);
+			position: absolute;
+			z-index: 1000;
+			border: 1px solid #ccc;
+			min-width: 100%;
+			box-sizing: border-box;
+			-webkit-box-sizing: border-box;
+		}
+		#menu::content paper-menu.dropdown{
+			min-width: 100%;
+			display: inline-block;
+		}
+		#menu::content paper-menu paper-item{ cursor: pointer;}
+		.display{
+			padding: 5px 0px 4px 2px;
+			border-bottom: 1px solid #ccc;
+		}
+		.display iron-icon{margin-left: 10px; float: right;}
+		:host(.astab){padding: 10px; width: auto !important;}
+		:host(.astab) .display{border-bottom: 0px;}
+		:host(.astab) #menu{top: 48px;}
+	</style>
+	<template>
+		<div class="display" on-click="showMenu">[[label]]<iron-icon icon="expand-more"></iron-icon></div>
+		<div id="menu"><content select=".dropdown"></content></div>
+	</template>
+	<script>
+		Polymer({
+			behaviors:[Polymer.NeonAnimationRunnerBehavior],
+			is: "zetta-dropdown",
+			ready : function() {
+				var self = this;
+				//self.listen(document, 'click', 'onDocumentClick');
+			},
+
+			addDocListener: function(){
+				this._onDocumentClick = this.onDocumentClick.bind(this);
+				document.addEventListener('click', this._onDocumentClick);
+			},
+			removeDocListener: function(){
+				this._onDocumentClick && document.removeEventListener('click', this._onDocumentClick);
+			},
+
+			onDocumentClick: function(e){
+				var self = this;
+				if(e.target == self || e.target.parentNode == self || e.target.parentNode.parentNode == self){
+					return
+				}
+				if (self._showing) {
+					self.hideMenu();
+				};
+			},
+
+			properties: {
+
+				animationConfig: {
+					type: Object,
+					value: function() {
+						return {
+							'entry': [{
+								name: 'scale-up-animation',
+								node: this.$.menu,
+								transformOrigin: '0 0'
+							}],
+							'exit': [{
+								name: 'fade-out-animation',
+								node: this.$.menu
+							}]
+						}
+					}
+				},
+
+				_showing: {
+					type: Boolean,
+					value: false
+				},
+				label: {
+					type:  String,
+					value : "Menu"
+				}
+			},
+
+			listeners: {
+				'neon-animation-finish': '_onAnimationFinish'
+			},
+
+			_onAnimationFinish: function() {
+				if (this._showing) {
+					this.addDocListener();
+				} else {
+					this.$.menu.style.display = '';
+					this.removeDocListener();
+				}
+			},
+			toggle: function(){
+				if (this._showing) {
+					this.hideMenu();
+				}else{
+					this.showMenu();
+				}
+			},
+
+			showMenu: function() {
+				this.$.menu.style.display = 'inline-block';
+				this.updateMenuPosition();
+				this._showing = true;
+				this.playAnimation('entry');
+			},
+
+			hideMenu: function() {
+				this._showing = false;
+				this.playAnimation('exit');
+			},
+
+			updateMenuPosition: function(){
+				var self = this;
+				if (self._updatedMenuPosition)
+					return;
+				var windowWidth = document.body.getBoundingClientRect().width;
+				var menuBox = self.$.menu.getBoundingClientRect();
+				if (menuBox.left+menuBox.width+5 > windowWidth) {
+					self.$.menu.style.right = '5px';
+				};
+				self._updatedMenuPosition = true;
+			}
+		})
+	</script>
+</dom-module>
+

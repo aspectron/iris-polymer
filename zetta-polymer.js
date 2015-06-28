@@ -53,6 +53,7 @@ function ZETTA_Polymer(core) {
 	        });
 		})
 		app.use('/deps', ServeStatic(path.join(__dirname, 'bower_components')));
+		app.use('/ZETTA/scripts', ServeStatic(path.join(__dirname, 'http/scripts')));
 	    app.use('/ZETTA', ServeStatic(path.join(__dirname, 'http/zetta')));
 	}
 }
