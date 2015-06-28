@@ -1,0 +1,222 @@
+
+<script>
+	var ZETTA = window.ZETTA || {};
+	ZETTA.ZettaLoginBehavior = {
+		is:"zetta-login",
+		username: "",
+		password: "",
+		totp:"",
+		timeIntervalId: false,
+		entryAnimation: 'slide-from-right-animation',
+		exitAnimation: 'slide-left-animation',
+		properties:{
+			msg: {
+				type: Object,
+				value:{},
+				observer: 'onMsgChange'
+			},
+			passrecoveryurl:{
+				type: String,
+				value: '/password-recovery'
+			},
+			afterloginurl:{
+				type: String,
+				value: "/"
+			},
+			redirectafterlogin:{
+				type: Boolean,
+				value: false
+			},
+			progressImg: {
+				type: String,
+				value: '<center><img src="data:image/gif;base64,R0lGODlhEgAEAKECAAAAAH9/f////////yH/C05FVFNDQVBFMi4wAwEAAAAh+QQJDwABACwAAAAAEgAEAAACB4yPqcvtrwoAIfkECQ8AAAAsAAAAABIABAAAAgyMA6m7hwyTi3FSVgAAIfkECQ8AAgAsAAAAABIABAAAAhGEIRkb6XmQYs9Fx1oVd64tFAAh+QQJDwADACwAAAAAEgAEAAACEYQxeZjhsdKI7dF55INZ9bEVACH5BAkPAAMALAAAAAASAAQAAAIRjDMJCzkMDlLMQWkrXXg3XwAAIfkECQ8AAwAsAAAAABIABAAAAhGcP6Fx4IDOYubBmFZ7OKvtFAAh+QQJDwADACwAAAAAEgAEAAACDJyPGBvpx9pzcVJWAAA7"/></center>'
+			}
+		},
+
+		ready: function(){
+			var self = this;
+			self.setAnimation('right');
+			self.selectedPage = 0;
+		},
+
+		onMsgChange: function(newValue){
+			var self = this;
+			if (newValue && newValue.activation && _.isArray(newValue.activation)){
+				var isSuccess = newValue.activation[0].success;
+				var msg = '<%= _T("Activation completed. Now you can login.") %>';
+				if (!isSuccess) {
+					var err = newValue.activation[0].error;
+					if (_.isString(err)) {
+						msg = err;
+					}else if (err.error) {
+						msg = err.error;
+					}else{
+						msg = '<%= _T("Error in account activation") %>';
+					}
+				};
+				self.showMsg('login', msg, isSuccess);
+			}
+		},
+
+		setAnimation: function(enterFrom){
+			var self = this;
+			if (enterFrom == 'right') {
+				self.entryAnimation = 'slide-from-right-animation';
+				self.exitAnimation 	= 'slide-left-animation';
+			}else{
+				self.entryAnimation = 'slide-from-left-animation';
+				self.exitAnimation 	= 'slide-right-animation';
+			}
+		},
+
+		onPagesReady: function(){
+
+		},
+
+		showRegisterForm: function(){
+			var self = this;
+			self.setAnimation('right');
+			self.selectedPage = 1;
+		},
+
+		showLoginForm: function(){
+			var self = this;
+			self.setAnimation('left');
+			self.selectedPage = 0;
+		},
+
+		_doFakeSubmitForValidation: function(form) {
+			var self = this;
+			form = form || 'loginform';
+			var fakeSubmit = document.createElement('input');
+			fakeSubmit.setAttribute('type', 'submit');
+			fakeSubmit.style.display = 'none';
+			self.$[form].appendChild(fakeSubmit);
+
+			fakeSubmit.click();
+
+			self.$[form].removeChild(fakeSubmit);
+		},
+
+		isValid: function(form){
+			var self = this;
+			form = form || 'loginform';
+			if (form == 'loginform') {
+				return self.username && self.password;
+			}else if(form == 'registerform'){
+				return self.usernameRegister && self.passwordRegister;
+			}
+		},
+
+		showMsg: function(frm, msg, addSuccessClass){
+			var self = this;
+			var el = self.$.status;
+			if (frm == 'register')
+				el = self.$.statusRegister;
+			self.toggleClass('success', addSuccessClass, el);
+			el.innerHTML = msg;
+		},
+
+		submitRegister: function(){
+			var self = this;
+			if (!self.isValid('registerform')) {
+				return self._doFakeSubmitForValidation('registerform');
+			};
+			var user = self.usernameRegister;
+			var pass = self.passwordRegister;
+			var totp = self.totpRegister;
+			self.showMsg('register', self.progressImg, false);
+			window.loginClient.register({username: user, email: user, password: pass, totpToken: totp}, function(err, result) {
+				var message = '<%= _T("Server Error") %>';
+				var success = false;
+				if (err) {
+					message = err.error || err;
+				}else if(result && result.success){
+					if (result.activationRequired) {
+						message = '<%= _T("We have send you activation email. Please check your inbox or spam folder.") %>';
+					}else{
+						message = result.message || '<%= _T("Acccount Created.") %>';
+					}
+					success = true;
+				}
+
+				self.showMsg('register', message, success);
+				console.log(arguments);
+			});
+		},
+
+		afterLogin: function(){
+			var self = this;
+			if (self.redirectafterlogin)
+				window.location.href = self.afterloginurl;
+		},
+
+		submit: function() {
+			console.log("submit")
+			var self = this;
+			if (!self.isValid()) {
+				return self._doFakeSubmitForValidation();
+			};
+			var user = self.username;
+			var pass = self.password;
+			var totp = self.totp;
+			self.showMsg('login', self.progressImg, false);
+			window.loginClient.login({username: user, password: pass, totpToken: totp}, function(err, ack) {
+				console.log(arguments);
+				if(err) {
+					if (err.request == 'TOTP') {
+						self.toggleClass('hide', false, self.$.totpdialog);
+						self.$.status.innerHTML = "";
+						return false;
+					}
+					var message = err.error || err || '<%= _T("Server Error") %>';
+					if (err.throttle && err.ts) {
+						var totalSec = err.ts;
+						 self.clearIntervalId();
+
+						self.timeIntervalId = setInterval(function(){
+							totalSec--;
+
+							if (totalSec <=0) {
+								self.clearIntervalId();
+								self.$.status.innerHTML = "";
+								return
+							};
+
+							var min = Math.floor(totalSec / 60);
+							var sec = totalSec - (min*60);
+
+							self.$.status.innerHTML = '<%= _T("Your access to the login system remains blocked for ##min## min ##sec## sec") %>'.replace('##min##', min).replace('##sec##', sec);
+						}, 1000);
+					}
+					return self.$.status.innerHTML = err.error || err || '<%= _T("Server Error") %>';
+				}
+
+				if(ack){
+					console.log("login ok")
+					self.afterLogin();
+				}
+			});
+
+			return false
+		},
+		onKeyPressR: function(event){
+			if(event.which == 13){
+				this.submitRegister();
+			}
+			return false
+		},
+		onKeyPress: function(event){
+			if(event.which == 13){
+				this.submit();
+			}
+			return false
+		},
+		clearIntervalId: function (){
+			if (this.timeIntervalId) {
+				clearInterval(this.timeIntervalId);
+			}
+		}
+	}
+</script>
+
