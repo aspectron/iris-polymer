@@ -7,7 +7,6 @@
 
         Polymer({
             is: 'zetta-rpc',
-            path : '/rpc',
             online : false,
             timeout : 30,
             properties:{
@@ -15,6 +14,10 @@
                     type: String,
                     value: '',
                     observer: 'onHolderChange'
+                },
+                path:{
+                    type: String,
+                    value : '/rpc'
                 }
             },
 
@@ -35,7 +38,7 @@
                 self.connected = false;
 
             	self.events.emitAsync('rpc-connecting');
-                self.socket = io(window.location.origin+this.path);
+                self.socket = io(window.location.origin+self.path);
                 self.socket.on('ready', function(){
                     self.online = true;
                 })
