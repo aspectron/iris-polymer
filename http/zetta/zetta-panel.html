@@ -1,0 +1,930 @@
+<!--
+Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<link rel="import" href="/deps/iron-icons/iron-icons.html" />
+<link rel="import" href="/deps/iron-collapse/iron-collapse.html">
+<link rel="import" href="/deps/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/deps/paper-menu/paper-menu.html">
+<link rel="import" href="/deps/paper-item/paper-item.html">
+<link rel="import" href="/deps/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="/deps/neon-animation/neon-animation.html" />
+<!--<link rel="import" href="../deps/bower_components/core-menu-button/core-menu-button.html">
+<link rel="import" href="../deps/bower_components/core-menu/core-menu.html">
+<link rel="import" href="../deps/bower_components/core-item/core-item.html">
+<link rel="import" href="zetta-dropdown.html">
+<link rel="import" href="../deps/bower_components/core-dropdown-menu/core-dropdown-menu.html">-->
+<dom-module id="zetta-body-cover">
+	<style type="text/css">
+		:host{
+			position: fixed;
+			left: 0px;
+			top: 0px;
+			right: 0px;
+			bottom: 0px;
+			background-color: rgba(0,0,0, 0.2);
+			display: none;
+			z-index: 1099;
+		}
+		:host(.transparent){
+			background-color: rgba(0,0,0,0);
+		}
+	</style>
+	<template></template>
+	<script>
+		Polymer({
+			is: "zetta-body-cover",
+			behaviors:[ZETTA.element],
+			listeners:{
+				tap: 'onClick'
+			},
+			onClick: function () {
+				console.log('brt-body-cover: onClick');
+			}
+		});
+	</script>
+</dom-module>
+<dom-module id="panel-resizer" attributes="direction locked minSize">
+	<style>
+		:host{
+			height: 5px;
+			width: 100%;
+			display: block;
+			cursor: row-resize;
+		};
+	</style>
+	<template></template>
+	<script>
+
+		Polymer({
+			is: 'panel-resizer',
+
+			listeners:{
+				'track': '_track'
+			},
+
+			/**
+			 * Possible values are  `up` and `down`.
+			 *
+			 * @attribute direction
+			 * @type string
+			 * @default 'down'
+			 */
+			direction: 'down',
+
+			/**
+			 * Minimum width to which the splitter target can be sized, e.g.
+			 * `minSize="100px"`
+			 *
+			 * @attribute minSize
+			 * @type string
+			 * @default ''
+			 */
+			minSize: '',
+
+			snapSize: 10,
+
+			/**
+			 * Locks the split bar so it can't be dragged.
+			 *
+			 * @attribute locked
+			 * @type boolean
+			 * @default false
+			 */
+			locked: false,
+
+			// Listen for resize requests on parent, since splitter is peer to resizables
+			resizerIsPeer: true,
+
+			dimension: 'height',
+
+			ready: function() {
+				this.directionChanged();
+			},
+
+			attached: function() {
+				//TODO: this.resizerAttachedHandler();
+			},
+
+			detached: function() {
+				//this.resizerDetachedHandler();
+			},
+
+			directionChanged: function() {
+				this.update();
+			},
+
+			update: function() {
+				if (!this.target) {
+					this.target = this.direction == 'down' ? this.previousElementSibling : this.nextElementSibling;
+				}
+				this.horizontal = this.direction == 'down' || this.direction == 'up';
+			},
+
+			targetChanged: function(old) {
+				//this.target.style[min] = this.minSize;
+			},
+
+			_track: function(event){
+				if (event.detail.state == 'start'){
+					this.trackStart(event);
+				}else if (event.detail.state == 'track'){
+					this.track(event);
+				}else if (event.detail.state == 'end'){
+					this.trackEnd(event);
+				}
+			},
+
+			trackEnd: function(){
+
+			},
+
+			trackStart: function(e) {
+				e.preventDefault();
+				this.update();
+				this.size = parseInt(getComputedStyle(this.target)[this.dimension]);
+			},
+
+			track: function(e) {
+				if (this.locked) {
+					return;
+				}
+				var d = e.detail[this.horizontal ? 'dy' : 'dx'];
+				var size = (this.size + (this.isNext ? -d : d));
+				if (this.snapSize) {
+						size = parseInt(size / this.snapSize) * this.snapSize;
+				}
+				this.horizontal ? this.target.setHeight(size) : this.target.setWidth(size);
+				//this.notifyResize();
+			}
+		});
+	</script>
+</dom-module>
+
+<style>
+	zetta-panel-proxy {
+		position: fixed;
+		left: 0;
+		top: 0;
+		display: block;
+		pointer-events: none;
+		background-color: rgba(0,0,0, 0.2);
+		z-index: 5000;
+	}
+
+	zetta-panel-proxy.floating{
+		background-color: #ffffff;
+		box-shadow: #000 0px 0px 10px 0px;
+	}
+
+	zetta-panel-proxy zetta-panel::shadow #content{
+		border-width: 0px;
+	}
+	/*
+	html /deep/ .floatingmenu core-menu core-item{
+		min-height: 30px;
+	}
+	html /deep/ .floatingmenu {
+		background-color: #eee;
+		border: 1px solid #ccc;
+		border-radius: 3px;
+		width: auto !important;
+		max-width: none !important;
+	}
+
+	body > core-overlay-layer{
+		z-index: 1200 !important;
+	}*/
+</style>
+
+<!--
+@group BRT Core Elements
+@element brt-panel
+@homepage github.io
+-->
+<dom-module id="zetta-panel" class="zetta-panel hide" attributes="width isdragable closeaction closeonmaskclick modal floating noheader collapsible closeable caption refreshable menuitems height minheight maxheight fixedheight fadein autoHeight">
+	<style>
+		:host{
+			display: block;
+			box-sizing: border-box;
+		}
+
+		:host(.floating){
+			background-color: #ffffff;
+			box-shadow: #333 0px 0px 20px 0px;
+		}
+
+		:host(.floating) panel-resizer{
+			position: absolute;
+			bottom: 0px;
+			left: 0px;
+			right: 0px;
+		}
+
+		#header {
+			padding: 0px 0px;
+			border: 1px solid #dedede;
+			font-size: 11px;
+			cursor: default;
+			display: block;
+			height: 22px;
+			-webkit-user-select: none;
+			-moz-user-select: none;
+			-ms-user-select: none;
+			user-select: none;
+			-webkit-tap-highlight-color: rgba(0,0,0,0);
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			overflow: hidden;
+		}
+		#header .title{
+			font-size: 11px;
+			margin-left: 15px;
+			line-height: 2;
+		}
+		:host >#content {
+			border: 1px solid #dedede;
+			overflow-y: auto !important;
+			overflow-x: auto !important;
+			box-sizing: border-box;
+			border-top-width: 0px;
+		}
+		:host >#content.iron-collapse-closed{
+			border: 0px;
+		}
+
+		paper-toolbar, paper-toolbar::shadow .toolbar-tools{
+			background-color: transparent;
+			height: 20px;
+			padding: 0px;
+			margin: 0px;
+		}
+
+		paper-toolbar{color: #000; border: 1px solid #dedede;}
+
+		paper-icon-button{
+			padding: 0px 5px;
+			margin: -2px 2px 2px !important;
+		}
+		paper-icon-button::shadow iron-icon{
+			width: 12px;
+			height: 12px;
+			background-size: 10px 10px;
+		}
+	</style>
+	<template>
+		<paper-toolbar id="header" hidden$="[[noheader]]">
+			<span class="title" on-click="onHeaderClick">[[caption]]</span>
+			<!--<core-menu-button id="menuButton" hidden?="{{!menuitems.length && !menuListeners.length}}">
+				<paper-icon-button icon="menu" id="menuBtn" on-tap="{{onMenuBtnClick}}"></core-icon-button>
+					<zetta-dropdown layered class="dropdown floatingmenu">
+						<core-menu valueattr="key" on-core-activate="{{onMenuSelection}}">
+							<template repeat="{{item in menuitems}}">
+								<paper-item key="{{item.key}}">{{item.value}}</paper-item>
+							</template>
+						</core-menu>
+					</zetta-dropdown>
+			</core-menu-button>-->
+			<zetta-dropdown hideexpandicon="true" icon="menu" id="menu" hidden$="{{menuitems.length}}">
+				<paper-menu class="dropdown floatingmenu">
+					<template is="dom-repeat" items="[[menuitems]]">
+						<paper-item on-click="onMenuSelection" data-id="[[item.key]]">[[item.value]]</paper-item>
+					</template>
+				</paper-menu>
+			</zetta-dropdown>
+			<paper-icon-button icon="refresh" id="refreshBtn"></paper-icon-button>
+			<paper-icon-button icon="arrow-drop-up" id="toggleBtn" hidden$="[[!collapsible]]" on-click="onToggleClick"></paper-icon-button>
+			<paper-icon-button icon="close" id="closeBtn" on-click="close"></paper-icon-button>
+		</paper-toolbar>
+		<iron-collapse id="content" opened$="[[opened]]" style="[[getContentStyle(opened)]]" class="fixedSize layout vertical" on-core-resize="onResize">
+				<content></content>
+		</iron-collapse>
+		<panel-resizer id="resizerBottom" class="bottom-resizer"></panel-resizer>
+	</template>
+<script>
+(function() {
+	var proxy, modal;
+
+	var winManage = {
+		wins:[],
+		zIndexSeed: 1000,
+		indexOf: function(w){
+			return this.wins.indexOf(w);
+		},
+
+		add: function(w){
+			var index = this.indexOf(w);
+			if (index < 0) {
+				this.wins.push(w);
+			}
+			return this.indexOf(w);
+		},
+
+		remove: function(w){
+			var self = this, wins = self.wins;
+			var index = self.indexOf(w)
+			if (index < 0) {
+				return false;
+			}
+			var newList = [];
+			self.forEach(function(w, i, list){
+				if (i != index) {
+					newList.push(w);
+				};
+			})
+			wins = newList;
+		},
+
+		focus: function(w){
+			var self = this, index = self.add(w);
+			self.forEach(function(w, i, list){
+				if (index == i) {
+					self.setFocus(w, true);
+				}else{
+					self.setFocus(w, false);
+				}
+			})
+		},
+
+		setFocus: function(w, focus){
+			w.style.zIndex = focus ? this.zIndexSeed+100: this.zIndexSeed;
+		},
+
+		forEach: function(callback){
+			var wins = this.wins;
+			for(var i = 0; i< wins.length; i++){
+				if(callback(wins[i], i, wins) === false){
+					return;
+				}
+			}
+		}
+	}
+	
+	Polymer({
+		is:'zetta-panel',
+		behaviors:[ZETTA.element],
+
+		properties:{
+			noheader: {
+				type: Boolean
+			},
+			menuitems: {
+				type: Array,
+				value: [],
+				observer: 'menuitemsChanged'
+			},
+			visible: {
+				type: Boolean,
+				observer: 'visibleChanged'
+			},
+			refreshable:{
+				type: Boolean,
+				observer:'refreshableChanged'
+			},
+			width: {
+				type: Number,
+				value:0,
+				observer: 'widthChanged'
+			},
+			height: {
+				type: Number,
+				value: 100,
+				//observer: 'widthChanged'
+			},
+			fixedheight:{
+				type: Number,
+				value: ''
+			},
+			maxheight:{
+				type: Number,
+				value: ''
+			},
+			minheight:{
+				type: Number,
+				value: ''
+			},
+			opened:{
+				type: Boolean,
+				observer: 'openedChanged',
+				reflectToAttribute: true
+			},
+			closeable:{
+				type: Boolean,
+				observer: 'closeableChanged'
+			},
+			autoHeight:{
+				type: Boolean
+			},
+			collapsible: {
+				type: Boolean
+			},
+			isdragable:{
+				type: Boolean
+			},
+			closeaction: {
+				type: String,
+				value: 'destroy'
+			},
+			floating:{
+				type: Boolean,
+				value: false,
+				reflectToAttribute: true
+			},
+			dragging:{
+				type: Boolean,
+				observer: 'draggingChanged'
+			},
+			caption:{
+				type: String,
+				value: ""
+			}
+		},
+
+		observers: [
+			//'coordinatesChanged(x)',
+			//'coordinatesChanged(y)'
+		],
+
+		getContentStyle: function(opened){
+			var cssText = '', self = this;
+			//console.log("self.minheight", this, 'opened:', opened, 'minheight:', self.minheight, 'fixedheight:', self.fixedheight)
+			if(opened && (self.minheight || self.fixedheight)){
+				cssText += 'min-height:'+(self.minheight || self.fixedheight)+'px;';
+			}
+
+			if(opened && (self.maxheight || self.fixedheight)){
+				cssText += 'max-height:'+( self.maxheight || self.fixedheight)+'px;';
+			}
+
+			if (self.noheader) {
+				cssText += 'border-top:none;';
+			};
+			return cssText;
+		},
+
+		onHiddenChange: function(hidden){
+			this.visible = !hidden;
+			this.fire('hidden-change', hidden);
+		},
+
+		checkFloatingChange: function(){
+			var self = this, s = self.style;
+			//console.log("self.floating", self.floating)
+			self.classList.toggle('floating', self.floating);
+			self.openedChanged();
+			self._oldPostion = self._oldPostion || self.getStyle('position');
+			if (self.floating) {
+				s.position = 'fixed';
+				self.showBodyCover(self.modal);
+				self.setPostion(0, 0, true);
+				self.center();
+				winManage.focus(this);
+			}else{
+				s.position = self._oldPostion;
+			}
+		},
+
+		visibleChanged: function(){
+			var self = this;
+			if (!self.floating) {
+				return
+			};
+			if (self.visible) {
+				self.show();
+			}else{
+				self.hide();
+			}
+		},
+
+		widthChanged: function(){
+			this.width && this.width!='0' && this.setWidth(this.width);
+		},
+
+		menuitemsChanged: function(){
+			var self = this;
+			//console.log("self.menuitems", self.menuitems)
+			if (self.menuitems && self.menuitems.length) {
+				if (typeof self.menuitems == 'string') {
+					self.menuitems = JSON.parse(self.menuitems);
+				};
+			}
+		},
+
+		
+		onMenuBtnClick: function(e, s, icon){
+			var self = this, fn, result = true;
+			self.menuListeners = self.menuListeners || [];
+			if (self.menuListeners.length) {
+				for(var i=0; i< self.menuListeners.length; i++){
+					fn = self.menuListeners[i];
+					if (fn) {
+						result = fn(this, e, icon);
+					};
+				}
+			}
+			if (result === false) {
+				e.preventDefault();
+				e.stopPropagation();
+				return false;
+			};
+			
+			return true;
+		},
+
+		registerMenuCallback: function(fn){
+			var self = this;
+			self.menuListeners = self.menuListeners || [];
+			if (self.menuListeners.indexOf(fn) < 0) {
+				self.menuListeners.push(fn);
+			};
+		},
+
+		unregisterMenuCallback: function(fn){
+			var self = this;
+			self.menuListeners = self.menuListeners || [];
+			var index = self.menuListeners.indexOf(fn), newList = [];
+			for(var i=0; i< self.menuListeners.length; i++){
+				if (i != index) {
+					newList.push(self.menuListeners[i]);
+				};
+			}
+			self.menuListeners = newList;
+		},
+
+		showMenuDropdown: function(){
+			this.$.menu.showMenu();
+		},
+
+		hideMenuDropdown: function(){
+			this.$.menu.hideMenu();
+		},
+
+		center: function(){
+			var self = this, s = self.style, p = this.parentNode || window;
+			var pBox = p.getBoundingClientRect();
+			var sBox = self.getBoundingClientRect();
+			self.setPostion( (pBox.width  - sBox.width)/2, (pBox.height - sBox.height)/2);
+		},
+
+		showBodyCover: function(show){
+			var self = this;
+			if (show) {
+				modal.setHidden(false, 'block');
+				if (self.closeonmaskclick != 'false' && self.closeonmaskclick !== false) {
+					modal.onClick = function(){
+						self.close();
+					}
+				}else{
+					modal.onClick = function(){
+						//
+					}
+				}
+			}
+		},
+
+		hide: function(){
+			modal.setHidden(true);
+			this.setHidden(true);
+		},
+
+		show: function(){
+			var self = this;
+			self.showBodyCover(self.modal);
+			self.setHidden(false);
+			winManage.focus(self);
+		},
+
+		onResize: function(){
+			//console.log('onResize')
+			var self = this;
+			self.forEachChildren('[hasesizerlistener]', function(item){
+				item.fire('core-resize', {panel: self}, item, false);
+			})
+		},
+
+		onStyleUpdate: function(name, value, val){
+			var self = this;
+			if (name == 'height') {
+				//TODO: self.$.content.horizontalChanged();
+				self.$.content.updateSize( (val - self.getHeaderHeight() - 5)+'px', null, true);
+				self.style.height = 'auto';
+				if (self.autoHeight == 'false' || !self.autoHeight) {
+					return;
+				};
+				var column  = ZETTA.findParent(self, 'ZETTA-DASHBOARD-COLUMN');
+				var row     = column ? column.parentNode : false;
+
+				if (row && row.updateColumnChildHeight && column.getHeightInfo) {
+					row.debounce('onStyleUpdate', function(){
+						row.updateColumnChildHeight(column.getHeightInfo().innerHeight);
+					}, 100);
+				};
+			}
+		},
+
+		getHeaderHeight: function(){
+			if (!this.headerHeight) {
+				this.headerHeight = this.$.header.getBoundingClientRect().height;
+			};
+			return this.headerHeight;
+		},
+
+		refreshableChanged: function(){
+			if (!this.refreshable || this.refreshable == 'false') {
+				this.$.refreshBtn.style.display = 'none'
+			}else{
+				this.$.refreshBtn.style.display = 'block'
+			}
+		},
+
+		closeableChanged: function(){
+			if (!this.closeable || this.closeable == 'false') {
+				this.$.closeBtn.style.display = 'none'
+			}else{
+				this.$.closeBtn.style.display = 'block'
+			}
+		},
+
+		onToggleClick: function(){
+			this.opened = !this.opened;
+			this.$.toggleBtn.icon = this.$.toggleBtn.icon == 'arrow-drop-up' ? 'arrow-drop-down' : 'arrow-drop-up';
+		},
+
+		close: function(){
+			var self = this;
+			if (self.getAttribute('closeaction') == 'hide') {
+				self.hide();
+			}else{
+				if (self.modal) {
+					modal.setHidden(true);
+				};
+				self.remove();
+			}
+		},
+
+		onMouseDown: function(){
+			if (this.floating) {
+				winManage.focus(this);
+			};
+		},
+
+		onMenuSelection: function(e, item, menu){
+			console.log('onMenuSelection', menu.selected)
+		},
+
+		ready: function() {
+			var self = this;
+			if (!proxy) {
+				proxy = document.createElement('zetta-panel-proxy');
+				var p = document.createElement('zetta-panel');
+				p.className = "panel-ghost";
+				proxy.appendChild(p);
+				document.body.appendChild(proxy);
+				modal = document.querySelector('zetta-body-cover');
+
+				if (!modal){
+					modal = document.createElement('zetta-body-cover');
+					document.body.appendChild(modal);
+				}
+			}
+			self.$.resizerBottom.target = self;
+			self.proxy = proxy;
+			self.opened = true;
+			self.dragging = false;
+			//self.draggingChanged();
+
+			/*
+			var fadeinDuration = parseInt(self.fadein);
+			console.log("fadeinDuration",fadeinDuration)
+			function fade() {
+				console.log("fading:",fadeinDuration*1000)
+				self.className = "brt-panel show";// this.className.replace("hide","show");
+			}
+
+			if(fadeinDuration) {
+				console.log("fading:",fadeinDuration*1000)
+				//BRT.dpc(fadeinDuration*1000, fade);
+			}
+			else
+				self.style.opacity = 1;
+			//console.log("this.",this)
+			*/
+		},
+
+		draggingChanged: function() {
+			var self = this;
+			self.proxy.style.display = self.dragging ? '' : 'none';
+			self.proxy.classList.toggle('floating', self.floating);
+		},
+
+		openedChanged: function() {
+			this.$.resizerBottom.style.display = this.opened? 'block':'none';
+			this.$.content.opened = this.opened;
+		},
+
+		attached: function() {
+			var self = this;
+			var listen = function(event, handler) {
+				self.listen(self.$.header, event, handler);
+			};
+			//
+			//listen('down', 'trackStart');
+			listen('track', '_track');
+			//listen('up', 'trackEnd');
+			self.openedChanged();
+
+			var host = self;//.parentNode.host || this.parentNode;
+			host.style.cssText += '; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;';
+			//console.log("self.height", self.height)
+			self.height && self.setHeight(self.height);
+			self.width && self.setWidth(self.width);
+			/*this.async(function(){
+				if (!this.$.content.style.height) {
+					this.setHeight(this.height);
+				};
+			}, null, this.$.content.duration * 1000);*/
+			self.checkFloatingChange();
+		},
+
+		detached: function(){
+			this.$.content.isTargetReady = false;
+			/*var off = function(event, handler) {
+				Polymer.removeEventListener(this.$.header, event, this[handler].bind(this));
+			}.bind(this);
+			//
+			off('trackstart', 'trackStart');
+			off('track', 'track');
+			off('trackend', 'trackEnd');*/
+		},
+
+		_track: function(event){
+			if (event.detail.state == 'start'){
+				this.trackStart(event);
+			}else if (event.detail.state == 'track'){
+				this.track(event);
+			}else if (event.detail.state == 'end'){
+				this.trackEnd(event);
+			}
+		},
+
+		trackStart: function(event) {
+			console.log("event", event)
+			var self = this;
+			self.onMouseDown();
+			var isdragable = self.isdragable;
+			//console.log("trackStart: isdragable", isdragable)
+			
+			if ( isdragable == 'false' || !isdragable) {
+				return;
+			};
+			self.proxy.style.cssText = '';
+			self.dragInfo = {
+				event: event,
+				proxy: self.proxy
+			};
+			self.onDragStart(self.dragInfo);
+			self.fire('drag-start', self.dragInfo);
+
+			// flaw #1: what if user doesn't need `drag()`?
+			self.dragging = Boolean(self.dragInfo.drag);
+			self.track(event);
+		},
+
+		track: function(e) {
+			if (this.dragging) {
+				this.x = e.detail.x;
+				this.y = e.detail.y;
+				this.dragInfo.event = e;
+				this.dragInfo.p = {x : this.x, y: this.y};
+				this.dragInfo.drag(this.dragInfo);
+				this.coordinatesChanged();
+			}
+		},
+
+		coordinatesChanged: function() {
+			if (!this.dragInfo) {
+				return;
+			};
+			var offset = this.dragInfo.offset, x = this.x + offset.x, y = this.y + offset.y;
+			this.proxy.style.transform = this.proxy.style.webkitTransform = 'translate('+x+'px, '+y+'px)';
+		},
+
+		trackEnd: function(event) {
+			var self = this;
+			if (self.dragging) {
+				self.dragging = false;
+				var dragInfo = self.dragInfo;
+				//console.log("dragInfo.drop", dragInfo.drop)
+				if (dragInfo.drop) {
+					dragInfo.framed = self.framed(event.currentTarget);
+					dragInfo.event = event;
+					dragInfo.drop(dragInfo);
+				}
+			}
+			self.dragInfo = null;
+		},
+
+		framed: function(node) {
+			var local = node.getBoundingClientRect();
+			return {x: this.x - local.left, y: this.y - local.top};
+		},
+
+		onDragStart: function(dragInfo) {
+			var self = this, box = self.getBoundingClientRect();
+			dragInfo.proxy.style.cssText = 'width: '+box.width+'px; height: '+box.height+'px;';
+			dragInfo.proxy.childNodes[0].caption = this.caption;
+			dragInfo.proxy.childNodes[0].opened = false;//this.opened;
+			if (self.floating) {
+				self.setHidden(true);
+				dragInfo.drop = function(info){
+					var offset = info.offset;
+					self.setPostion(self.x + offset.x, self.y + offset.y);
+					self.setHidden(false);
+				}
+			}
+			dragInfo.drag = function() {};
+
+			dragInfo.offset = {
+				x: box.left - dragInfo.event.detail.x,
+				y: box.top - dragInfo.event.detail.y
+			}
+		},
+
+		setPostion: function(left, top, useLeftTop){
+			var s = this.style;
+			if (useLeftTop) {
+				s.left = left+'px';
+				s.top  = top+'px';
+			}else{
+				s.transform = s.webkitTransform = 'translate('+left+'px, '+top+'px)';
+			}
+		},
+
+		exportConfig: function(){
+			var height = this.opened? this.getBoundingClientRect().height : parseInt(this.$.content.size.replace('px', '')) + this.getHeaderHeight() + 5;
+			
+			var childNodes = this.childNodes, child;
+			var items = [];
+			for (var i = childNodes.length - 1; i >= 0; i--) {
+					child = childNodes[i];
+					if (child.exportConfig) {
+						items.unshift(child.exportConfig());
+					}else{
+						//items.unshift({tagName: child.tagName});
+					}
+			}
+			var data = {
+				tagName: this.tagName,
+				refreshable: !!this.refreshable,
+				menuitems: this.menuitems? this.menuitems: "",
+				opened: this.opened,
+				height: height,
+				caption: this.caption
+			};
+
+			if (items.length) {
+				data.items = items;
+			};
+			return data;
+		},
+
+		importConfig: function(config){
+			var self = this;
+			var keys = ['refreshable', 'menuitems', 'height', 'opened', 'caption'], k;
+			for (var i = keys.length - 1; i >= 0; i--) {
+					k = keys[i];
+					if (config[k] != undefined) {
+							self[k] = config[k];
+					};
+			}
+
+			if (config.items) {
+				var len = config.items.length;
+				var firstChild = false;
+				for (var i = 0; i < len; i++) {
+					if (!firstChild) {
+						firstChild = BRT.createElement(config.items[i]);
+						self.appendChild(firstChild);
+					}else{
+						self.appendChild(BRT.createElement(config.items[i]));
+					}
+				};
+
+				if (firstChild) {
+					firstChild.addEventListener('titleupdated', function(ce){
+						self.caption = ce.detail.title;
+					})
+				}
+			};
+		}
+
+	});
+
+
+})();
+</script>
+</dom-module>

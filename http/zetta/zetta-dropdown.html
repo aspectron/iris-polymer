@@ -1,7 +1,7 @@
 <link rel="import" href="/deps/iron-icons/iron-icons.html" />
 <link rel="import" href="/deps/iron-icon/iron-icon.html" />
 <link rel="import" href="/deps/neon-animation/neon-animation-runner-behavior.html" />
-<dom-module id="zetta-dropdown" attributes="selected label icon items">
+<dom-module id="zetta-dropdown" attributes="selected label icon items hideexpandicon">
 	<style>
 		:host{display: inline-block; position: relative; cursor: pointer;}
 		#menu{
@@ -38,8 +38,8 @@
 				<template is='dom-if' if='{{icon}}'>
 					<iron-icon class='icon' icon="[[icon]]"></iron-icon>&nbsp;
 				</template>
-				<span>[[label]]</span>
-				<iron-icon class='pulldown' icon="expand-more"></iron-icon>
+				<span hidden$="[[!label]]">[[label]]</span>
+				<iron-icon hidden$="[[hideexpandicon]]" class='pulldown' icon="expand-more"></iron-icon>
 			</div>
 		</nobr>
 		<div id="menu"><content select=".dropdown"></content></div>
@@ -48,6 +48,12 @@
 		Polymer({
 			behaviors:[Polymer.NeonAnimationRunnerBehavior],
 			is: "zetta-dropdown",
+			properties:{
+				hideexpandicon:{
+					type: Boolean,
+					value: false
+				}
+			},
 			ready : function() {
 				var self = this;
 				//self.listen(document, 'click', 'onDocumentClick');
@@ -96,7 +102,7 @@
 				},
 				label: {
 					type:  String,
-					value : "Menu"
+					value : ""
 				}
 			},
 
