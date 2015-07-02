@@ -1,0 +1,63 @@
+<dom-module id="zetta-contact">
+	<style>
+		#msg{min-height: 22px;}
+		.error{color: #F00}
+		.form-ctr {font-size: 14px;font-family: "Droid Sans Mono";background-color: white;text-align: left;min-width: 250px;display: block;}
+		form {padding: 25px;margin: 16px;@apply(--shadow-elevation-4dp);width: 300px;display: block;}
+		.submit{margin: 10px 0px;}
+	</style>
+	<template>
+		<div class="horizontal layout center-center">
+			<form on-submit="submit" role="form">
+				<h2><%= _T("Contact us") %></h2>
+				<paper-input class="form-ctr" on-keypress="onKeyPress" label="<%= _T("E-Mail") %>" value="{{email}}" required></paper-input>
+				<paper-input class="form-ctr" on-keypress="onKeyPress" label="<%= _T("Subject") %>" value="{{subject}}" required></paper-input>
+				<paper-textarea class="form-ctr" on-keypress="onKeyPress" label="<%= _T("Message") %>" value="{{message}}" required></paper-textarea>
+				<div id="msg"></div>
+				<paper-button on-click="submit" tabindex="4" raised class="submit primary"><%= _T("Submit") %></paper-button>
+			</form>
+		</div>
+	</template>
+	<script>
+		Polymer({
+			is:'zetta-contact',
+			properties:{
+				rpc: {
+					type: Object
+				}
+			},
+			onKeyPress: function(event){
+				if(event.which == 13){
+					this.submit();
+				}
+				return false
+			},
+			submit: function(){
+				var self = this;
+				var email = self.email;
+				var subject = self.subject;
+				var message = self.message;
+				if (!email || !subject || !message)
+					return self.setMsg('<%= _T("Please provide complete detail.") %>', 'error');
+				if (!self.rpc)
+					return console.log("ZETTA-CONTACT: RPC is missing");
+				self.rpc.dispatch({op: 'contactus', email: email, message: message, subject: subject}, function(err, result) {
+					console.log("op:contactus:submition:result", arguments)
+
+					if (err)
+						return self.setMsg(err.error || '<%= _T("Unable to submit.") %>', 'error');
+
+					self.setMsg('<%= _T("Thanks for contacting us. we will respond soon.") %>');
+				});
+			},
+			setMsg: function(msg, cls){
+				var self = this;
+				self.$.msg.innerHTML = msg;
+				self.$.msg.classList.remove('success', 'error');
+				if (cls)
+					self.$.msg.classList.add(cls);
+			},
+		})
+	</script>
+</dom-module>
+

@@ -85,6 +85,10 @@
 			self.selectedPage = 0;
 		},
 
+		showPassRecoveryForm: function(){
+			window.location.href = this.passrecoveryurl;
+		},
+
 		_doFakeSubmitForValidation: function(form) {
 			var self = this;
 			form = form || 'loginform';

@@ -1,0 +1,195 @@
+<script>
+	function log(){
+		if (arguments[0].tagName){
+			var tagName = arguments[0].tagName+":";
+			arguments = Array.prototype.slice.call(arguments, 1);
+			arguments.unshift(tagName)
+		}
+		console.log.apply(console, arguments)
+	};
+
+	var ZETTA = window.ZETTA || {};
+	ZETTA.ZettaDomAppBehavior = {
+		selectedPage: 0,
+		properties:{
+			rpcPath: {
+				type: String,
+				value: '/rpc'
+			},
+			rpcHolder:{
+				type: String,
+				value: ''
+			},
+			selected:{
+				type: Number,
+				value: 0,
+				notify: true,
+				observer: 'selectedChanged'
+			},
+			leftselected:{
+				type: Number,
+				value: 1,
+				observer: 'leftselectedChanged'
+			},
+			lefttabs: {
+				type: Array,
+				value:[],
+				notify: true,
+				observer: 'subtabChanged'
+			},
+			logoutPath:{
+				type: String,
+				value: '/logout'
+			},
+			logintab:{
+				type: String,
+				value: 'Login',
+				notify: true
+			},
+			logintask:{
+				type: String,
+				value: 'login',
+				notify: true
+			},
+			languageselector:Boolean,
+			user:{
+				type: Object,
+				value: {},
+				observer: 'onUserChange'
+			},
+			msg:{
+				type: Object,
+				value: {},
+				observer:'onMsgChange'
+			}
+		},
+		ready: function(){
+			var self = this;
+			self.rpc 				= self.$.rpc;
+			self.entryAnimation 	= 'slide-from-right-animation';
+			self.exitAnimation 		= 'slide-left-animation';
+			self.selectedPage 		= self.selected;
+
+			self.classList.add('layout');
+			self.classList.add('vertical');
+
+			//log(this, self)
+			<% 
+				var langs = []; 
+				_.each(_T.languages, function(l, code){
+					langs.push({name: l.name, id: code});
+				});
+			%>
+
+			self.language = {
+				source: '<%- _T.source %>',
+				locale: '<%- _T.locale %>',
+				list: <%- JSON.stringify(langs) %>
+			}
+			self.updateLanguageTitle(self.language.locale);
+			self.tabsAdded = true;
+		},
+
+		onUserChange: function(user){
+			var self = this;
+			self.logintab 			= self.user ? 'Logout': 'Login';
+			self.logintask 			= self.user ? 'logout': 'login';
+		},
+
+		onMsgChange: function(msg){
+		},
+
+		updateLanguageTitle: function(code){
+			this.languageTitle = _.find(this.language.list, function(o){return o.id == code}).name;
+		},
+		selectLanguage: function(e){
+			var self = this;
+			var langCode = e.currentTarget.dataId
+			self.updateLanguageTitle(langCode);
+			//console.log("self.language.locale", self.language.locale, self.language.source, langCode)
+			if (self.language.locale != langCode) {
+				var loc = window.location;
+				if (self.language.locale == 'en') {
+					window.location.href = loc.href.replace(loc.host+'/', loc.host+'/'+langCode+'/');
+				}else{
+					window.location.href = loc.href.replace(loc.host+'/'+self.language.locale, loc.host+'/'+langCode);
+				}
+			};
+		},
+		leftselectedChanged: function(){
+			//console.log("leftselectedChanged", arguments)
+		},
+		subtabChanged: function(){
+			//console.log("subtabChanged", arguments)
+            if(this.$.lefttabs)
+			    this.$.lefttabs._onResize();
+		},
+		onPageAnimationFinished: function(){
+
+		},
+		onPagesReady: function(){
+			var self = this;
+			self.debounce('onPagesReady', function(){
+				if(self.tabsAdded){
+					self.restoreLastTab();
+					self.tabsAdded = false;
+				}
+			}, 200);
+		},
+		getTab: function(id){
+			var self = this;
+			var tabs = self.$.tabs.querySelectorAll('paper-tab');
+			var tab = {};
+			_.each(tabs, function(t, index){
+				if (t.dataTabId == id || t.getAttribute('data-tab-id') == id){
+					tab.tab = t;
+					tab.index = index;
+				}
+			});
+			return tab;
+		},
+		toUpperCase : function(v) {
+			return (v+'').toUpperCase();
+		},
+		toLowerCase : function(v) {
+			return (v+'').toLowerCase();
+		},
+		showHome : function() {
+			var self = this;
+			self.selected = 0;
+		},
+		selectedChanged:function(newValue, oldValue){
+			var self = this;
+			if (oldValue !== undefined && newValue > oldValue) {
+				self.entryAnimation = 'slide-from-right-animation';
+				self.exitAnimation = 'slide-left-animation';
+			}else{
+				self.entryAnimation = 'slide-from-left-animation';
+				self.exitAnimation = 'slide-right-animation';
+			}
+			if (!self.$.tabs || !self.$.tabs.items) {
+				return log(this, "Tabs missing");
+			};
+			var tab = self.$.tabs.items[self.selected].dataTab;
+			if ( tab == 'logout') {
+				window.location.href = self.logoutPath;
+				return;
+			};
+			self.selectedPage = self.selected;
+			self.$.pages.fire('neon-animation-begin');
+			if (oldValue !== undefined && tab!='login') {
+				localStorage.tabIndex = self.selected;
+			}
+		},
+		restoreLastTab: function(){
+			if (this.msg && this.msg.activation){
+				this.selected = this.getTab('login').index;
+				return;
+			}
+			if(typeof localStorage.tabIndex != 'undefined'){
+				this.selected = parseInt(localStorage.tabIndex);
+			}
+		}
+	};
+</script>
+

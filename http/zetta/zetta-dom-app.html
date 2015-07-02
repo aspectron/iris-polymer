@@ -1,0 +1,73 @@
+<link rel="import" href="/deps/iron-icons/iron-icons.html" />
+<link rel="import" href="/deps/iron-icons/editor-icons.html" />
+<link rel="import" href="/deps/iron-icons/social-icons.html" />
+<link rel="import" href="/deps/iron-icons/maps-icons.html" />
+<link rel="import" href="/deps/iron-icons/communication-icons.html" />
+<link rel="import" href="/deps/iron-icon/iron-icon.html" />
+<link rel="import" href="/deps/paper-tabs/paper-tabs.html" />
+<link rel="import" href="/deps/paper-item/paper-item.html" />
+<link rel="import" href="/deps/paper-item/paper-item-body.html" />
+<link rel="import" href="/deps/paper-input/paper-input.html" />
+<link rel="import" href="/deps/paper-input/paper-textarea.html" />
+<link rel="import" href="/deps/paper-button/paper-button.html" />
+<link rel="import" href="/deps/paper-icon-button/paper-icon-button.html" />
+<link rel="import" href="/deps/paper-slider/paper-slider.html" />
+<link rel="import" href="/deps/paper-checkbox/paper-checkbox.html" />
+<link rel="import" href="/deps/paper-dialog/paper-dialog.html" />
+<link rel="import" href="/deps/neon-animation/neon-animation.html" />
+<link rel="import" href="/deps/iron-flex-layout/iron-flex-layout.html" />
+
+<link rel="import" href="zetta-rpc.html" />
+<link rel="import" href="zetta-dom-app-behavior.html" />
+<link rel="import" href="zetta-dropdown.html" />
+<link rel="import" href="zetta-login.html" />
+<link rel="import" href="zetta-footer.html" />
+<link rel="import" href="zetta-contact.html" />
+
+
+<dom-module id="zetta-dom-app" attributes="rpc-path rpc-holder logintab logintask languageselector user msg selected">
+	<style>
+		:host {}
+		#tabs::shadow #tabsContainer #selectionBar {}
+		#tabs::shadow paper-tab::shadow #ink {color: #848DBD;}
+        #tabs::shadow paper-tab {font-weight: bold; opacity: 0.75;}
+        #tabs::shadow paper-tab.iron-selected{opacity: 1;}
+		#lefttabs{background-color: #afb1b9; height: 35px; margin-top: 15px; margin-left: 15px}
+		paper-textarea.textarea-bug{visibility: hidden;min-height: 0px;min-width: 0px;height: 0px;width: 0px;overflow: hidden;}
+		#pages::shadow neon-animatable{overflow: auto;}
+		::content zetta-login{min-height: 390px; display: block;}
+	</style>
+	<template>
+		<zetta-rpc id="rpc" path="[[rpcPath]]" holder="[[rpcHolder]]"></zetta-rpc>
+		<paper-textarea class="textarea-bug"></paper-textarea>
+		<div class="layout horizontal">
+			<content select=".logo"></content>
+            <paper-tabs id="tabs" selected="{{selected}}" noBar align-bottom role="tablist" class="layout horizontal">
+            	<content select=".tab"></content>
+            </paper-tabs>
+            <zetta-dropdown hidden$="[[!languageselector]]" label="[[languageTitle]]" class="astab" icon="translate">
+				<paper-menu class='dropdown'>
+					<template is="dom-repeat" items="[[language.list]]">
+						<paper-item on-click="selectLanguage" data-id="[[item.id]]">[[item.name]]</paper-item>
+					</template>
+				</paper-menu>
+			</zetta-dropdown>
+        </div>
+		<neon-animated-pages id="pages" style="position:relative;" on-dom-change="onPagesReady" selected="[[selectedPage]]" class="flex-1" entry-animation="[[entryAnimation]]" exit-animation="[[exitAnimation]]" on-neon-animation-finish="onPageAnimationFinished">
+			<content select=".page"></content>
+		</neon-animated-pages>
+	</template>
+	<script>
+	Polymer({
+		is:'zetta-dom-app',
+		behaviors:[ZETTA.ZettaDomAppBehavior],
+		/*
+		ready: function () {
+			var self = this;
+			ZETTA.ZettaDomAppBehavior.ready.apply(self, arguments);
+		}
+		*/
+	})
+	</script>
+</dom-module>
+

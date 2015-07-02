@@ -49,7 +49,7 @@
 						</div>
 						<paper-button on-click="submit" tabindex="4" raised class="submit primary"><%= _T("Log In") %></paper-button>
 						<div>
-							<a href="{{passrecoveryurl}}" tabindex="5" class="forgot-password"><%= _T("Forgot Password?") %></a>
+							<a tabindex="5" class="forgot-password" on-click="showPassRecoveryForm"><%= _T("Forgot Password?") %></a>
 							<a tabindex="6" class="align-right" on-click="showRegisterForm"><%= _T("Register") %></a>   
 						</div>
 					</form>
