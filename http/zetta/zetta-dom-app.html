@@ -6,6 +6,7 @@
 <link rel="import" href="/deps/iron-icon/iron-icon.html" />
 <link rel="import" href="/deps/paper-tabs/paper-tabs.html" />
 <link rel="import" href="/deps/paper-item/paper-item.html" />
+<link rel="import" href="/deps/paper-menu/paper-menu.html" />
 <link rel="import" href="/deps/paper-item/paper-item-body.html" />
 <link rel="import" href="/deps/paper-input/paper-input.html" />
 <link rel="import" href="/deps/paper-input/paper-textarea.html" />
@@ -25,37 +26,128 @@
 <link rel="import" href="zetta-contact.html" />
 
 
-<dom-module id="zetta-dom-app" attributes="rpc-path rpc-holder logintab logintask languageselector user msg selected">
+<dom-module id="zetta-dom-app-header" ____attributes="selectedlang languagetitle language">
+	<template>
+		<content></content>
+	</template>
+	<script>
+	Polymer({
+		is:'zetta-dom-app-header',
+		/*properties:{
+			languagetitle: String,
+			language: {
+				type: Object,
+				value: {},
+				//observer:'onLanguageChange'
+			},
+			selectedlang: {
+				type: String,
+				value: '',
+				//observer:'onSelectedlangChange'
+			}
+		},
+		/*
+		attached: function(){
+			var self = this;
+			self.$.languageDropdown = self.querySelector("zetta-dropdown.language");
+			if (self.$.languageDropdown) {
+				self.$.languageTpl = Polymer.dom(self.$.languageDropdown).querySelector('template');
+				self.listen(self.$.languageDropdown, 'click', 'selectLanguage');
+			};
+		},
+
+		onSelectedlangChange: function(){
+			console.log('onLanguageChange', this.language)
+		},
+		
+		onSelectedlangChange: function(e){
+			var self = this;
+			//if (self.$.languageTpl.itemForElement(e.target)) {
+				if (self.parentNode.tagName == 'ZETTA-DOM-APP') {
+					self.parentNode.onSelectedlangChange.apply(self.parentNode, arguments);
+				};
+			//};
+		}*/
+
+		/*,
+		_marshalAnnotatedListeners: function(){
+			var scope = this;
+			if (this.parentNode.tagName == 'ZETTA-DOM-APP') {
+				scope = this.parentNode;
+			};
+			Polymer.Base._marshalAnnotatedListeners.apply(scope, arguments)
+		}
+		*/
+	});
+	</script>
+</dom-module>
+
+<dom-module id="zetta-dom-app-content">
+	<template>
+		<neon-animated-pages id="pages" class="flex" style="position:relative;" on-dom-change="onPagesReady" selected="[[selectedPage]]" class="flex-1" entry-animation="[[entryAnimation]]" exit-animation="[[exitAnimation]]" on-neon-animation-finish="onPageAnimationFinished">
+			<content></content>
+		</neon-animated-pages>
+	</template>
+	<script>
+	Polymer({
+		is:'zetta-dom-app-content',
+		ready: function(){
+			var self = this;
+			self.classList.add('layout');
+			self.classList.add('vertical');
+			self.selectedPage = 0;
+		},
+		onPagesReady: function(){
+			var self = this;
+			/*if (self.parentNode.tagName == 'ZETTA-DOM-APP') {
+				self.parentNode.onPagesReady.apply(self.parentNode, arguments);
+				return;
+			};
+			*/
+			self.fire('pages-ready', self);
+			//local handling
+		},
+		onPageAnimationFinished: function(){
+			var self = this;
+			/*if (self.parentNode.tagName == 'ZETTA-DOM-APP') {
+				self.parentNode.onPageAnimationFinished.apply(self.parentNode, arguments);
+				return;
+			}
+			*/
+			self.fire('page-animation-finished', arguments);
+
+			//local handling
+		}
+		/*
+		_marshalAnnotatedListeners: function(){
+			var scope = this;
+			if (this.parentNode.tagName == 'ZETTA-DOM-APP') {
+				scope = this.parentNode;
+			};
+			Polymer.Base._marshalAnnotatedListeners.apply(scope, arguments)
+		}
+		*/
+	});
+	</script>
+</dom-module>
+
+<dom-module id="zetta-dom-app" attributes="rpc-path rpc-holder logintab logintask languageselector user msg selected language languageTitle">
 	<style>
 		:host {}
-		#tabs::shadow #tabsContainer #selectionBar {}
-		#tabs::shadow paper-tab::shadow #ink {color: #848DBD;}
-        #tabs::shadow paper-tab {font-weight: bold; opacity: 0.75;}
-        #tabs::shadow paper-tab.iron-selected{opacity: 1;}
+		::content #tabs::shadow #tabsContainer #selectionBar {}
+		::content #tabs::shadow paper-tab::shadow #ink {color: #848DBD;}
+        ::content #tabs::shadow paper-tab {font-weight: bold; opacity: 0.75;}
+        ::content #tabs::shadow paper-tab.iron-selected{opacity: 1;}
 		#lefttabs{background-color: #afb1b9; height: 35px; margin-top: 15px; margin-left: 15px}
 		paper-textarea.textarea-bug{visibility: hidden;min-height: 0px;min-width: 0px;height: 0px;width: 0px;overflow: hidden;}
-		#pages::shadow neon-animatable{overflow: auto;}
+		::content #pages::shadow neon-animatable{overflow: auto;}
 		::content zetta-login{min-height: 390px; display: block;}
 	</style>
 	<template>
 		<zetta-rpc id="rpc" path="[[rpcPath]]" holder="[[rpcHolder]]"></zetta-rpc>
 		<paper-textarea class="textarea-bug"></paper-textarea>
-		<div class="layout horizontal">
-			<content select=".logo"></content>
-            <paper-tabs id="tabs" selected="{{selected}}" noBar align-bottom role="tablist" class="layout horizontal">
-            	<content select=".tab"></content>
-            </paper-tabs>
-            <zetta-dropdown hidden$="[[!languageselector]]" label="[[languageTitle]]" class="astab" icon="translate">
-				<paper-menu class='dropdown'>
-					<template is="dom-repeat" items="[[language.list]]">
-						<paper-item on-click="selectLanguage" data-id="[[item.id]]">[[item.name]]</paper-item>
-					</template>
-				</paper-menu>
-			</zetta-dropdown>
-        </div>
-		<neon-animated-pages id="pages" style="position:relative;" on-dom-change="onPagesReady" selected="[[selectedPage]]" class="flex-1" entry-animation="[[entryAnimation]]" exit-animation="[[exitAnimation]]" on-neon-animation-finish="onPageAnimationFinished">
-			<content select=".page"></content>
-		</neon-animated-pages>
+		<content select="zetta-dom-app-header"></content>
+		<content select="zetta-dom-app-content"></content>
 	</template>
 	<script>
 	Polymer({

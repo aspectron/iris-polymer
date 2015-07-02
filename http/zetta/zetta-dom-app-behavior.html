@@ -51,7 +51,10 @@
 				value: 'login',
 				notify: true
 			},
-			languageselector:Boolean,
+			languageselector:{
+				type: Boolean,
+				observer: 'onLanguageSelectorChange'
+			},
 			user:{
 				type: Object,
 				value: {},
@@ -61,14 +64,33 @@
 				type: Object,
 				value: {},
 				observer:'onMsgChange'
+			},
+			languagetitle:{
+				type: String,
+				notify: true,
+				observer: 'onLanguageTitleChange'
+			},
+			language:{
+				type: Object,
+				value:{},
+				notify: true,
+				observer: 'onLanguageChange'
+			},
+			selectedlang: {
+				type: String,
+				value: '',
+				observer:'onSelectedlangChange'
 			}
+		},
+		listeners:{
+			'pages-ready': 'onPagesReady',
+			'page-animation-finished': 'onPageAnimationFinished'
 		},
 		ready: function(){
 			var self = this;
 			self.rpc 				= self.$.rpc;
-			self.entryAnimation 	= 'slide-from-right-animation';
-			self.exitAnimation 		= 'slide-left-animation';
 			self.selectedPage 		= self.selected;
+			
 
 			self.classList.add('layout');
 			self.classList.add('vertical');
@@ -80,6 +102,21 @@
 					langs.push({name: l.name, id: code});
 				});
 			%>
+
+			self.tabsAdded = true;
+		},
+
+		attached: function(){
+			var self = this;
+			_.each(['tabs', 'pages'], function(id){
+				self.$[id] = self.querySelector('#'+id);
+			});
+
+			self.$.header = self.querySelector('zetta-dom-app-header');
+			self.$.content = self.querySelector('zetta-dom-app-content');
+
+			self.$.content.entryAnimation 	= 'slide-from-right-animation';
+			self.$.content.exitAnimation 	= 'slide-left-animation';
 
 			self.language = {
 				source: '<%- _T.source %>',
@@ -99,12 +136,35 @@
 		onMsgChange: function(msg){
 		},
 
-		updateLanguageTitle: function(code){
-			this.languageTitle = _.find(this.language.list, function(o){return o.id == code}).name;
+		onLanguageSelectorChange: function(){
+			//if(this.$.header)
+				//this.$.header.languageselector = this.languageselector;
 		},
-		selectLanguage: function(e){
+
+		onLanguageTitleChange: function(){
+			//if(this.$.header){
+				//this.$.header.languagetitle = this.languagetitle;
+			//}
+		},
+		onLanguageChange: function(){
+			//if(this.$.header){
+				//this.$.header.language = this.language;
+			//}
+		},
+
+		updateLanguageTitle: function(code){
+			this.languagetitle = _.find(this.language.list, function(o){return o.id == code}).name;
+			//if(this.$.header){
+				//this.$.header.languagetitle = this.languagetitle;
+				//this.$.header.language = this.language;
+			//}
+		},
+		onSelectedlangChange: function(langCode){
 			var self = this;
-			var langCode = e.currentTarget.dataId
+			//var langCode = e.target.dataId
+			if (!langCode) {
+				return;
+			};
 			self.updateLanguageTitle(langCode);
 			//console.log("self.language.locale", self.language.locale, self.language.source, langCode)
 			if (self.language.locale != langCode) {
@@ -125,7 +185,7 @@
 			    this.$.lefttabs._onResize();
 		},
 		onPageAnimationFinished: function(){
-
+			//console.log("onPageAnimationFinished")
 		},
 		onPagesReady: function(){
 			var self = this;
@@ -160,22 +220,23 @@
 		},
 		selectedChanged:function(newValue, oldValue){
 			var self = this;
-			if (oldValue !== undefined && newValue > oldValue) {
-				self.entryAnimation = 'slide-from-right-animation';
-				self.exitAnimation = 'slide-left-animation';
-			}else{
-				self.entryAnimation = 'slide-from-left-animation';
-				self.exitAnimation = 'slide-right-animation';
-			}
 			if (!self.$.tabs || !self.$.tabs.items) {
 				return log(this, "Tabs missing");
 			};
+			if (oldValue !== undefined && newValue > oldValue) {
+				self.$.content.entryAnimation = 'slide-from-right-animation';
+				self.$.content.exitAnimation = 'slide-left-animation';
+			}else{
+				self.$.content.entryAnimation = 'slide-from-left-animation';
+				self.$.content.exitAnimation = 'slide-right-animation';
+			}
+			
 			var tab = self.$.tabs.items[self.selected].dataTab;
 			if ( tab == 'logout') {
 				window.location.href = self.logoutPath;
 				return;
 			};
-			self.selectedPage = self.selected;
+			self.$.pages.selected = self.selected;
 			self.$.pages.fire('neon-animation-begin');
 			if (oldValue !== undefined && tab!='login') {
 				localStorage.tabIndex = self.selected;
