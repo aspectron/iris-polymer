@@ -10,7 +10,6 @@
 
 	var ZETTA = window.ZETTA || {};
 	ZETTA.ZettaDomAppBehavior = {
-		selectedPage: 0,
 		properties:{
 			rpcPath: {
 				type: String,
@@ -70,6 +69,16 @@
 				notify: true,
 				observer: 'onLanguageTitleChange'
 			},
+			entryanimation:{
+				type: String,
+				notify: true,
+				value: 'slide-from-right-animation'
+			},
+			exitanimation:{
+				type: String,
+				notify: true,
+				value: 'slide-left-animation'
+			},
 			language:{
 				type: Object,
 				value:{},
@@ -79,7 +88,12 @@
 			selectedlang: {
 				type: String,
 				value: '',
-				observer:'onSelectedlangChange'
+				//observer:'onSelectedlangChange'
+			},
+			selectedpage: {
+				type: Number,
+				value: 0,
+				notify: true
 			}
 		},
 		listeners:{
@@ -89,19 +103,12 @@
 		ready: function(){
 			var self = this;
 			self.rpc 				= self.$.rpc;
-			self.selectedPage 		= self.selected;
-			
+			self.selectedpage 		= self.selected;
 
 			self.classList.add('layout');
 			self.classList.add('vertical');
 
 			//log(this, self)
-			<% 
-				var langs = []; 
-				_.each(_T.languages, function(l, code){
-					langs.push({name: l.name, id: code});
-				});
-			%>
 
 			self.tabsAdded = true;
 		},
@@ -112,18 +119,13 @@
 				self.$[id] = self.querySelector('#'+id);
 			});
 
-			self.$.header = self.querySelector('zetta-dom-app-header');
-			self.$.content = self.querySelector('zetta-dom-app-content');
+			//self.$.header = self.querySelector('zetta-dom-app-header');
+			self.$.content = self.querySelector('.zetta-dom-app-content');
 
-			self.$.content.entryAnimation 	= 'slide-from-right-animation';
-			self.$.content.exitAnimation 	= 'slide-left-animation';
+			self.listen(self.$.content, 'dom-change', 'onPagesReady');
+			self.listen(self.$.content, 'neon-animation-finish', 'onPageAnimationFinished');
 
-			self.language = {
-				source: '<%- _T.source %>',
-				locale: '<%- _T.locale %>',
-				list: <%- JSON.stringify(langs) %>
-			}
-			self.updateLanguageTitle(self.language.locale);
+			//self.updateLanguageTitle(self.language.locale);
 			self.tabsAdded = true;
 		},
 
@@ -153,12 +155,13 @@
 		},
 
 		updateLanguageTitle: function(code){
-			this.languagetitle = _.find(this.language.list, function(o){return o.id == code}).name;
+			//this.languagetitle = _.find(this.language.list, function(o){return o.id == code}).name;
 			//if(this.$.header){
 				//this.$.header.languagetitle = this.languagetitle;
 				//this.$.header.language = this.language;
 			//}
 		},
+		/*
 		onSelectedlangChange: function(langCode){
 			var self = this;
 			//var langCode = e.target.dataId
@@ -176,6 +179,7 @@
 				}
 			};
 		},
+		*/
 		leftselectedChanged: function(){
 			//console.log("leftselectedChanged", arguments)
 		},
@@ -224,11 +228,11 @@
 				return log(this, "Tabs missing");
 			};
 			if (oldValue !== undefined && newValue > oldValue) {
-				self.$.content.entryAnimation = 'slide-from-right-animation';
-				self.$.content.exitAnimation = 'slide-left-animation';
+				self.entryanimation = 'slide-from-right-animation';
+				self.exitanimation = 'slide-left-animation';
 			}else{
-				self.$.content.entryAnimation = 'slide-from-left-animation';
-				self.$.content.exitAnimation = 'slide-right-animation';
+				self.entryanimation = 'slide-from-left-animation';
+				self.exitanimation = 'slide-right-animation';
 			}
 			
 			var tab = self.$.tabs.items[self.selected].dataTab;
@@ -236,7 +240,7 @@
 				window.location.href = self.logoutPath;
 				return;
 			};
-			self.$.pages.selected = self.selected;
+			self.selectedpage = self.selected;
 			self.$.pages.fire('neon-animation-begin');
 			if (oldValue !== undefined && tab!='login') {
 				localStorage.tabIndex = self.selected;

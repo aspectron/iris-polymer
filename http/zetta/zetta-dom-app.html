@@ -25,7 +25,7 @@
 <link rel="import" href="zetta-footer.html" />
 <link rel="import" href="zetta-contact.html" />
 
-
+<!--
 <dom-module id="zetta-dom-app-header" ____attributes="selectedlang languagetitle language">
 	<template>
 		<content></content>
@@ -130,7 +130,72 @@
 	});
 	</script>
 </dom-module>
+-->
+<dom-module id="zetta-language-selector">
+	<style>
+	zetta-dropdown{display: block;}
+	</style>
+	<template>
+		 <zetta-dropdown label="[[languagetitle]]" class="astab" icon="translate">
+			<paper-menu class='dropdown' selected="{{selected}}" attr-for-selected="value">
+				<template is="dom-repeat" items="[[language.list]]">
+					<paper-item value="[[item.id]]">[[item.name]]</paper-item>
+				</template>
+			</paper-menu>
+		</zetta-dropdown>
+	</template>
+	<script>
+<% 
+	var langs = []; 
+	_.each(_T.languages, function(l, code){
+		langs.push({name: l.name, id: code});
+	});
+%>
+	Polymer({
+		is:'zetta-language-selector',
+		properties:{
+			languagetitle:{
+				type: String,
+				notify: true
+			},
+			selected:{
+				type: String,
+				notify: true,
+				value: '<%= _T.locale %>',
+				observer:'onLangChange'
+			},
+			language:{
+				type: Object,
+				notify: true,
+				observer:'onLangChange'
+			}
+		},
+		ready: function(){
+			var self = this;
+			self.language = {
+				source: '<%- _T.source %>',
+				locale: '<%- _T.locale %>',
+				list: <%- JSON.stringify(langs) %>
+			}
+		},
+		onLangChange: function(){
+			var self = this;
+			if (!self.language || !self.selected)
+				return;
+			self.languagetitle = _.find(self.language.list, function(o){return o.id == self.selected}).name;
 
+			if (self.language.locale != self.selected) {
+				var loc = window.location;
+				if (self.language.locale == 'en') {
+					window.location.href = loc.href.replace(loc.host+'/', loc.host+'/'+self.selected+'/');
+				}else{
+					window.location.href = loc.href.replace(loc.host+'/'+self.language.locale, loc.host+'/'+self.selected);
+				}
+			};
+		}
+	})
+	</script>
+</dom-module>
 <dom-module id="zetta-dom-app" attributes="rpc-path rpc-holder logintab logintask languageselector user msg selected language languageTitle">
 	<style>
 		:host {}
@@ -146,8 +211,7 @@
 	<template>
 		<zetta-rpc id="rpc" path="[[rpcPath]]" holder="[[rpcHolder]]"></zetta-rpc>
 		<paper-textarea class="textarea-bug"></paper-textarea>
-		<content select="zetta-dom-app-header"></content>
-		<content select="zetta-dom-app-content"></content>
+		<content></content>
 	</template>
 	<script>
 	Polymer({
