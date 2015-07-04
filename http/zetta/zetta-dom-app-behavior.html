@@ -234,8 +234,12 @@
 				self.entryanimation = 'slide-from-left-animation';
 				self.exitanimation = 'slide-right-animation';
 			}
-			
-			var tab = self.$.tabs.items[self.selected].dataTab;
+			var seletedTab = self.$.tabs.items[self.selected];
+			if (!seletedTab){
+				self.selectedpage = 0;
+				return;
+			}
+			var tab = seletedTab.dataTab || seletedTab.getAttribute('data-tab');
 			if ( tab == 'logout') {
 				window.location.href = self.logoutPath;
 				return;
