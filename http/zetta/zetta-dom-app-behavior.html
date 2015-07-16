@@ -27,7 +27,7 @@
 			},
 			leftselected:{
 				type: Number,
-				value: 1,
+				value: 0,
 				observer: 'leftselectedChanged'
 			},
 			lefttabs: {
@@ -115,7 +115,7 @@
 
 		attached: function(){
 			var self = this;
-			_.each(['tabs', 'pages'], function(id){
+			_.each(['tabs', 'pages', 'lefttabs'], function(id){
 				self.$[id] = self.querySelector('#'+id);
 			});
 
@@ -127,6 +127,13 @@
 
 			//self.updateLanguageTitle(self.language.locale);
 			self.tabsAdded = true;
+		},
+
+		toUpperCase : function(v) {
+			return (v+'').toUpperCase();
+		},
+		toLowerCase : function(v) {
+			return (v+'').toLowerCase();
 		},
 
 		onUserChange: function(user){
@@ -184,9 +191,13 @@
 			//console.log("leftselectedChanged", arguments)
 		},
 		subtabChanged: function(){
-			//console.log("subtabChanged", arguments)
-            if(this.$.lefttabs)
-			    this.$.lefttabs._onResize();
+			var self = this;
+			//console.log("subtabChanged", arguments, self.$.lefttabs)
+			if (!self.$.lefttabs) {
+				self.$.lefttabs = self.querySelector('#lefttabs');
+			}
+            if(self.$.lefttabs)
+			    self.$.lefttabs._onResize();
 		},
 		onPageAnimationFinished: function(){
 			//console.log("onPageAnimationFinished")
