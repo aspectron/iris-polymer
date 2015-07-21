@@ -1,0 +1,66 @@
+<dom-module id="zetta-file">
+	<style>
+		.c{position: relative; display: inline-block; overflow: hidden;padding: 3px 0px;};
+		#file{position: absolute; top: 0px; left: 0px; bottom: 0px; right: 0px; font-size: 40px; opacity: 0;}
+		.preview-holder{height: 0px;}
+		:host(.has-preview) .preview-holder{height: auto;}
+	</style>
+	<template>
+		<div class="c">
+			<paper-button raised>[[btntext]]</paper-button>
+			<input id="file" type="file" on-change="onFileChange" />
+		</div>
+		<template is="dom-if" if="[[preview]]">
+			<div class="preview-holder"><img class="preview" id="preview" /></div>
+		</template>
+	</template>
+	<script>
+		Polymer({
+			is:"zetta-file",
+			properties:{
+				filedata:{
+					type: String,
+					value:'',
+					notify: true,
+					observer:"onFileDataChange"
+				},
+				preview: Boolean,
+				btntext:{
+					type: String,
+					value: "Choose file"
+				}
+			},
+			ready: function(){
+
+			},
+
+			onFileDataChange: function(){
+				var self = this;
+				if (self.preview){
+					if (!self.previewImg)
+						self.previewImg = self.querySelector("#preview");
+
+					self.previewImg.src = self.filedata || "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+					self.toggleClass("has-preview", !!self.filedata);
+				}
+
+				self.btntext = self.filedata? "Change file" : "Choose file";
+				self.fire("change", {filedata: self.filedata, files: self.$.file.files})
+			},
+
+			onFileChange: function(){
+				var self = this;
+				var files = self.$.file.files;
+				if (!files.length) {
+					self.filedata = "";
+					return;
+				}
+				var fileReader = new FileReader();
+	            fileReader.readAsDataURL(files[0]);
+	            fileReader.onload = function (fileEvent) {
+	                self.filedata = fileEvent.target.result;
+	            };
+	        }
+		})
+	</script>
+</dom-module>
