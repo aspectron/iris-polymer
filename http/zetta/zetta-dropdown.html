@@ -26,6 +26,7 @@
 			padding: 5px 0px 4px 2px;
 			border-bottom: 1px solid #ccc;
 		}
+		[readonly]{cursor: default;}
 		.pulldown {margin-left: 10px; float: right;}
 		:host(.astab){padding: 10px; width: auto !important;}
 		:host(.astab) .display{border-bottom: 0px;}
@@ -34,12 +35,13 @@
 	</style>
 	<template>
 		<nobr>
-			<div class="display" on-click="showMenu">
+			<div class="display" on-click="showMenu" readonly$="[[readonly]]">
 				<template is='dom-if' if='{{icon}}'>
 					<iron-icon class='icon' icon="[[icon]]"></iron-icon>&nbsp;
 				</template>
 				<span hidden$="[[!label]]">[[label]]</span>
 				<iron-icon hidden$="[[hideexpandicon]]" class='pulldown' icon="expand-more"></iron-icon>
+				<content select=".label"></content>
 			</div>
 		</nobr>
 		<div id="menu"><content select=".dropdown"></content></div>
@@ -48,37 +50,7 @@
 		Polymer({
 			behaviors:[Polymer.NeonAnimationRunnerBehavior],
 			is: "zetta-dropdown",
-			properties:{
-				hideexpandicon:{
-					type: Boolean,
-					value: false
-				}
-			},
-			ready : function() {
-				var self = this;
-				//self.listen(document, 'click', 'onDocumentClick');
-			},
-
-			addDocListener: function(){
-				this._onDocumentClick = this.onDocumentClick.bind(this);
-				document.addEventListener('click', this._onDocumentClick);
-			},
-			removeDocListener: function(){
-				this._onDocumentClick && document.removeEventListener('click', this._onDocumentClick);
-			},
-
-			onDocumentClick: function(e){
-				var self = this;
-				if(e.target == self || e.target.parentNode == self || e.target.parentNode.parentNode == self){
-					return
-				}
-				if (self._showing) {
-					self.hideMenu();
-				};
-			},
-
 			properties: {
-
 				animationConfig: {
 					type: Object,
 					value: function() {
@@ -103,7 +75,44 @@
 				label: {
 					type:  String,
 					value : ""
+				},
+				hideexpandicon:{
+					type: Boolean,
+					value: false
+				},
+				readonly: {
+					type: Boolean,
+					observer: 'onReadOnlyChange'
 				}
+			},
+			ready : function() {
+				var self = this;
+				//self.listen(document, 'click', 'onDocumentClick');
+			},
+
+			onReadOnlyChange: function(){
+				if (this.readonly !== undefined){
+					this.readonly = !!this.readonly;
+					this.hideexpandicon = this.readonly;
+				}
+			},
+
+			addDocListener: function(){
+				this._onDocumentClick = this.onDocumentClick.bind(this);
+				document.addEventListener('click', this._onDocumentClick);
+			},
+			removeDocListener: function(){
+				this._onDocumentClick && document.removeEventListener('click', this._onDocumentClick);
+			},
+
+			onDocumentClick: function(e){
+				var self = this;
+				if(e.target == self || e.target.parentNode == self || e.target.parentNode.parentNode == self){
+					return
+				}
+				if (self._showing) {
+					self.hideMenu();
+				};
 			},
 
 			listeners: {
@@ -127,6 +136,8 @@
 			},
 
 			showMenu: function() {
+				if (this.readonly)
+					return;
 				this.$.menu.style.display = 'inline-block';
 				this.updateMenuPosition();
 				this._showing = true;
