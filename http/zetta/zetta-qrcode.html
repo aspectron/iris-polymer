@@ -28,7 +28,8 @@
 				},
 				rendertype:{
 					type: String,
-					value: 'canvas'
+					value: 'canvas',
+					observer: 'onRendertypeChanged'
 				},
 				backgroundcolor:{
 					type: String,
@@ -47,8 +48,11 @@
 					value: 200
 				}
 			},
+			onRendertypeChanged: function(){
+				this.rendertype && this.createImage();
+			},
 			onTextChanged:function(text){
-				this.createImage();
+				this.rendertype && this.createImage();
 			},
 
 			createImage: function(){
