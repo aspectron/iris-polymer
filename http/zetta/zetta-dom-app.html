@@ -24,6 +24,7 @@
 <link rel="import" href="zetta-login.html" />
 <link rel="import" href="zetta-footer.html" />
 <link rel="import" href="zetta-contact.html" />
+<link rel="import" href="zetta-prompt.html" />
 
 <!--
 <dom-module id="zetta-dom-app-header" ____attributes="selectedlang languagetitle language">
@@ -209,6 +210,7 @@
 		::content zetta-login{min-height: 410px; display: block;}
 	</style>
 	<template>
+		<zetta-prompt holder="[[rpcHolder]]"></zetta-prompt>
 		<zetta-rpc id="rpc" path="[[rpcPath]]" holder="[[rpcHolder]]"></zetta-rpc>
 		<paper-textarea class="textarea-bug"></paper-textarea>
 		<content></content>
