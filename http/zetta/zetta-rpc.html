@@ -50,6 +50,9 @@
                     console.log("RPC error", arguments);
                 	self.events.emit('rpc-error');
                 })
+                self.socket.on('offline', function(){
+                    window.location.reload();
+                })
                 self.socket.on('disconnect', function() { 
                     self.online = false;
                     console.log("RPC disconnected",arguments);
