@@ -11,6 +11,16 @@
 	window.ZETTA = window.ZETTA || {};
 	window.ZETTA.ZettaDomAppBehavior = {
 		properties:{
+			mediaquery:{
+				type: String,
+				value: 'max-width: 700px'
+			},
+			ismobile:{
+				type: Boolean,
+				value: false,
+				notify: true,
+				observer: 'isMobileChanged'
+			},
 			rpcPath: {
 				type: String,
 				value: '/rpc'
@@ -121,6 +131,10 @@
 
 			//self.$.header = self.querySelector('zetta-dom-app-header');
 			self.$.content = self.querySelector('.zetta-dom-app-content');
+			self.$.toggleDrawerBtns = self.querySelectorAll('[toggle-drawer]');
+			_.each(self.$.toggleDrawerBtns, function(btn){
+				self.listen(btn, 'click', 'toggleDrawer');
+			})
 
 			self.listen(self.$.content, 'dom-change', 'onPagesReady');
 			self.listen(self.$.content, 'neon-animation-finish', 'onPageAnimationFinished');
@@ -135,7 +149,9 @@
 		toLowerCase : function(v) {
 			return (v+'').toLowerCase();
 		},
-
+		isMobileChanged:function(ismobile){
+			this.toggleClass('mobile', ismobile);
+		},
 		onUserChange: function(user){
 			var self = this;
 			self.logintab 			= self.user ? 'Logout': 'Login';
@@ -269,6 +285,10 @@
 			if(typeof localStorage.tabIndex != 'undefined'){
 				this.selected = parseInt(localStorage.tabIndex);
 			}
+		},
+		toggleDrawer: function(){
+			console.log("toggleDrawer")
+			this.$.drawer.togglePanel();
 		}
 	};
 </script>
