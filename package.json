@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "underscore" : "*",
-    "serve-static" : "*"
+    "serve-static" : "*",
+    "node-uuid" : "*"
   }
 }
