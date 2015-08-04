@@ -22,6 +22,8 @@
 <link rel="import" href="/deps/paper-menu-button/paper-menu-button.html" />
 <link rel="import" href="/deps/paper-header-panel/paper-header-panel.html" />
 <link rel="import" href="/deps/paper-toolbar/paper-toolbar.html" />
+<link rel="import" href="animations/slide-from-up-animation.html" />
+<link rel="import" href="animations/slide-from-down-animation.html" />
 
 <link rel="import" href="zetta-rpc.html" />
 <link rel="import" href="zetta-dom-app-behavior.html" />
@@ -37,7 +39,7 @@
 	.display{cursor: pointer;padding: 5px 0px 4px 2px;border-bottom: 1px solid #ccc;}
 	.astab{padding: 10px; width: auto !important;}
 	.astab .display{border-bottom: 0px;}
-	.astab::content #dropdown{margin-top: 48px !important}
+	.astab::content #dropdown{margin-top: 48px !important; margin-left:5px; margin-right: 5px;}
 	</style>
 	<template>
 		<paper-menu-button class="astab">
@@ -46,7 +48,7 @@
 				<span>[[languagetitle]]</span>
 			</div>
 			<paper-menu class="dropdown-content" selected="{{selected}}" attr-for-selected="value">
-				<template is="dom-repeat" items="[[language.list]]">
+				<template is="dom-repeat" items="{{language.list}}">
 					<paper-item value="[[item.id]]">[[item.name]]</paper-item>
 				</template>
 			</paper-menu>
@@ -76,19 +78,32 @@
 				type: Object,
 				notify: true,
 				observer:'onLangChange'
-			}
+			},
 		},
+		observers:[
+			'onLangChange(language.list)'
+		],
 		ready: function(){
 			var self = this;
-			self.language = {
+			self.set('language', {
 				source: '<%- _T.source %>',
 				locale: '<%- _T.locale %>',
 				list: <%- JSON.stringify(langs) %>
-			}
+			});
+		},
+		attached: function(){
+			var self = this;
+			if (!self.language || !self.language.list || !self.language.list.length)
+				return;
+			var list = [].concat(self.language.list);
+			self.set('language.list', []);
+			self.async(function(){
+				self.set('language.list', list);
+			}, 1000);
 		},
 		onLangChange: function(){
 			var self = this;
-			if (!self.language || !self.selected)
+			if (!self.language || !self.language.list.length || !self.selected)
 				return;
 			console.log("self.selected", self.selected, self.language.list)
 			self.languagetitle = _.find(self.language.list, function(o){return o.id == self.selected}).name;
@@ -101,6 +116,9 @@
 					window.location.href = loc.href.replace(loc.host+'/'+self.language.locale, loc.host+'/'+self.selected);
 				}
 			};
+		},
+		toJSON: function(v){
+			return JSON.stringify(v);
 		}
 	})
 	</script>
@@ -117,20 +135,31 @@
 		::content #pages::shadow neon-animatable{overflow: auto;}
 		::content zetta-login{min-height: 410px; display: block;}
 		::content .toggle-drawer{min-width: 10px;}
+		#drawerMenus ::content #tabs{height: auto;}
+		#drawerMenus ::content #tabs #tabsContent{display: block;}
+		#drawerMenus ::content #tabs #tabsContent paper-tab{display: block; padding:15px 5px 15px 15px;}
+		#drawerMenus ::content #tabs #tabsContent paper-tab .tab-content{
+			-ms-flex-pack: left; -webkit-justify-content: left; justify-content: left; }
+		#drawerMenus ::content .drawer-menu {display: block;}
+		::content [toggle-drawer]{display: none;}
+		:host(.mobile) ::content [toggle-drawer]{display: inline-block;}
+		::content #pages{overflow: hidden;}
 	</style>
 	<template>
 		<zetta-prompt holder="[[rpcHolder]]"></zetta-prompt>
 		<iron-media-query query="[[mediaquery]]" query-matches="{{ismobile}}"></iron-media-query>
 		<zetta-rpc id="rpc" path="[[rpcPath]]" holder="[[rpcHolder]]"></zetta-rpc>
 		<paper-textarea class="textarea-bug"></paper-textarea>
-		<paper-drawer-panel id="drawer">
-			 <paper-header-panel drawer>
+		<paper-drawer-panel id="drawer" narrow="{{isnarrow}}" force-narrow>
+			 <paper-header-panel drawer id="drawerLeft">
 				<paper-toolbar>
-					<div>Application</div>
+					<content select=".drawer-toolbar-item"></content>
 				</paper-toolbar>
-			 	<content select=".drawer-item"></content>
+				<div id="drawerMenus">
+			 		<content select=".drawer-item"></content>
+			 	</div>
 			 </paper-header-panel>
-			<div main class="flex-1 layout vertical"><content select=".main-item"></content></div>
+			<div main class="flex-1 layout vertical" id="drawerMain"><content select=".main-item"></content></div>
 		</paper-drawer-panel>
 	</template>
 	<script>

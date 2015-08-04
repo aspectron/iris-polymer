@@ -13,7 +13,11 @@
 		properties:{
 			mediaquery:{
 				type: String,
-				value: 'max-width: 700px'
+				value: 'max-width: 640px'
+			},
+			isnarrow: {
+				type: Boolean,
+				observer: 'onNarrowChange'
 			},
 			ismobile:{
 				type: Boolean,
@@ -104,7 +108,8 @@
 				type: Number,
 				value: 0,
 				notify: true
-			}
+			},
+			verticalanimation: Boolean
 		},
 		listeners:{
 			'pages-ready': 'onPagesReady',
@@ -149,8 +154,42 @@
 		toLowerCase : function(v) {
 			return (v+'').toLowerCase();
 		},
+
+		onNarrowChange: function(){
+			console.log("onNarrowChange", this.isnarrow)
+		},
+
 		isMobileChanged:function(ismobile){
+			var self = this;
+			console.log("ismobile", ismobile)
 			this.toggleClass('mobile', ismobile);
+			if (!self.$.tabs){
+				self.debounce('isMobileChanged', function(){
+					self.isMobileChanged(self.ismobile);
+				}, 100);
+				return;
+			}
+			if(!self._tabsParent){
+				self._tabsParent = self.$.tabs.parentNode;
+			}
+			var drawerMenuItems = self.querySelectorAll('.drawer-menu');
+			_.each(drawerMenuItems, function(menu){
+				if (!menu.__pNode){
+					menu.__pNode = menu.parentNode;
+				}
+			})
+
+			if (ismobile){
+				self.$.drawerMenus.appendChild(self.$.tabs);
+				_.each(drawerMenuItems, function(menu){
+					self.$.drawerMenus.appendChild(menu);
+				});
+			}else{
+				self._tabsParent.appendChild(self.$.tabs);
+				_.each(drawerMenuItems, function(menu){
+					menu.__pNode.appendChild(menu)
+				})
+			}
 		},
 		onUserChange: function(user){
 			var self = this;
@@ -162,14 +201,9 @@
 		},
 
 		onLanguageSelectorChange: function(){
-			//if(this.$.header)
-				//this.$.header.languageselector = this.languageselector;
 		},
 
 		onLanguageTitleChange: function(){
-			//if(this.$.header){
-				//this.$.header.languagetitle = this.languagetitle;
-			//}
 		},
 		onLanguageChange: function(){
 			//if(this.$.header){
@@ -178,33 +212,8 @@
 		},
 
 		updateLanguageTitle: function(code){
-			//this.languagetitle = _.find(this.language.list, function(o){return o.id == code}).name;
-			//if(this.$.header){
-				//this.$.header.languagetitle = this.languagetitle;
-				//this.$.header.language = this.language;
-			//}
 		},
-		/*
-		onSelectedlangChange: function(langCode){
-			var self = this;
-			//var langCode = e.target.dataId
-			if (!langCode) {
-				return;
-			};
-			self.updateLanguageTitle(langCode);
-			//console.log("self.language.locale", self.language.locale, self.language.source, langCode)
-			if (self.language.locale != langCode) {
-				var loc = window.location;
-				if (self.language.locale == 'en') {
-					window.location.href = loc.href.replace(loc.host+'/', loc.host+'/'+langCode+'/');
-				}else{
-					window.location.href = loc.href.replace(loc.host+'/'+self.language.locale, loc.host+'/'+langCode);
-				}
-			};
-		},
-		*/
 		leftselectedChanged: function(){
-			//console.log("leftselectedChanged", arguments)
 		},
 		subtabChanged: function(){
 			var self = this;
@@ -254,12 +263,22 @@
 			if (!self.$.tabs || !self.$.tabs.items) {
 				return log(this, "Tabs missing");
 			};
-			if (oldValue !== undefined && newValue > oldValue) {
-				self.entryanimation = 'slide-from-right-animation';
-				self.exitanimation = 'slide-left-animation';
+			if (self.verticalanimation) {
+				if (oldValue !== undefined && newValue > oldValue) {
+					self.entryanimation = 'slide-from-down-animation';
+					self.exitanimation = 'slide-up-animation';
+				}else{
+					self.entryanimation = 'slide-down-animation';
+					self.exitanimation = 'slide-from-up-animation';
+				}
 			}else{
-				self.entryanimation = 'slide-from-left-animation';
-				self.exitanimation = 'slide-right-animation';
+				if (oldValue !== undefined && newValue > oldValue) {
+					self.entryanimation = 'slide-from-right-animation';
+					self.exitanimation = 'slide-left-animation';
+				}else{
+					self.entryanimation = 'slide-from-left-animation';
+					self.exitanimation = 'slide-right-animation';
+				}
 			}
 			var seletedTab = self.$.tabs.items[self.selected];
 			if (!seletedTab){
@@ -287,7 +306,6 @@
 			}
 		},
 		toggleDrawer: function(){
-			console.log("toggleDrawer")
 			this.$.drawer.togglePanel();
 		}
 	};
