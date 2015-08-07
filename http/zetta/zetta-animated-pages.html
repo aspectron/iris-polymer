@@ -1,0 +1,141 @@
+<dom-module id="zetta-animated-page">
+	<style>:host{display: block; min-height: 100%;}</style>
+	<template>
+		<content></content>
+	</template>
+	<script>
+		Polymer({
+			is:'zetta-animated-page'
+		})
+	</script>
+</dom-module>
+<dom-module id="zetta-animated-pages">
+	<style>
+		:host{
+			overflow-y: auto;
+			display: block;
+		}
+		:host(#pages){
+			overflow-y: auto;
+			display: block;
+		}
+	</style>
+	<template>
+		<content></content>
+	</template>
+	<script>
+		Polymer({
+			is:'zetta-animated-pages',
+			properties:{
+				selected: {
+					type: Number,
+					value: false,
+					notify: true,
+					observer: 'onSelectedChange'
+				},
+				items: {
+					type: Array,
+					value:[],
+					observer: 'onItemChange'
+				},
+				animateTime: {
+					type: Number,
+					value: 800
+				},
+				noAnimationForFirst:{
+					type: Boolean,
+					value: false
+				}
+			},
+			ready: function(){
+				var self = this;
+				self.listen(window, 'resize', 'setMinHeightOfChildren');
+				self.listen(self, 'scroll', 'onScroll');
+				self._isReady = true;
+				self.onSelectedChange();
+			},
+			onItemChange: function(){
+				this.onSelectedChange();
+			},
+			onSelectedChange: function(){
+				var self = this;
+				if (self.selected === false || !self._isReady || !self.items.length)
+					return;
+				if (self._selected == self.selected) {
+					self._selected = false;
+					return;
+				};
+				
+				if (self.noAnimationForFirst && !self.__initChange) {
+					self.__initChange = true;
+					self.scrollTop = self.getItemTop(self.selected);
+				}else{
+					jQuery(self).animate({
+						scrollTop: self.getItemTop(self.selected)
+					}, self.animateTime);
+				}
+			},
+			onScroll: function(){
+				//console.log("zetta-animated-pages", this.scrollTop)
+				var self = this;
+				self.debounce('onScroll', function(){
+					self.updateSelected();
+				}, 300);
+			},
+
+			updateSelected: function(){
+				var self = this;
+				var top = self.scrollTop;
+				var selected = 0;
+
+				_.each(self.items, function(page, index){
+					if (page.offsetTop <= top ) {
+						selected = index;
+					};
+				});
+				//console.log('updateSelected', selected)
+				self.setSilentSelected(selected);
+			},
+
+			setSilentSelected: function(selected){
+				var self = this;
+				self._selected = selected;
+				self.set('selected', selected);
+				//self.async(function(){
+					//self._silentSelected = false;
+				//}, 100)
+			},
+
+			getItemTop: function(index){
+				var self = this;
+				var page = self.items ? self.items[index] : false;
+				if (!page) {
+					return self.scrollTop;
+				};
+				return page.offsetTop;
+			},
+			attached: function() {
+				var self = this;
+				self.async(function(){
+					self.initItems();
+				}, 1000);
+			},
+			initItems: function() {
+				var self = this;
+				self.set('items', self.getChildren());
+				self.setMinHeightOfChildren();
+			},
+			setMinHeightOfChildren: function(){
+				var self = this;
+				var minHeight = self.getBoundingClientRect().height;
+				_.each(self.items, function(child){
+					child.style.minHeight = minHeight+'px'; 
+				});
+			},
+			getChildren: function(){
+				return this.querySelectorAll('zetta-animated-page');
+			}
+		})
+	</script>
+</dom-module>
+
