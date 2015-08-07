@@ -255,6 +255,14 @@
 			});
 			return tab;
 		},
+		getActiveTabId: function(){
+			var self = this;
+			var seletedTab = self.$.tabs.items[self.selected];
+			if (!seletedTab){
+				return false;
+			}
+			return seletedTab.dataTabId || seletedTab.getAttribute('data-tab-id');
+		},
 		toUpperCase : function(v) {
 			return (v+'').toUpperCase();
 		},
