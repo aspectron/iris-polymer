@@ -61,23 +61,31 @@
 				var self = this;
 				if (self.selected === false || !self._isReady || !self.items.length)
 					return;
-				if (self._selected == self.selected) {
+				if (self._selected === self.selected) {
 					self._selected = false;
 					return;
 				};
-				
+				self._selected = false;
 				if (self.noAnimationForFirst && !self.__initChange) {
 					self.__initChange = true;
 					self.scrollTop = self.getItemTop(self.selected);
 				}else{
-					jQuery(self).animate({
-						scrollTop: self.getItemTop(self.selected)
-					}, self.animateTime);
+					self.animating = true;
+					jQuery(self).stop(true, false).animate({
+						scrollTop: self.getItemTop(self.selected) || 1
+					}, {
+						duration: self.animateTime,
+						always: function(){
+							self.animating = false;
+						}
+					})
 				}
 			},
 			onScroll: function(){
 				//console.log("zetta-animated-pages", this.scrollTop)
 				var self = this;
+				if (self.animating)
+					return;
 				self.debounce('onScroll', function(){
 					self.updateSelected();
 				}, 300);
