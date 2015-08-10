@@ -47,7 +47,7 @@ function ZETTA_Polymer(core) {
 		_.each(list, function(file){
 			if (_.contains(ignoreList, file))
 				return;
-			console.log("file", file)
+			// console.log("file", file)
 			app.get('/ZETTA/'+file, function(req, res, next) {
 	            res.render(file, {req: req});
 	        });
