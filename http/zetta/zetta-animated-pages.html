@@ -14,6 +14,7 @@
 		:host{
 			overflow-y: auto;
 			display: block;
+			outline: 0px;
 		}
 		:host(#pages){
 			overflow-y: auto;
@@ -54,6 +55,11 @@
 					type:Number,
 					value:1,
 					reflectToAttribute: true
+				},
+				dontAutoFocus:{
+					type: Boolean,
+					value: false,
+					observer:'_onAutoFocusChanged'
 				}
 			},
 			hasattributes:{
@@ -63,8 +69,43 @@
 				var self = this;
 				self.listen(window, 'resize', 'setMinHeightOfChildren');
 				self.listen(self, 'scroll', 'onScroll');
+				
 				self._isReady = true;
 				self.onSelectedChange();
+			},
+			_onAutoFocusChanged: function(){
+				var self = this;
+				if (!self.dontAutoFocus) {
+					self.addDocListener();
+				}else{
+					self.removeDocListener();
+				}
+			},
+			addDocListener: function(){
+				this._onDocumentKeyPress = this.onDocumentKeyPress.bind(this);
+				document.addEventListener('keyup', this._onDocumentKeyPress);
+			},
+			removeDocListener: function(){
+				this._onDocumentKeyPress && document.removeEventListener('keyup', this._onDocumentKeyPress);
+			},
+
+			onDocumentKeyPress: function(e){
+				var self = this;
+				var t = e.target;
+				if(
+					t == self ||
+					t.parentNode == self ||
+					(t.parentNode && t.parentNode.parentNode == self) ||
+					(t.tagName == 'PAPER-TAB' || t.tagName == 'BODY' || t.tagName == 'HTML')
+					){
+					self.tryToFocus();
+				}
+			},
+			tryToFocus:function(){
+				var self = this;
+				if (!self.dontAutoFocus && self.focus) {
+					self.focus();
+				};
 			},
 			onItemChange: function(){
 				this.onSelectedChange();
@@ -100,9 +141,7 @@
 					return;
 				self.debounce('onScroll', function(){
 					self.updateSelected();
-					if (e.target == self && self.focus) {
-						self.focus();
-					};
+					(e.target == self) && self.tryToFocus();
 				}, 300);
 			},
 
