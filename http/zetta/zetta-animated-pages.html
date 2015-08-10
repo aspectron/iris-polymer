@@ -45,6 +45,10 @@
 				noAnimationForFirst:{
 					type: Boolean,
 					value: false
+				},
+				fixMinHeight:{
+					type: Boolean,
+					value: false
 				}
 			},
 			ready: function(){
@@ -135,6 +139,8 @@
 			},
 			setMinHeightOfChildren: function(){
 				var self = this;
+				if (!self.fixMinHeight)
+					return;
 				var minHeight = self.getBoundingClientRect().height;
 				_.each(self.items, function(child){
 					child.style.minHeight = minHeight+'px'; 
