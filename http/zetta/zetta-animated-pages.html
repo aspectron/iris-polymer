@@ -62,9 +62,6 @@
 					observer:'_onAutoFocusChanged'
 				}
 			},
-			hasattributes:{
-				tabindex: '1'
-			},
 			ready: function(){
 				var self = this;
 				self.listen(window, 'resize', 'setMinHeightOfChildren');
@@ -178,9 +175,12 @@
 			},
 			attached: function() {
 				var self = this;
-				self.async(function(){
+				//self.async(function(){
 					self.initItems();
-				}, 1000);
+					if (!self.dontAutoFocus) {
+						self.tryToFocus();
+					}
+				//}, 10);
 			},
 			initItems: function() {
 				var self = this;
