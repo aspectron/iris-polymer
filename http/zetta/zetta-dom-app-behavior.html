@@ -11,6 +11,10 @@
 	window.ZETTA = window.ZETTA || {};
 	window.ZETTA.ZettaDomAppBehavior = {
 		properties:{
+			appName: {
+				type: String,
+				value: ''
+			},
 			mediaquery:{
 				type: String,
 				value: 'max-width: 640px'
@@ -320,20 +324,37 @@
 			self.selectedpage = self.selected;
 			self.$.pages.fire('neon-animation-begin');
 			if (oldValue !== undefined && tab!='login') {
-				localStorage.tabIndex = self.selected;
+				self.localStorage('tabIndex', self.selected);
 			}
 		},
 		restoreLastTab: function(){
+			var self = this;
 			if (this.msg && this.msg.activation){
 				this.selected = this.getTab('login').index;
 				return;
 			}
-			if(typeof localStorage.tabIndex != 'undefined'){
-				this.selected = parseInt(localStorage.tabIndex);
+			var tabIndex = self.localStorage('tabIndex');
+			if(typeof  tabIndex != 'undefined'){
+				this.selected = parseInt(tabIndex);
 			}
 		},
 		toggleDrawer: function(){
 			this.$.drawer.togglePanel();
+		},
+		localStorage: function(key, value){
+			var self = this;
+			key = (self.appName || 'app').toLowerCase()+'-'+key;
+			if (arguments.length == 1)
+				return localStorage[key];
+
+			if (value === undefined){
+				value = localStorage[key];
+				delete localStorage[key];
+				return value;
+			}
+
+			localStorage[key] = value;
+			return value;
 		}
 	};
 </script>
