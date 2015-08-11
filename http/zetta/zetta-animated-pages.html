@@ -175,12 +175,12 @@
 			},
 			attached: function() {
 				var self = this;
-				//self.async(function(){
+				self.async(function(){
 					self.initItems();
 					if (!self.dontAutoFocus) {
 						self.tryToFocus();
 					}
-				//}, 10);
+				}, 10);
 			},
 			initItems: function() {
 				var self = this;
