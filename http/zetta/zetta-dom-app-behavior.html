@@ -113,6 +113,7 @@
 		},
 		listeners:{
 			'pages-ready': 'onPagesReady',
+			'drawerMenus.click': 'onDrawerMenuItemClick',
 			'page-animation-finished': 'onPageAnimationFinished'
 		},
 		ready: function(){
@@ -197,6 +198,17 @@
 				})
 			}
 			//self.$.tabs.selected = self.selected;
+		},
+		onDrawerMenuItemClick:function(e){
+			var self = this;
+			var tab = _.find(e.path, function(t){return t.tagName == 'PAPER-TAB'});
+			if (!tab || !tab.hasAttribute)
+				return;
+			var dontHide = tab.hasAttribute('dont-hide') || (tab.classList && tab.classList.contains('dont-hide'));
+			if (dontHide) {
+				return;
+			};
+			self.toggleDrawer();
 		},
 		onUserChange: function(user){
 			var self = this;
