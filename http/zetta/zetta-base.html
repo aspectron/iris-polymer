@@ -1,0 +1,585 @@
+<script type="text/javascript" src="/ZETTA/scripts/underscore-min.js"></script>
+<script>
+var ZETTA = window.ZETTA = (window.ZETTA || {});
+ZETTA = _.extend(ZETTA, {
+	types:{
+		Steps:{
+
+		}
+	}
+})
+ZETTA.dpc = function(t,fn) { if(typeof(t) == 'function') setTimeout(t,0); else setTimeout(fn,t); }
+
+ZETTA.find = function(local, shadow) { 
+	var l = document.querySelector(local);
+	if(!l || !shadow)
+		return l;
+
+	var o = l.shadowRoot.querySelector(shadow.replace('/','\\/'));
+	return o;
+}
+
+ZETTA.findAll = function(local, shadow) { 
+
+	var l = document.querySelectorAll(local);
+	if(!l.length || !shadow)
+		return l;
+	l = l[0];
+	return l.shadowRoot.querySelectorAll(shadow.replace('/','\\/'));
+}
+
+ZETTA.findParent = function(el, parentTag) {
+	var el = el.parentNode;
+	var tagName = parentTag.toUpperCase();
+	while(el && el.tagName != tagName){
+		el = el.parentNode;
+	}
+	return el;
+}
+
+ZETTA.findPanel = function(el, tagName) {
+	tagName = (tagName || 'BRT-PANEL').toUpperCase();
+	var el = el.parentNode;
+	while(el && el.tagName != tagName)
+		el = el.parentNode;
+	return el;
+}
+
+
+// Resolve 'a.b.c' notation against global namespace
+ZETTA.resolve = function(path) {
+	return _.isString(path) ? eval(path) : path;
+}
+// Get parent object & name
+ZETTA.resolveParent = function(path) {
+	var parentPath = path.split('.');
+	var name = parentPath.pop();
+	parentPath = parentPath.join('.');
+	var parent = ZETTA.resolve(parentPath);
+	if(!parent)
+		throw new Error('Unable to resolve parent for path: '+path);
+	var ret = {
+		parent : parent,
+		name : name
+	}
+	return ret;
+}
+ZETTA.define = function(targetPath, value) {
+
+	var target = ZETTA.resolveParent(targetPath);
+	target.parent[target.name] = value;
+}
+
+ZETTA.create = function(targetPath, o, args) {
+
+	if(!o)
+		throw new Error("Missing type for "+targetPath);
+
+	var t = ZETTA.resolveParent(targetPath);
+	if(!t.parent)
+		throw new Error("Unable to resolve "+targetPath);
+
+	if(t.parent[t.name])
+		throw new Error("Object already exists "+targetPath);
+
+	var ctor = o.ctor || o;
+	var target = new ctor(args);
+
+	t.parent[t.name] = target;
+	return target;
+}
+/*
+ZETTA.override = function(targetPath, newCtor) {
+
+	var baseCtor = ZETTA.resolve(targetPath);
+	if(!baseCtor)
+		throw new Error("Unable to locate: "+targetPath);
+
+  	var ctor = function(args) {
+	    var self = this;
+	    // baseCtor.call(self, args);
+	    newCtor.call(self, baseCtor, args);
+	}
+
+	var target = ZETTA.resolveParent(targetPath);
+	target.parent[target.name] = ctor; 
+}
+*/
+
+ZETTA.alert = function(args){
+	ZETTA.showAlertWin(args, 'alert');
+}
+
+ZETTA.prompt = function(args){
+	ZETTA.showAlertWin(args, 'prompt');
+}
+
+ZETTA.confirm = function(args){
+	//ZETTA.showAlertWin(args, 'confirm');
+}
+
+ZETTA.showAlertWin = function(args, name){
+	var key  = name+'Box';
+	ZETTA[key] = ZETTA[key] || document.body.querySelector('ZETTA-'+name);
+	if (!ZETTA[key]) {
+		ZETTA[key] = ZETTA.createElement({tagName: 'zetta-'+name});
+		document.body.appendChild(ZETTA[key]);
+	};
+
+	var box = ZETTA[key];
+
+	box.setAttribute('message', args.message || '');
+	box.setAttribute('caption', args.caption);
+	if (name=='prompt') {
+		box.setAttribute('value', args.value || '');
+	};
+	box.width = args.width || 0;
+	box.callback = args.callback || function(){};
+	box.show();
+}
+
+
+// ---
+
+
+
+ZETTA.define('ZETTA.types.Steps', function() {
+    var self = this;
+    self.steps = [ ]
+
+    self.push = function(fn) {
+        self.steps.push(fn);
+    }
+
+    self.run = function(callback) {
+        run_step();
+        function run_step() {
+            var step = self.steps.shift();
+            if(!step)
+                return callback && callback();
+
+            step.call(this, function(err) {
+                if(err)
+                    return callback && callback(err);
+                run_step();
+            });
+        }
+    }
+})
+
+ZETTA.define('ZETTA.asyncMap', function(_list, fn, callback) {
+    if(!_list || !_.isArray(_list))
+        return callback(new Error("asyncMap() supplied argument is not array"));
+    var list = _list.slice();
+    var result = [ ]
+    digest();
+    function digest() {
+        var item = list.shift();
+        if(!item)
+            return callback(null, result);
+        fn(item, function(err, data) {
+            if(err)
+                return callback(err);
+            data && result.push(data);
+            _.dpc(digest);
+        })
+    }
+})
+
+ZETTA.define('ZETTA.tsString', function(src_date) {
+    var a = src_date || (new Date());
+    var year = a.getFullYear();
+    var month = a.getMonth()+1; month = month < 10 ? '0' + month : month;
+    var date = a.getDate(); date = date < 10 ? '0' + date : date;
+    var hour = a.getHours(); hour = hour < 10 ? '0' + hour : hour;
+    var min = a.getMinutes(); min = min < 10 ? '0' + min : min;
+    var sec = a.getSeconds(); sec = sec < 10 ? '0' + sec : sec;
+    var time = year + '-' + month + '-' + date + ' ' + hour + ':' + min + ':' + sec;
+    return time;
+})
+
+ZETTA.define('ZETTA.progressImages', [
+	"data:image/gif;base64,R0lGODlhEgAEAKECAAAAAH9/f////////yH/C05FVFNDQVBFMi4wAwEAAAAh+QQJDwABACwAAAAAEgAEAAACB4yPqcvtrwoAIfkECQ8AAAAsAAAAABIABAAAAgyMA6m7hwyTi3FSVgAAIfkECQ8AAgAsAAAAABIABAAAAhGEIRkb6XmQYs9Fx1oVd64tFAAh+QQJDwADACwAAAAAEgAEAAACEYQxeZjhsdKI7dF55INZ9bEVACH5BAkPAAMALAAAAAASAAQAAAIRjDMJCzkMDlLMQWkrXXg3XwAAIfkECQ8AAwAsAAAAABIABAAAAhGcP6Fx4IDOYubBmFZ7OKvtFAAh+QQJDwADACwAAAAAEgAEAAACDJyPGBvpx9pzcVJWAAA7"
+])
+
+///////////////////////////////////////////////////////////////////////////
+
+
+
+/*
+ZETTA.post = function(path, data, callback) {
+    $.ajax({
+        dataType: "json",
+        method : 'POST',
+        url: path,
+        data: data,
+        error : function(err) {
+            if(err.responseJSON && err.responseJSON.error)
+                callback(err.responseJSON);
+            else
+                callback({ error : err.statusText });
+        }, 
+        success: function(o) {
+        	callback(null, o);
+        }
+    })
+}
+
+ZETTA.Button = function(options)
+{
+    var self = this;
+    self.options = options;
+
+    self.trigger_ = options.trigger;
+    self.element = document.createElement("div");
+    $(self.element).addClass("button");
+
+    $(self.element).append(options.text);
+    options.cls && $(self.element).addClass(options.cls);
+    options.id && $(self.element).attr('id', options.id)
+    options.css && $(self.element).css(options.css);
+
+    self.trigger = function() {
+        self.trigger_ && self.trigger_();
+    }
+
+    $(self.element).on('trigger', function() {
+         self.trigger();
+    })
+
+    $(self.element).mousedown(function(event){
+        if(event.which == 3)
+            return;
+        // $(self.element).addClass(options.cls+'-inverse');
+         self.trigger();
+    });
+
+    function done(){
+        // $(self.element).removeClass(options.cls+'-inverse');
+    }
+
+    $(self.element).mouseup(function() {
+        // self.trigger();
+        done();
+    });
+    $(self.element).mouseout(function() {
+        done();
+    });
+}
+
+ZETTA.button = function(options, fn) {
+
+    if(typeof(options) == 'string' && fn)
+        options = { text : options, trigger : fn }
+
+    var button = new ZETTA.Button(options);
+    return button.element;
+}
+
+ZETTA.notify = function(o, text) {
+	// ZETTA.notificationSound && ZETTA.notificationSound.play();
+	if(typeof(o) == 'string') {
+		var _o = { }
+		if(text) {
+			_o.title = o;
+			_o.text = text;
+		}
+		else {
+			_o.text = o;
+		}
+
+		o = _o;
+	}
+
+	$.notify(o, o);
+}
+
+try {
+	ZETTA.notificationSound = new Audio('/resources/sounds/coin.ogg');
+} catch(ex) { }
+*/
+
+/*
+ZETTA.updateQuote = function(args) {
+	var target = ZETTA.quotes[args.type];
+	var pair = args.pair;
+	if(!target[pair[0]])
+		target[pair[0]] = { }
+	target[pair[0]][pair[1]] = args.quote;
+	if (!ZETTA.quotePairs[pair[0]]) {
+		ZETTA.quotePairs[pair[0]] = {};
+	};
+	ZETTA.quotePairs[pair[0]][pair[1]] = 1;
+	ZETTA.fireAppEvent('updateQuote', target)
+}
+*/
+
+/*
+ZETTA.fireAppEvent = function(eventName, args) {
+	if(window.App && App.app) {
+		App.app.fireEvent(eventName, args)
+	}
+}
+
+ZETTA.getSettings = function(){
+	return ZETTA.core_config.settings || {};
+}
+*/
+
+/*
+ZETTA.hideNotification = function(id){
+	var $noti = $('.notifyjs-fug-base .notification-'+id);
+	if ( $noti.length ) {
+		var $p = $noti.closest('.notifyjs-wrapper');
+		$p.slideUp(200, function(){
+			$p.remove();
+		});
+	}
+}
+
+ZETTA.showSingleNotification = function(args){
+	var title 	= args.title;
+	var text 	= args.text;
+	var id 		= args.id;
+
+	ZETTA.hideNotification(id);
+
+	var args = {
+		title: title,
+		text: '<span class="notification-'+id+'"></span>'+text,
+		globalPosition: 'top right',
+		className: 'blue'+ ( (args.clickToHide || args.autoHide) ? '':' uncloseable'),
+		clickToHide: args.clickToHide,
+		autoHide: args.autoHide
+	}
+	ZETTA.notify(args);
+}
+*/
+
+/*
+ZETTA.Socket = function(options) {
+	var self = this;
+	self.options = options || { }
+	self.events = { }
+
+	self.socket = io.connect(self.options.path || '/sio');
+	self.socket.on('connect', function() {
+		self.dispatch({op: 'check-pending-items'});
+	})
+	self.socket.on('error', function() { })
+	self.socket.on('disconnect', function() { })
+	self.socket.on('message', function(args) {
+		_.each(self.events[args.op], function(callback) {
+			callback(args);
+		})
+	})
+
+	self.socket.on('notify', function(args) {
+		if (args.pendingitems) {
+			if (!args.pendingitems.length) {
+				return ZETTA.hideNotification('pendingitems');
+			};
+
+			var text = [];
+			$.each(args.pendingitems, function(index, t){
+				text.push("<tr><td>"+t.title+": </td><td>"+t.text+"</td></tr>");
+			});
+
+			ZETTA.showSingleNotification({
+				id: 'pendingitems',
+				title: 'ACTION REQUIRED',
+				clickToHide: false,
+				autoHide: false,
+				text: "<table>"+text.join('')+"</table>"
+			});
+			return;
+		};
+
+		if (args.askForPassphrase) {
+			ZETTA.fireAppEvent('askForPassphrase', args.askForPassphrase);
+			ZETTA.showSingleNotification({
+				id: 'askForPassphrase'+args.askForPassphrase.id,
+				title: args.title,
+				text: args.text,
+				autoHide: true
+			});
+			return;
+		};
+
+		if (args.accountCreated) {
+			console.log('accountCreated', args.accountCreated);
+			ZETTA.fireAppEvent('accountCreated', args.accountCreated)
+			return;
+		};
+
+		if (args.type == 'multisigtx') {
+			ZETTA.fireAppEvent('multisigtxupdate', args)
+			ZETTA.showSingleNotification({
+				id: 'multisigtx'+args.id,
+				title: args.title,
+				text: args.text,
+				autoHide: true
+			});
+			return;
+		};
+
+		args.accountIsReady && ZETTA.fireAppEvent('accountIsReadyToUse', args.accountIsReady)
+		args.refreshAccount && console.log("notification:", args);
+		args.text && ZETTA.notify(args);
+		args.refreshAccountSilent && ZETTA.refreshAccounts(args.refreshAccountSilent, false);
+		args.refreshAccount && ZETTA.refreshAccounts(args.refreshAccount, true);
+		args.updateQuote && ZETTA.updateQuote(args.updateQuote);
+	})
+	self.socket.on('reload', function(args) {
+		window.location.reload();
+	})
+
+	self.on = function(event, callback) {
+		if(!self.events[event])
+			self.events[event] = [ ]
+		self.events[event].push(callback);
+	}
+
+	self.dispatch = function(msg) {
+		self.socket.emit('message', msg);
+	}
+
+	self.socket.on('settings-update', function(settings){
+		ZETTA.core_config.settings = settings;
+		ZETTA.fireAppEvent('settingsUpdate', settings)
+	})
+}
+*/
+/*
+ZETTA.apiRequest = function(apikey, options) {
+
+	var api_server = ZETTA.core_config.apiServer;
+	var link = api_server+"/api/v1/invoice/create";
+
+	var data = {
+		apikey : apikey,
+		price : options.price,
+		currency : options.currency?options.currency:"USD"
+	}
+
+	if(options.target_link) {
+		$(options.target_link).html("<img src='/resources/images/progress/progress-01.gif'/>");
+	}
+
+	ZETTA.post(link, data, function(err, resp) {
+		console.log("API SERVER RESPONSE:",arguments);
+		if(err) {
+			if(options.target_link) {
+				if (err.error == 'error') {
+					err.error = 'Server error please try again later.';
+				};
+				$(options.target_link).html(err.error || 'Error: '+err);
+			}
+			return;
+		}
+
+		if (resp) {
+			if(resp.error) {
+				if(options.target_link) {
+					$(options.target_link).html('Error: '+resp.error);
+				}
+				return;
+			}
+
+			var id = resp.id;
+
+			if(options.target_link) {
+				$(options.target_link).html("<a class='apikey-link' target='_blank' href='"+api_server+"/api/v1/invoice/view/"+id+"'>"+api_server+'/api/v1/invoice/view/'+id+"</a>")
+			}
+		};
+	})
+}
+
+ZETTA.getTransactionInputAddresses = function(args, callback){
+	var rawTx 			= args.rawTx;
+	var returnAll 		= !!args.returnAll;
+	try{
+		var tx 				= new CC.Transaction.fromHex(rawTx);
+	}catch(e){
+		return callback({error:'Invalid transaction.', invalid: 'rawTx'});
+	}
+
+	var addresses = [];
+	for(var i=0; i< tx.ins.length; i++){
+		var redeemScript 	= tx.getRedeemScript(i);
+		if (!redeemScript){
+			return callback({error:'Could not get Redeem Script for input (' + ( i+1 )+ ')'});
+		}
+		var isSigningComplete = redeemScript.isSigningComplete();
+
+		if (returnAll || !isSigningComplete) {
+			var add = redeemScript.toAddress();
+			if (!add || !add.address) {
+				return callback({error:'Could not get address for input (' + ( i+1 )+ ')'});
+			};
+			add.isSigningComplete = isSigningComplete;
+			add.inputIndex = i;
+			addresses.push(add)
+		};
+	}
+
+	callback(null, addresses);
+}
+
+ZETTA.createPublicKeyFromPassphrase = function(args, callback){
+	return CC.createPublicKeyFromPassphrase(args.passphrase);
+}
+
+ZETTA.signTransaction = function(args, callback){
+	var rawTx 			= args.rawTx;
+	var passphrase 		= args.passphrase;
+	delete args.passphrase;
+
+
+	//create a transaction
+	try{
+		var tx 				= new CC.Transaction.fromHex(rawTx);
+	}catch(e){
+		return callback({error:'Invalid transaction.', invalid: 'rawTx'});
+	}
+
+	var vinCompleted = 0;
+
+	for(var inputIndex = 0; inputIndex < tx.ins.length; inputIndex++){
+
+		var redeemScript 	= tx.getRedeemScript(inputIndex);
+		if (!redeemScript){
+			return callback({error:'Could not get Redeem Script'});
+		}
+
+		var signKey 	= redeemScript.getSigningKeyForPassphrase( passphrase );
+
+		if ( !signKey ) {
+			return callback({error:'Invalid Passphrase.', invalid: 'passphrase'});
+		};
+
+		var signatures = tx.getInputSignatures(inputIndex)
+		//sign with one key
+		tx.signMultiSig(inputIndex, redeemScript, signKey);
+
+		var newSignatures = tx.getInputSignatures(inputIndex)
+
+		if (signatures.length == newSignatures.length) {
+			console.log(' VIN '+inputIndex+' : Already signed.');
+			return callback({error: 'This passphrase is already used for signing.', invalid: 'passphrase'})
+		};
+
+		if (tx.isSigningComplete(inputIndex)) {
+			vinCompleted++;
+		};
+	}
+
+	callback(null, {rawTx: tx.toHex(), isComplete: vinCompleted == tx.ins.length});
+}
+
+ZETTA.renderTransaction = function(tx){
+	return "<pre>"+JSON.stringify(tx, null,'\t')+"</pre>"
+}
+//setInterval(function(){ZETTA.refreshAccounts('zRo54AAGaYBRfs16U9Q', false)}, 10000);
+*/
+</script>
