@@ -9,7 +9,22 @@ ZETTA = _.extend(ZETTA, {
 	}
 })
 ZETTA.dpc = function(t,fn) { if(typeof(t) == 'function') setTimeout(t,0); else setTimeout(fn,t); }
-
+ZETTA.createElement = function(config){
+	var el = document.createElement(config.tagName || 'div');
+	if (el.importConfig) {
+		el.importConfig(config);
+	};
+	if (config.attributes) {
+		for( attr in config.attributes){
+			if (attr == 'cls') {
+				el.className += ' '+config.attributes[attr];
+			}else{
+				el.setAttribute(attr, config.attributes[attr]);
+			}
+		};
+	};
+	return el;
+}
 ZETTA.find = function(local, shadow) { 
 	var l = document.querySelector(local);
 	if(!l || !shadow)
@@ -43,6 +58,31 @@ ZETTA.findPanel = function(el, tagName) {
 	while(el && el.tagName != tagName)
 		el = el.parentNode;
 	return el;
+}
+
+ZETTA.loadTheme = function(themeFile, base, onload, onerror, always){
+	var self = this;
+	var href = (base || 'ZETTA/themes/')+themeFile;
+	var oldTheme 	= self._themeLink;
+	var holder 		= document.head;
+
+	self._themeLink = ZETTA.createElement({tagName: 'LINK', attributes: {rel: 'import', href:href} });
+	self._themeLink.onload = function(){
+		onload && onload(self._themeLink);
+		always && always(true, self._themeLink);
+		console.log("self._themeLink.onload")
+		if (oldTheme){
+			holder.removeChild(oldTheme);
+		}
+	}
+	self._themeLink.onerror = function(){
+		onerror && onerror(self._themeLink);
+		always && always(false, self._themeLink);
+		console.log("self._themeLink.onerror")
+		holder.removeChild(self._themeLink);
+	}
+
+	holder.appendChild(self._themeLink);
 }
 
 
