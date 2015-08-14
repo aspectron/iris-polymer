@@ -274,7 +274,7 @@
 		},
 		getActiveTabId: function(){
 			var self = this;
-			var seletedTab = self.$.tabs.items[self.selected];
+			var seletedTab = self.$.tabs && self.$.tabs.items[self.get('selected')];
 			if (!seletedTab){
 				return false;
 			}
