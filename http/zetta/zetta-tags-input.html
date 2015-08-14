@@ -5,36 +5,43 @@
 		input:-moz-placeholder {color: var(--paper-input-container-color, --secondary-text-color);}
 		input::-moz-placeholder {color: var(--paper-input-container-color, --secondary-text-color);}
 		input:-ms-input-placeholder {color: var(--paper-input-container-color, --secondary-text-color);}
-		.tag{padding: 5px; border:1px #CCC solid; background-color: #DDD; display: inline-block;}
+		.tag{padding-left:5px; border:1px #CCC solid; background-color: #DDD; display: inline-block; margin-bottom: 3px;}
 		.tag iron-icon{margin-left: 5px;}
-		#dropdownContent{}
 		input#input{display: none}
 		paper-menu-button{display: block; padding: 4px 0px;}
-		.tag-container{min-height: 36px}
+		paper-menu-button ::content #dropdown{display: block; width: 100%}
+		paper-menu-button ::content paper-item.iron-selected{display: none};
+		.tag-container{min-height: 27px}
 	</style>
 	<template>
 		<paper-input-container no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]" auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
 			<content select="[prefix]"></content>
 			<label hidden$="[[!label]]">[[label]]</label>
 			<div>
+				<!--div>{{toJSON(value)}}</div-->
 				<div class="tag-container" on-tap="onContainerTap">
 					<template is="dom-repeat" items="[[value]]">
-						<span class="tag">[[getItemText(item)]]<iron-icon icon="[[removeIcon]]"></iron-icon></span>
+						<span class="tag">[[getItemTextById(item, items)]]<iron-icon data-tag="[[item]]" icon="[[removeIcon]]"></iron-icon></span>
 					</template>
 				</div>
 				<paper-menu-button vertical-align="[[verticalAlign]]" opened="{{dropdownOpened}}">
 					<span class="dropdown-trigger"></span>
-					<paper-menu id="dropdownContent" class="dropdown-content">
-						<template is="dom-repeat" items="[[value]]">
-							<paper-item>[[getItemText(item)]]</paper-item>
+					<div class="dropdown-content" >
+						<template is="dom-if" if="[[allSelected]]">
+							<paper-item>[[noItemText]]</paper-item>
 						</template>
-					</paper-menu>
+						<paper-menu id="dropdownMenu" selected="[[value]]" attr-for-selected="dataid" multi>
+							<template is="dom-repeat" items="[[items]]">
+								<paper-item dataid="[[getMenuItemId(item, items)]]">[[getMenuItemText(item, items)]]</paper-item>
+							</template>
+						</paper-menu>
+					</div>
 				</paper-menu-button>
 				<input is="iron-input" id="input"
 					aria-labelledby$="[[_ariaLabelledBy]]"
 					aria-describedby$="[[_ariaDescribedBy]]"
 					disabled$="[[disabled]]"
-					bind-value="{{value}}"
+					bind-value1="{{value}}"
 					invalid="{{invalid}}"
 					prevent-invalid-input="[[preventInvalidInput]]"
 					allowed-pattern="[[allowedPattern]]"
@@ -82,19 +89,115 @@
 				value: 'top'
 			},
 			dropdownOpened:{
-				type:Boolean,
-				value: true
+				type:Boolean
+			},
+			value:{
+				type:Array,
+				notify:true,
+				value:[]
+			},
+			items:{
+				type: Array,
+				value:[]
+			},
+			allSelected:{
+				type: Boolean
+			},
+			noItemText:{
+				type: String,
+				value: '-No item-'
 			}
 		},
+		toJSON:function(v){
+			return JSON.stringify(v, null, '\t');
+		},
+		observers:[
+			'onValueChange(value.*)'
+		],
 		ready: function (argument) {
 			var self = this;
-
+			
+		},
+		attached: function(){
+			var self = this;
+			var menu = self.$.dropdownMenu;
+			menu.select = (function(value) {
+				//if (this.multi) {
+					if (this.selectedValues) {
+						this._toggleSelected(value);
+					} else {
+						this.selectedValues = [value];
+					}
+					self.set('value', [].concat(this.selectedValues));
+				//} else {
+					//this.selected = value;
+					//self.set('value', [value]);
+				//}
+			}).bind(menu)
 		},
 		onContainerTap: function(e){
-			console.dir(e.currentTarget)
+			var self = this;
+			if(e.target.icon == self.removeIcon){
+				self.removeItem(e.target.dataTag)
+				return;
+			}
+			if (!self.dropdownOpened)
+				self.dropdownOpened = true;
 		},
-		getItemText: function(item){
-			return item.text || item.value || item.name || item;
+		onValueChange: function(){
+			var self 		= this, id;
+			var value 		= self.value;
+			var validIds 	= [];
+			var items 		= self.get('items') || [];
+			//if (!items)
+				//return
+			_.each(items, function(item){
+				id = self.getMenuItemId(item);
+				if(_.contains(value, id)){
+					validIds.push(id);
+				}
+			});
+			//console.log("onValueChange", value, validIds)
+			//self.set('value', validIds)
+
+			var menu = self.$.dropdownMenu;
+			menu.selectedValues = validIds;
+			menu._updateSelected();
+			self.debounce('onValueChange', function(){
+				if (items.length && validIds.join(',') != value.join(',')){
+					self.set('value', validIds)
+				}
+			}, 100);
+			self.debounce('onValueChange2', function(){
+				self.fire('change', self.value);
+				self.set('allSelected', (menu.selectedValues.length == items.length));
+			}, 300);
+		},
+		removeItem: function(id){
+			var self = this, index = self.value.indexOf(id);
+			if (index > -1) {
+				self.splice('value', index, 1);
+				this.fire('remove', id);
+			};
+		},
+		getItemTextById: function(id, items){
+			var item = this.findItemById(id, items);
+			if (!item)
+				return "";
+
+			return this.getMenuItemText(item);
+		},
+		getMenuItemText: function(item){
+			return item.text || item.title || item.name || item;
+		},
+		getMenuItemId: function(item){
+			return item.id || item.uuid || item.value || item._id || item;
+		},
+		findItemById: function(id, items){
+			var self = this;
+			return _.find(items, function(item){
+				return self.getMenuItemId(item) == id
+			})
 		}
 	})
 	</script>
