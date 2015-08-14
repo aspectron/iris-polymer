@@ -74,7 +74,6 @@
 			},
 			user:{
 				type: Object,
-				value: {},
 				observer: 'onUserChange'
 			},
 			msg:{
@@ -131,6 +130,7 @@
 			//log(this, self)
 
 			self.tabsAdded = true;
+			ZETTA.loadTheme('theme1.html');
 		},
 
 		attached: function(){
@@ -216,8 +216,9 @@
 		},
 		onUserChange: function(user){
 			var self = this;
-			self.logintab 			= self.user ? 'Logout': 'Login';
-			self.logintask 			= self.user ? 'logout': 'login';
+			console.log("onUserChange", self.user, self.get('user'), user);
+			self.set('logintab', self.get('user') ? 'Logout': 'Login');
+			self.set('logintask',  self.get('user') ? 'logout': 'login');
 		},
 
 		onMsgChange: function(msg){
@@ -273,7 +274,7 @@
 		},
 		getActiveTabId: function(){
 			var self = this;
-			var seletedTab = self.$.tabs.items[self.selected];
+			var seletedTab = self.$.tabs && self.$.tabs.items[self.get('selected')];
 			if (!seletedTab){
 				return false;
 			}

@@ -1,0 +1,62 @@
+<script type="text/javascript" src="/ZETTA/scripts/jscolor/jscolor.js"></script>
+<script type="text/javascript">
+	jscolor.bindClass = '-color-field-';
+	jscolor.dir = '/ZETTA/scripts/jscolor/';
+</script>
+<dom-module id="zetta-color-input">
+	<style>
+		paper-menu-button ::content iron-dropdown{margin-top: 33px;margin-right: 39px;}
+	</style>
+	<template>
+		<div class="layout horizontal end">
+			<paper-input class="flex-1" id="input" label="{{label}}" value="{{value}}"></paper-input>
+			<div>
+				<paper-menu-button vertical-align="top" horizontal-align="right" on-paper-open="showPicker">
+					<iron-icon class="dropdown-trigger" icon="expand-more"></iron-icon>
+					<div id="dropdown" class="dropdown-content"></div>
+				</paper-menu-button>
+			</div>
+		</div>
+	</template>
+	<script>
+		Polymer({
+			is:'zetta-color-input',
+			properties:{
+				label: {
+					type: String,
+					value:''
+				},
+				value:{
+					type: String,
+					value: '#FFFFFF',
+					notify: true,
+					observer:'onValueChange'
+				}
+			},
+			ready: function (argument) {
+				var self = this;
+				self.colorPicker = new jscolor.color(self.$.input, {
+					pickerFaceColor:'transparent',
+					parentEl: self.$.dropdown,
+					pickerBorderColor: '#DDD',
+					styleElement: self.$.input.$.input,
+					relativePosition: true,
+					hash:true
+				});
+				self.showPicker();
+			},
+			showPicker:function(){
+				this.colorPicker.showPicker();
+			},
+			onValueChange: function(){
+				var self = this;
+				if(self.colorPicker && self.value){
+					self.debounce('onValueChange', function(){
+						self.colorPicker._updateField();
+					}, 300)
+				}	
+			}
+		})
+	</script>
+</dom-module>
+
