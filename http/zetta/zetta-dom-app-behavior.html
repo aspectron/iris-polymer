@@ -74,7 +74,6 @@
 			},
 			user:{
 				type: Object,
-				value: false,
 				observer: 'onUserChange'
 			},
 			msg:{
@@ -217,8 +216,9 @@
 		},
 		onUserChange: function(user){
 			var self = this;
-			self.set('logintab', self.user ? 'Logout': 'Login');
-			self.set('logintask', self.user ? 'logout': 'login');
+			console.log("onUserChange", self.user, self.get('user'), user);
+			self.set('logintab', self.get('user') ? 'Logout': 'Login');
+			self.set('logintask',  self.get('user') ? 'logout': 'login');
 		},
 
 		onMsgChange: function(msg){
