@@ -217,8 +217,8 @@
 		},
 		onUserChange: function(user){
 			var self = this;
-			self.logintab 			= self.user ? 'Logout': 'Login';
-			self.logintask 			= self.user ? 'logout': 'login';
+			self.set('logintab', self.user ? 'Logout': 'Login');
+			self.set('logintask', self.user ? 'logout': 'login');
 		},
 
 		onMsgChange: function(msg){
