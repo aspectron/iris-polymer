@@ -53,7 +53,7 @@ var jscolor = {
 
 		var e = document.getElementsByTagName('script');
 		for(var i=0; i<e.length; i+=1) {
-			console.log("e[i].src", e[i].src)
+			//console.log("e[i].src", e[i].src)
 			if(e[i].src && /(^|\/)jscolor\.js([?#].*)?$/i.test(e[i].src)) {
 				var src = new jscolor.URI(e[i].src);
 				var srcAbs = src.toAbsolute(base);
@@ -804,7 +804,7 @@ var jscolor = {
 
 			jscolor.picker.owner = THIS;
 			p.boxB.className = 'jscolor-box';
-			console.log("THIS", THIS, THIS.parentEl);
+			//console.log("THIS", THIS, THIS.parentEl);
 			(THIS.parentEl || document.getElementsByTagName('body')[0]).appendChild(p.boxB);
 		}
 
