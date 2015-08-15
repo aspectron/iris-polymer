@@ -85,6 +85,10 @@
 				if(e.which == 13){
 					var tags = [], v = self.$.input.value || '';
 					var _tags = self.get('tags');
+					if (!_tags){
+						_tags = [];
+						self.set('tags', []);
+					}
 					self.setInputStyle({width: '2px'});
 					//_.each(v.split(' '), function(t){
 						if (v && _tags.indexOf(v) == -1) {
