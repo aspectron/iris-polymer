@@ -78,6 +78,7 @@
 				}, 500);
 
 				self.fire('change', {tags: self.get('tags'), el: self});
+				self.$.input.value = '';
 			},
 
 			onKey: function (e) {
