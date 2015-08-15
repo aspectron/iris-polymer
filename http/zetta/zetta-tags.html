@@ -86,11 +86,11 @@
 					var tags = [], v = self.$.input.value || '';
 					var _tags = self.get('tags');
 					self.setInputStyle({width: '2px'});
-					_.each(v.split(' '), function(t){
-						if (t && _tags.indexOf(t) == -1) {
-							tags.push(t)
+					//_.each(v.split(' '), function(t){
+						if (v && _tags.indexOf(v) == -1) {
+							tags.push(v)
 						};
-					});
+					//});
 
 					self.push('tags', tags);
 					self.$.input.value = '';
