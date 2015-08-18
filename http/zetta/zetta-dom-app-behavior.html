@@ -373,6 +373,8 @@
 					self.debounce('selectedChanged', function(){
 						if(tabId && history.replaceState) {
 							history.replaceState(null, null, '#' + tabId);
+						}else{
+							window.location.hash = '';
 						}
 						//tabId && (window.location.hash = '#'+tabId);
 					}, 600);
