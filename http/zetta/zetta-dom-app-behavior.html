@@ -166,7 +166,7 @@
 
 		isMobileChanged:function(ismobile){
 			var self = this;
-			console.log("ismobile", ismobile)
+			//console.log("ismobile", ismobile)
 			this.toggleClass('mobile', ismobile);
 			if (!self.$.tabs){
 				self._isMobileChangedDebounceCount = self._isMobileChangedDebounceCount || 0;
@@ -216,7 +216,7 @@
 		},
 		onUserChange: function(user){
 			var self = this;
-			console.log("onUserChange", self.user, self.get('user'), user);
+			//console.log("onUserChange", self.user, self.get('user'), user);
 			self.set('logintab', self.get('user') ? 'Logout': 'Login');
 			self.set('logintask',  self.get('user') ? 'logout': 'login');
 		},
