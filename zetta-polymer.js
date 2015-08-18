@@ -36,6 +36,7 @@ function ZETTA_Polymer(core) {
 
 	self.initHttp = function(app) {
 		var componetsPath = path.join(__dirname,'/http/zetta/');
+		var scriptsPath   = path.join(__dirname,'/http/scripts/');
 		var list = fs.readdirSync(componetsPath);
 		var ignoreList = ['.', '..', '.DS_Store'];
 		if (_.isArray(app.get('views'))) {
@@ -51,7 +52,47 @@ function ZETTA_Polymer(core) {
 			app.get('/ZETTA/'+file, function(req, res, next) {
 	            res.render(file, {req: req});
 	        });
-		})
+		});
+		app.get('/scripts/combine/:files', function(req, res, next){
+			var files = req.params.files.split('|'), p;
+			var data = [];
+			console.log("cripts/combin".greenBG, files)
+			core.asyncMap(files, function(file, callback){
+				p = '';
+				if(fs.existsSync(scriptsPath+file)){
+					p = scriptsPath+file;
+				}else if(fs.existsSync(core.appFolder+'/http/scripts/'+file)){
+					p = core.appFolder+'/http/scripts/'+file;
+				}else if(fs.existsSync(core.appFolder+'/http/'+file)){
+					p = core.appFolder+'/http/'+file;
+				}else if(fs.existsSync(core.appFolder+'/'+file)){
+					p = core.appFolder+'/'+file;
+				}
+				if (!p)
+					return callback({error:file+": File not found"});
+				//console.log("reading js file:", p)
+				fs.readFile(p, function(err, _data){
+					if (err)
+						return callback(err);
+
+					data.push("\n\r/*####"+file+"###\*/\r\n"+_data);
+					callback()
+				});
+
+			}, function(err){
+				if (err)
+					return console.log("combine-js:1:".greenBG, err);
+
+				//fs.writeFile(file, data, function (err, status) {
+                    //if (err)
+                        //return console.log("combine-js:2:".greenBG, err);
+                    res.setHeader('Content-Type', 'text/javascript');
+                    res.send(data.join("\n\r"))
+                    //callback(null, {fields:fields, file:file});
+                //});
+			})
+			//next()
+		});
 		app.use('/deps', ServeStatic(path.join(__dirname, 'bower_components')));
 		app.use('/ZETTA/scripts', ServeStatic(path.join(__dirname, 'http/scripts')));
 	    app.use('/ZETTA', ServeStatic(path.join(__dirname, 'http/zetta')));
