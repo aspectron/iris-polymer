@@ -64,14 +64,24 @@
 			},
 			ready: function(){
 				var self = this;
-				self.location_hash = window.location.hash;
 				self.listen(window, 'resize', 'setMinHeightOfChildren');
 				self.listen(self, 'scroll', 'onScroll');
 				
 				self._isReady = true;
 
-				if(!self.location_hash)
+				if(!ZETTA._locationHash){
 					self.onSelectedChange();
+				}
+			},
+			getLocationHash: function(){
+				return window.location.hash;
+			},
+			setLocationHash:function(hash){
+				if (!hash){
+					window.location.hash = "";
+					return;
+				}
+				window.location.hash = hash;
 			},
 			_onAutoFocusChanged: function(){
 				var self = this;
@@ -108,12 +118,15 @@
 				};
 			},
 			onItemChange: function(){
-				if(!this.location_hash)
+				if(!this.getLocationHash())
 					this.onSelectedChange();
 			},
 			onSelectedChange: function(){
 				var self = this;
-				// console.trace("onSelectedChange", self.location_hash);
+				if (ZETTA._locationHash) {
+					return;
+				};
+				console.log("onSelectedChange", ZETTA._locationHash, arguments)
 				if (self.selected === false || !self._isReady || !self.items.length)
 					return;
 				if (self._selected === self.selected) {
@@ -125,11 +138,6 @@
 					self.__initChange = true;
 					self.scrollTop = self.getItemTop(self.selected);
 				}else{
-					/*if(self.location_hash) {
-						self.location_hash = null;
-						return;
-					}*/
-
 					self.animating = true;
 					jQuery(self).stop(true, false).animate({
 						scrollTop: self.getItemTop(self.selected) || 1

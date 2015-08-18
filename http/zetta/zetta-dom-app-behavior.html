@@ -9,6 +9,7 @@
 	};
 
 	window.ZETTA = window.ZETTA || {};
+	ZETTA._locationHash  = window.location.hash+'';
 	window.ZETTA.ZettaDomAppBehavior = {
 		properties:{
 			appName: {
@@ -131,8 +132,55 @@
 
 			self.tabsAdded = true;
 			ZETTA.loadTheme('theme1.html');
+			//self.restoreLocationHash();
 		},
-
+		getLocationHash: function(){
+			return window.location.hash;
+		},
+		setLocationHash:function(hash){
+			if (!hash){
+				window.location.hash = "";
+				return;
+			}
+			window.location.hash = hash;
+		},
+		buildPagesAnchors: function(){
+			var self = this;
+			if(!self.__pagesInitiated && self.$.pages && self.$.pages.items && self.$.pages.items.length){
+				self.__pagesInitiated = true;
+				var tabs = self.$.tabs.querySelectorAll('paper-tab');
+				var tab = {}, hash;
+				var items = self.$.pages.items;
+				console.log("buildPagesAnchors:items", items)
+				_.each(tabs, function(t, index){
+					hash = t.dataTabId || t.getAttribute('data-tab-id');
+					if (!hash || !items[index])
+						return;
+					//console.log("index", index)
+					var a = self.create('A', {name:hash, style:"display:block"});
+					//a.innerHTML = "###"+hash.toUpperCase()+"####";
+					items[index].insertBefore(a, items[index].children[0]);
+				});
+				console.log("buildPagesAnchors")
+				self.restoreLocationHash();
+			}
+		},
+		restoreLocationHash:function(){
+			var self = this;
+			if (ZETTA._locationHash){
+				self.async(function(){
+					//var id = ('hash_'+Math.random(1, 1000)).replace('.', '_');
+					//$(document.body).append('<a id="'+id+'" href="'+hash+'">hash</a>');
+					//var a = $('#'+id);
+					self.setLocationHash('');
+					var hash = ZETTA._locationHash;
+					ZETTA._locationHash = '';
+					self.setLocationHash(hash);
+					console.log("self.asyncself.asyncself.async: ZETTA._locationHash", hash);
+					
+				}, 100);
+			}
+		},
 		attached: function(){
 			var self = this;
 			_.each(['tabs', 'pages', 'lefttabs'], function(id){
@@ -319,11 +367,23 @@
 				return;
 			}
 			var tab = seletedTab.dataTab || seletedTab.getAttribute('data-tab');
+			if (!ZETTA._locationHash){
+				/*var tabId = seletedTab.dataTabId || seletedTab.getAttribute('data-tab-id');
+				if(tabId){
+					self.debounce('selectedChanged', function(){
+						tabId && (window.location.hash = '#'+tabId);
+					}, 600);
+				}*/
+				//self.debounce('selectedChanged', function(){
+					window.location.hash = '';
+				//}, 600);
+			}
 			if ( tab == 'logout') {
 				window.location.href = self.logoutPath;
 				return;
 			};
 			self.selectedpage = self.selected;
+			self.buildPagesAnchors();
 			self.$.pages.fire('neon-animation-begin');
 			if (oldValue !== undefined && tab!='login') {
 				self.localStorage('tabIndex', self.selected);
