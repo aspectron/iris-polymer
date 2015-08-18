@@ -368,14 +368,17 @@
 			}
 			var tab = seletedTab.dataTab || seletedTab.getAttribute('data-tab');
 			if (!ZETTA._locationHash){
-				/*var tabId = seletedTab.dataTabId || seletedTab.getAttribute('data-tab-id');
+				var tabId = seletedTab.dataTabId || seletedTab.getAttribute('data-tab-id');
 				if(tabId){
 					self.debounce('selectedChanged', function(){
-						tabId && (window.location.hash = '#'+tabId);
+						if(tabId && history.replaceState) {
+							history.replaceState(null, null, '#' + tabId);
+						}
+						//tabId && (window.location.hash = '#'+tabId);
 					}, 600);
-				}*/
+				}
 				//self.debounce('selectedChanged', function(){
-					window.location.hash = '';
+					//window.location.hash = '';
 				//}, 600);
 			}
 			if ( tab == 'logout') {
