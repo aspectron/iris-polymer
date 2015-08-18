@@ -64,11 +64,14 @@
 			},
 			ready: function(){
 				var self = this;
+				self.location_hash = window.location.hash;
 				self.listen(window, 'resize', 'setMinHeightOfChildren');
 				self.listen(self, 'scroll', 'onScroll');
 				
 				self._isReady = true;
-				self.onSelectedChange();
+
+				if(!self.location_hash)
+					self.onSelectedChange();
 			},
 			_onAutoFocusChanged: function(){
 				var self = this;
@@ -105,10 +108,12 @@
 				};
 			},
 			onItemChange: function(){
-				this.onSelectedChange();
+				if(!self.location_hash)
+					this.onSelectedChange();
 			},
 			onSelectedChange: function(){
 				var self = this;
+				// console.trace("onSelectedChange", self.location_hash);
 				if (self.selected === false || !self._isReady || !self.items.length)
 					return;
 				if (self._selected === self.selected) {
@@ -120,6 +125,11 @@
 					self.__initChange = true;
 					self.scrollTop = self.getItemTop(self.selected);
 				}else{
+					if(self.location_hash) {
+						self.location_hash = null;
+						return;
+					}
+
 					self.animating = true;
 					jQuery(self).stop(true, false).animate({
 						scrollTop: self.getItemTop(self.selected) || 1

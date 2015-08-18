@@ -255,7 +255,8 @@
 			var self = this;
 			self.debounce('onPagesReady', function(){
 				if(self.tabsAdded){
-					self.restoreLastTab();
+					if(!window.location.hash)
+						self.restoreLastTab();
 					self.tabsAdded = false;
 				}
 			}, 200);
