@@ -14224,6 +14224,7 @@ ZETTA.define('ZETTA.progressImages', [
 
       self.tabsAdded = true;
       ZETTA.loadTheme('theme1.html');
+      self.toggleClass('loading', false, document.body);
       //self.restoreLocationHash();
     },
     getLocationHash: function(){
