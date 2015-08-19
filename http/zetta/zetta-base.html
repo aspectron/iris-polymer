@@ -70,7 +70,7 @@ ZETTA.loadTheme = function(themeFile, base, onload, onerror, always){
 	self._themeLink.onload = function(){
 		onload && onload(self._themeLink);
 		always && always(true, self._themeLink);
-		console.log("self._themeLink.onload")
+		//console.log("self._themeLink.onload")
 		if (oldTheme){
 			holder.removeChild(oldTheme);
 		}
@@ -78,7 +78,7 @@ ZETTA.loadTheme = function(themeFile, base, onload, onerror, always){
 	self._themeLink.onerror = function(){
 		onerror && onerror(self._themeLink);
 		always && always(false, self._themeLink);
-		console.log("self._themeLink.onerror")
+		//console.log("self._themeLink.onerror")
 		holder.removeChild(self._themeLink);
 	}
 
