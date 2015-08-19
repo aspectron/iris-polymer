@@ -76,7 +76,7 @@ function ZETTA_Polymer(core) {
 			var files = req.params.files, folder;
 			var data = [];
 			var fileName = crypto.createHash('md5').update(files).digest('hex')+'.js';
-			console.log("cripts/combin".greenBG, fileName, files)
+			// console.log("cripts/combine".greenBG.bold, fileName, files)
 			if(fs.existsSync(scriptsPath+fileName)){
 				res.setHeader('Content-Type', 'text/javascript');
 				var r = fs.createReadStream(scriptsPath+fileName);
