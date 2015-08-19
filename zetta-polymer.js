@@ -30,8 +30,11 @@ var util 		= require('util');
 var _ 			= require('underscore');
 var fs 			= require('fs');
 var crypto 		= require('crypto');
-
-
+/*var jsp	= require('uglify-js').parser;
+var pro	= require('uglify-js').uglify;
+console.log("jsp",jsp);
+console.log("pro",pro)
+*/
 function ZETTA_Polymer(core) {
 	var self = this;
 
@@ -46,6 +49,8 @@ function ZETTA_Polymer(core) {
 	}
 
 	self.initHttp = function(app) {
+
+		var cache = { }
 		var componetsPath = path.join(__dirname,'/http/zetta/');
 		var scriptsPath   = path.join(__dirname,'/http/scripts/');
 
@@ -72,17 +77,27 @@ function ZETTA_Polymer(core) {
 	            res.render(file, {req: req});
 	        });
 		});
-		app.get('/scripts/combine/:files', function(req, res, next){
+		app.get('/combine/:files', function(req, res, next){
 			var files = req.params.files, folder;
 			var data = [];
 			var fileName = crypto.createHash('md5').update(files).digest('hex')+'.js';
-			// console.log("cripts/combine".greenBG.bold, fileName, files)
+			var hash = fileName;
+			 // console.log("scripts/combine".greenBG.bold, fileName, files)
+			if(cache[hash]) {
+				// console.log("cache",hash,cache[hash].length)
+				res.setHeader('Content-Type', 'text/javascript');
+				res.end(cache[hash]);
+				return;
+			}
+
+			/*
 			if(fs.existsSync(scriptsPath+fileName)){
 				res.setHeader('Content-Type', 'text/javascript');
 				var r = fs.createReadStream(scriptsPath+fileName);
                 r.pipe(res)//.send(data.join("\n\r"))
                 return;
-			}
+			}*/
+
 			core.asyncMap(files.split('|'), function(file, callback){
 				folder = _.find(self._httpFolders, function(_folder){
 					//console.log("_folder+file".greenBG, _folder+file)
@@ -95,15 +110,41 @@ function ZETTA_Polymer(core) {
 					if (err)
 						return callback(err);
 
-					data.push("\n\r/*####"+file+"###\*/\r\n"+_data);
+					data.push("\n\r/* ---["+file+"]---\*/\r\n"+_data);
 					callback()
 				});
 
 			}, function(err){
-				if (err){
+				if (err) {
 					next()
 					return console.log("combine-js:1:".greenBG, err);
 				}
+
+                res.setHeader('Content-Type', 'text/javascript');
+				var content = cache[hash] = data.join("\n\r");
+				res.end(content);
+
+
+				/*
+
+				var orig_code = data.join("\n\r");
+				var i = 0;
+				console.log(i++);
+				var ast = jsp.parse(orig_code); // parse code and get the initial AST
+				console.log(i++);
+				ast = pro.ast_mangle(ast); // get a new AST with mangled names
+				console.log(i++);
+				ast = pro.ast_squeeze(ast); // get an AST with compression optimizations
+				console.log(i++);
+				var final_code = pro.gen_code(ast); // compressed code here
+				console.log("done");
+
+
+				cache[hash] = final_code; //data.join("\n\r").replace(/ {2,}/g,' ');
+				res.end(final_code);
+				*/
+
+				/*
 				fileName = scriptsPath+fileName;
 				fs.writeFile(fileName, data.join("\n\r"), function (err, status) {
                     //if (err)
@@ -112,6 +153,7 @@ function ZETTA_Polymer(core) {
                     res.send(data.join("\n\r"))
                     //callback(null, {fields:fields, file:file});
                 });
+				*/
 			})
 			//next()
 		});
