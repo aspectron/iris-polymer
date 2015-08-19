@@ -15070,5 +15070,41 @@ ZETTA.define('ZETTA.progressImages', [
 </dom-module>
 
 
+<dom-module id="zetta-footer">
+  <style>
+    :host{display: block; text-align: center; left: 0px; right: 0px; margin: 25px 0px 15px;font-size: 12px;}
+    :host(.abs){position: absolute;bottom: 0px; }
+  </style>
+  <template><content></content></template>
+  <script>
+  Polymer({
+    is: "zetta-footer",
+    attached: function(){
+      var self = this;
+      if (!self.parentNode.parentNode || self.parentNode.parentNode.tagName != 'NEON-ANIMATED-PAGES')
+        return;
+      self.debounce('attached', function(){
+        self.updateLocation()
+      }, 100)
+      self.listen(self.parentNode.parentNode, 'neon-animation-begin', 'updateLocation')
+    },
+    updateLocation: function(){
+      var self = this;
+      var outerBox = self.parentNode.getBoundingClientRect();
+      if (!outerBox.bottom)
+        return;
+      var childBox = self.parentNode.children[0].getBoundingClientRect();
+      if (outerBox.bottom > childBox.bottom) {
+        self.classList.add('abs');
+      }else{
+        self.classList.remove('abs');
+      }
+      //console.log("onAnimationEnd", outerBox.bottom > childBox.bottom, childBox)
+    }
+  });
+    </script>
+</dom-module>
+
+
 
 </body></html>
