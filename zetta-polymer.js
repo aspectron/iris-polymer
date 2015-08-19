@@ -35,9 +35,27 @@ var crypto 		= require('crypto');
 function ZETTA_Polymer(core) {
 	var self = this;
 
+	self._httpFolders = [];
+	self.addHttpResourcesFolders = function(folders){
+		if (_.isArray(folders)) {
+			self._httpFolders = self._httpFolders.concat(folders);
+		}else{
+			self._httpFolders.push(folders);
+		}
+		self._httpFolders = _.uniq(self._httpFolders);
+	}
+
 	self.initHttp = function(app) {
 		var componetsPath = path.join(__dirname,'/http/zetta/');
 		var scriptsPath   = path.join(__dirname,'/http/scripts/');
+
+		self.addHttpResourcesFolders([
+			scriptsPath,
+			core.appFolder+'/http/',
+			core.appFolder+'/http/scripts/',
+			core.appFolder+'/lib/manage/resources/'
+		]);
+
 		var list = fs.readdirSync(componetsPath);
 		var ignoreList = ['.', '..', '.DS_Store'];
 		if (_.isArray(app.get('views'))) {
@@ -55,7 +73,7 @@ function ZETTA_Polymer(core) {
 	        });
 		});
 		app.get('/scripts/combine/:files', function(req, res, next){
-			var files = req.params.files, p;
+			var files = req.params.files, folder;
 			var data = [];
 			var fileName = crypto.createHash('md5').update(files).digest('hex')+'.js';
 			console.log("cripts/combin".greenBG, fileName, files)
@@ -66,20 +84,14 @@ function ZETTA_Polymer(core) {
                 return;
 			}
 			core.asyncMap(files.split('|'), function(file, callback){
-				p = '';
-				if(fs.existsSync(scriptsPath+file)){
-					p = scriptsPath+file;
-				}else if(fs.existsSync(core.appFolder+'/http/scripts/'+file)){
-					p = core.appFolder+'/http/scripts/'+file;
-				}else if(fs.existsSync(core.appFolder+'/http/'+file)){
-					p = core.appFolder+'/http/'+file;
-				}else if(fs.existsSync(core.appFolder+'/'+file)){
-					p = core.appFolder+'/'+file;
-				}
-				if (!p)
+				folder = _.find(self._httpFolders, function(_folder){
+					//console.log("_folder+file".greenBG, _folder+file)
+					return fs.existsSync(_folder+file);
+				});
+				if (!folder)
 					return callback({error:file+": File not found"});
 				//console.log("reading js file:", p)
-				fs.readFile(p, function(err, _data){
+				fs.readFile(folder+file, function(err, _data){
 					if (err)
 						return callback(err);
 
