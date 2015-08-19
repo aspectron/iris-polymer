@@ -29,6 +29,7 @@ var ServeStatic = require('serve-static');
 var util 		= require('util');
 var _ 			= require('underscore');
 var fs 			= require('fs');
+var crypto 		= require('crypto');
 
 
 function ZETTA_Polymer(core) {
@@ -54,10 +55,17 @@ function ZETTA_Polymer(core) {
 	        });
 		});
 		app.get('/scripts/combine/:files', function(req, res, next){
-			var files = req.params.files.split('|'), p;
+			var files = req.params.files, p;
 			var data = [];
-			console.log("cripts/combin".greenBG, files)
-			core.asyncMap(files, function(file, callback){
+			var fileName = crypto.createHash('md5').update(files).digest('hex')+'.js';
+			console.log("cripts/combin".greenBG, fileName, files)
+			if(fs.existsSync(scriptsPath+fileName)){
+				res.setHeader('Content-Type', 'text/javascript');
+				var r = fs.createReadStream(scriptsPath+fileName);
+                r.pipe(res)//.send(data.join("\n\r"))
+                return;
+			}
+			core.asyncMap(files.split('|'), function(file, callback){
 				p = '';
 				if(fs.existsSync(scriptsPath+file)){
 					p = scriptsPath+file;
@@ -80,16 +88,18 @@ function ZETTA_Polymer(core) {
 				});
 
 			}, function(err){
-				if (err)
+				if (err){
+					next()
 					return console.log("combine-js:1:".greenBG, err);
-
-				//fs.writeFile(file, data, function (err, status) {
+				}
+				fileName = scriptsPath+fileName;
+				fs.writeFile(fileName, data.join("\n\r"), function (err, status) {
                     //if (err)
                         //return console.log("combine-js:2:".greenBG, err);
                     res.setHeader('Content-Type', 'text/javascript');
                     res.send(data.join("\n\r"))
                     //callback(null, {fields:fields, file:file});
-                //});
+                });
 			})
 			//next()
 		});
