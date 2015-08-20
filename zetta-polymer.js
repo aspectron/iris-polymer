@@ -52,9 +52,12 @@ function ZETTA_Polymer(core) {
 
 		var cache = { }
 		var componetsPath = path.join(__dirname,'/http/zetta/');
+		var iconsPath     = path.join(__dirname,'/http/zetta/icons/');
 		var scriptsPath   = path.join(__dirname,'/http/scripts/');
 
 		self.addHttpResourcesFolders([
+			componetsPath,
+			iconsPath,
 			scriptsPath,
 			core.appFolder+'/http/',
 			core.appFolder+'/http/scripts/',
@@ -77,10 +80,15 @@ function ZETTA_Polymer(core) {
 	            res.render(file, {req: req});
 	        });
 		});
-		app.get('/combine/:files', function(req, res, next){
-			var files = req.params.files, folder;
+		app.get('/combine*', function(req, res, next){
+			// console.log("REQ:",req);
+			var list = req._parsedOriginalUrl.pathname.replace('/combine:','');
+			var files = list.split(';');
+			// var files = req.params.files, 
+			var folder;
+			// console.log(files);	
 			var data = [];
-			var fileName = crypto.createHash('md5').update(files).digest('hex')+'.js';
+			var fileName = crypto.createHash('md5').update(list).digest('hex');//+'.js';
 			var hash = fileName;
 			 // console.log("scripts/combine".greenBG.bold, fileName, files)
 			if(cache[hash]) {
@@ -98,7 +106,7 @@ function ZETTA_Polymer(core) {
                 return;
 			}*/
 
-			core.asyncMap(files.split('|'), function(file, callback){
+			core.asyncMap(files, function(file, callback){
 				folder = _.find(self._httpFolders, function(_folder){
 					//console.log("_folder+file".greenBG, _folder+file)
 					return fs.existsSync(_folder+file);
@@ -123,6 +131,8 @@ function ZETTA_Polymer(core) {
                 res.setHeader('Content-Type', 'text/javascript');
 				var content = cache[hash] = data.join("\n\r");
 				res.end(content);
+				console.log('combine:'.green.bold, hash.bold, content.length);
+				console.log(files);
 
 
 				/*
