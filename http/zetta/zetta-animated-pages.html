@@ -11,9 +11,13 @@
 		right: 0px;
 		top: 0px;
 		bottom: 0px;
+		transition:opacity 0.5s;
+		-webkit-transition:opacity 0.5s;
+		-moz-transition:opacity 0.5s;
+		opacity: 1;
 	}
 	:host([sub-app]):not(.active){
-		height: 0px;
+		height: 0;
 	}
 	</style>
 	<template>
@@ -45,6 +49,10 @@
 		:host(#pages){
 			overflow-y: auto;
 			display: block;
+		}
+		:host(.sub-app-active){
+			overflow-y:hidden;
+			-ms-overflow-y:hidden;
 		}
 		:host(.sub-app-active)::content>zetta-animated-page:not(.active){
 			height: 0px;
@@ -166,38 +174,69 @@
 				var page = self.items[self.selected];
 				if (!page)
 					return;
+				self.animating = true;
 				if (page.subApp) {
 					self.toggleClass('sub-app-active', true);
 					page.toggleClass('active', true);
-					//$(page).slideDown( "slow" );
+					$(page).fadeIn(1000);
+					self.debounce('animating', function(){
+						self.animating = false;
+					}, 100);
+					_.each(self.items, function(item){
+						if (page == item)
+							return;
+						if (item.subApp && item.classList.contains('active')){
+							$(item).fadeOut(500, function(){
+								item.toggleClass('active', false);
+							});
+						}else{
+							item.toggleClass('active', false);
+						}
+					});
 					return;
 				}else{
+					var doScroll = true;
 					_.each(self.items, function(item){
-						item.toggleClass('active', false);
+						if (item.subApp && item.classList.contains('active')){
+							doScroll = false;
+							$(item).fadeOut(500, function(){
+								item.toggleClass('active', false);
+								scroll();
+							});
+						}else{
+							item.toggleClass('active', false);
+						}
 					});
 					self.toggleClass('sub-app-active', false);
+					if (doScroll)
+						scroll();
 				}
 
-				if (self.noAnimationForFirst && !self.__initChange) {
-					self.__initChange = true;
-					self.scrollTop = self.getItemTop(self.selected);
-				}else{
-					self.animating = true;
-					jQuery(self).stop(true, false).animate({
-						scrollTop: self.getItemTop(self.selected) || 1
-					}, {
-						duration: self.animateTime,
-						always: function(){
-							self.animating = false;
-						}
-					})
+				function scroll(){
+					if (self.noAnimationForFirst && !self.__initChange) {
+						self.__initChange = true;
+						self.scrollTop = self.getItemTop(self.selected);
+						self.animating = false;
+					}else{
+						jQuery(self).stop(true, false).animate({
+							scrollTop: self.getItemTop(self.selected) || 1
+						}, {
+							duration: self.animateTime,
+							always: function(){
+								self.debounce('animating', function(){
+									self.animating = false;
+								}, 100);
+							}
+						})
+					}
 				}
 			},
 			onScroll: function(e){
-				//console.log("zetta-animated-pages", this.scrollTop)
+				
 				var self = this;
 				if (self.animating)
 					return;
+				//console.log("onScroll", e)
 				self.debounce('onScroll', function(){
 					self.updateSelected();
 					(e.target == self) && self.tryToFocus();
@@ -215,6 +254,7 @@
 						};
 						return
 					};
+					//console.log("page.offsetTop <= top", page.offsetTop, top, index, page)
 					if (page.offsetTop <= top ) {
 						selected = index;
 					};
