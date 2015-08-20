@@ -1,11 +1,41 @@
 <dom-module id="zetta-animated-page">
-	<style>:host{display: block;}</style>
+	<style>
+	:host{
+		display: block;
+		overflow: hidden;
+		background-color: #FFF;
+	}
+	:host([sub-app]){
+		position: absolute;
+		left: 0px;
+		right: 0px;
+		top: 0px;
+		bottom: 0px;
+		transition:opacity 0.5s;
+		-webkit-transition:opacity 0.5s;
+		-moz-transition:opacity 0.5s;
+		opacity: 1;
+	}
+	:host([sub-app]):not(.active){
+		height: 0;
+	}
+	</style>
 	<template>
 		<content></content>
 	</template>
 	<script>
 		Polymer({
-			is:'zetta-animated-page'
+			is:'zetta-animated-page',
+			properties:{
+				subApp:{
+					type: Boolean,
+					observer:'onSubAppChange'
+				}
+			},
+			onSubAppChange: function(){
+				this.toggleClass('layout', !!this.subApp);
+				this.toggleClass('vertical', !!this.subApp);
+			}
 		})
 	</script>
 </dom-module>
@@ -19,6 +49,13 @@
 		:host(#pages){
 			overflow-y: auto;
 			display: block;
+		}
+		:host(.sub-app-active){
+			overflow-y:hidden;
+			-ms-overflow-y:hidden;
+		}
+		:host(.sub-app-active)::content>zetta-animated-page:not(.active){
+			height: 0px;
 		}
 	</style>
 	<template>
@@ -118,14 +155,14 @@
 				};
 			},
 			onItemChange: function(){
-				if(!this.getLocationHash())
+				//111if(!this.getLocationHash())
 					this.onSelectedChange();
 			},
 			onSelectedChange: function(){
 				var self = this;
-				if (ZETTA._locationHash) {
-					return;
-				};
+				//111if (ZETTA._locationHash) {
+				//111	return;
+				//111};
 				//console.log("onSelectedChange", ZETTA._locationHash, arguments)
 				if (self.selected === false || !self._isReady || !self.items.length)
 					return;
@@ -134,26 +171,72 @@
 					return;
 				};
 				self._selected = false;
-				if (self.noAnimationForFirst && !self.__initChange) {
-					self.__initChange = true;
-					self.scrollTop = self.getItemTop(self.selected);
-				}else{
-					self.animating = true;
-					jQuery(self).stop(true, false).animate({
-						scrollTop: self.getItemTop(self.selected) || 1
-					}, {
-						duration: self.animateTime,
-						always: function(){
-							self.animating = false;
+				var page = self.items[self.selected];
+				if (!page)
+					return;
+				self.animating = true;
+				if (page.subApp) {
+					self.toggleClass('sub-app-active', true);
+					page.toggleClass('active', true);
+					$(page).fadeIn(1000);
+					self.debounce('animating', function(){
+						self.animating = false;
+					}, 100);
+					_.each(self.items, function(item){
+						if (page == item)
+							return;
+						if (item.subApp && item.classList.contains('active')){
+							$(item).fadeOut(500, function(){
+								item.toggleClass('active', false);
+							});
+						}else{
+							item.toggleClass('active', false);
 						}
-					})
+					});
+					return;
+				}else{
+					var doScroll = true;
+					_.each(self.items, function(item){
+						if (item.subApp && item.classList.contains('active')){
+							doScroll = false;
+							$(item).fadeOut(500, function(){
+								item.toggleClass('active', false);
+								scroll();
+							});
+						}else{
+							item.toggleClass('active', false);
+						}
+					});
+					self.toggleClass('sub-app-active', false);
+					if (doScroll)
+						scroll();
+				}
+
+				function scroll(){
+					if (self.noAnimationForFirst && !self.__initChange) {
+						self.__initChange = true;
+						self.scrollTop = self.getItemTop(self.selected);
+						self.animating = false;
+					}else{
+						jQuery(self).stop(true, false).animate({
+							scrollTop: self.getItemTop(self.selected) || 1
+						}, {
+							duration: self.animateTime,
+							always: function(){
+								self.debounce('animating', function(){
+									self.animating = false;
+								}, 100);
+							}
+						})
+					}
 				}
 			},
 			onScroll: function(e){
-				//console.log("zetta-animated-pages", this.scrollTop)
+				
 				var self = this;
 				if (self.animating)
 					return;
+				//console.log("onScroll", e)
 				self.debounce('onScroll', function(){
 					self.updateSelected();
 					(e.target == self) && self.tryToFocus();
@@ -165,11 +248,18 @@
 				var top = self.scrollTop;
 				var selected = 0;
 				_.each(self.items, function(page, index){
+					if (page.subApp) {
+						if (page.classList.contains('active')) {
+							selected = index;
+						};
+						return
+					};
+					//console.log("page.offsetTop <= top", page.offsetTop, top, index, page)
 					if (page.offsetTop <= top ) {
 						selected = index;
 					};
 				});
-				//console.log('updateSelected', selected)
+				console.log('updateSelected', selected)
 				self.setSilentSelected(selected);
 			},
 
@@ -177,9 +267,6 @@
 				var self = this;
 				self._selected = selected;
 				self.set('selected', selected);
-				//self.async(function(){
-					//self._silentSelected = false;
-				//}, 100)
 			},
 
 			getItemTop: function(index){
@@ -203,11 +290,11 @@
 				var self = this;
 				self.set('items', self.getChildren());
 				self.setMinHeightOfChildren();
-				if(ZETTA._locationHash){
-					self.async(function(){
-						self.updateSelected();
-					}, 10);
-				}
+				//111if(ZETTA._locationHash){
+					//111self.async(function(){
+						//111self.updateSelected();
+					//111}, 10);
+				//111}
 			},
 			setMinHeightOfChildren: function(){
 				var self = this;
@@ -219,7 +306,7 @@
 				});
 			},
 			getChildren: function(){
-				return this.querySelectorAll('zetta-animated-page');
+				return this.children;//querySelectorAll('zetta-animated-page');
 			}
 		})
 	</script>

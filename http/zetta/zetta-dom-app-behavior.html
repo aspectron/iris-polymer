@@ -152,7 +152,7 @@
 				var tabs = self.$.tabs.querySelectorAll('paper-tab');
 				var tab = {}, hash;
 				var items = self.$.pages.items;
-				console.log("buildPagesAnchors:items", items)
+				//console.log("buildPagesAnchors:items", items)
 				_.each(tabs, function(t, index){
 					hash = t.dataTabId || t.getAttribute('data-tab-id');
 					if (!hash || !items[index])
@@ -162,7 +162,7 @@
 					//a.innerHTML = "###"+hash.toUpperCase()+"####";
 					items[index].insertBefore(a, items[index].children[0]);
 				});
-				console.log("buildPagesAnchors")
+				//console.log("buildPagesAnchors")
 				self.restoreLocationHash();
 			}
 		},
@@ -177,7 +177,7 @@
 					var hash = ZETTA._locationHash;
 					ZETTA._locationHash = '';
 					self.setLocationHash(hash);
-					console.log("self.asyncself.asyncself.async: ZETTA._locationHash", hash);
+					//console.log("self.asyncself.asyncself.async: ZETTA._locationHash", hash);
 					
 				}, 100);
 			}
@@ -345,6 +345,10 @@
 			if (!self.$.tabs || !self.$.tabs.items) {
 				return log(this, "Tabs missing");
 			};
+			//bar missing: issue
+			self.$.tabs._tabChanged(self.$.tabs._previousTab);
+			self.$.tabs._onResize();
+
 			if (self.verticalanimation) {
 				if (oldValue !== undefined && newValue > oldValue) {
 					self.entryanimation = 'slide-from-down-animation';
