@@ -1,11 +1,37 @@
 <dom-module id="zetta-animated-page">
-	<style>:host{display: block;}</style>
+	<style>
+	:host{
+		display: block;
+		overflow: hidden;
+		background-color: #FFF;
+	}
+	:host([sub-app]){
+		position: absolute;
+		left: 0px;
+		right: 0px;
+		top: 0px;
+		bottom: 0px;
+	}
+	:host([sub-app]):not(.active){
+		height: 0px;
+	}
+	</style>
 	<template>
 		<content></content>
 	</template>
 	<script>
 		Polymer({
-			is:'zetta-animated-page'
+			is:'zetta-animated-page',
+			properties:{
+				subApp:{
+					type: Boolean,
+					observer:'onSubAppChange'
+				}
+			},
+			onSubAppChange: function(){
+				this.toggleClass('layout', !!this.subApp);
+				this.toggleClass('vertical', !!this.subApp);
+			}
 		})
 	</script>
 </dom-module>
@@ -19,6 +45,9 @@
 		:host(#pages){
 			overflow-y: auto;
 			display: block;
+		}
+		:host(.sub-app-active)::content>zetta-animated-page:not(.active){
+			height: 0px;
 		}
 	</style>
 	<template>
@@ -134,6 +163,21 @@
 					return;
 				};
 				self._selected = false;
+				var page = self.items[self.selected];
+				if (!page)
+					return;
+				if (page.subApp) {
+					self.toggleClass('sub-app-active', true);
+					page.toggleClass('active', true);
+					//$(page).slideDown( "slow" );
+					return;
+				}else{
+					_.each(self.items, function(item){
+						item.toggleClass('active', false);
+					});
+					self.toggleClass('sub-app-active', false);
+				}
+
 				if (self.noAnimationForFirst && !self.__initChange) {
 					self.__initChange = true;
 					self.scrollTop = self.getItemTop(self.selected);
@@ -165,6 +209,12 @@
 				var top = self.scrollTop;
 				var selected = 0;
 				_.each(self.items, function(page, index){
+					if (page.subApp) {
+						if (page.classList.contains('active')) {
+							selected = index;
+						};
+						return
+					};
 					if (page.offsetTop <= top ) {
 						selected = index;
 					};
@@ -177,9 +227,6 @@
 				var self = this;
 				self._selected = selected;
 				self.set('selected', selected);
-				//self.async(function(){
-					//self._silentSelected = false;
-				//}, 100)
 			},
 
 			getItemTop: function(index){
@@ -219,7 +266,7 @@
 				});
 			},
 			getChildren: function(){
-				return this.querySelectorAll('zetta-animated-page');
+				return this.children;//querySelectorAll('zetta-animated-page');
 			}
 		})
 	</script>
