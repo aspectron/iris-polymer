@@ -52,13 +52,11 @@ function ZETTA_Polymer(core) {
 
 		var cache = { }
 		var componetsPath = path.join(__dirname,'/http/zetta/');
-		var iconsPath     = path.join(__dirname,'/http/zetta/icons/');
 		var scriptsPath   = path.join(__dirname,'/http/scripts/');
 
 		self.addHttpResourcesFolders([
-			componetsPath,
-			iconsPath,
 			scriptsPath,
+			componetsPath+'icons/',
 			core.appFolder+'/http/',
 			core.appFolder+'/http/scripts/',
 			core.appFolder+'/lib/manage/resources/'
@@ -80,40 +78,31 @@ function ZETTA_Polymer(core) {
 	            res.render(file, {req: req});
 	        });
 		});
-		app.get('/combine*', function(req, res, next){
-			// console.log("REQ:",req);
-			var list = req._parsedOriginalUrl.pathname.replace('/combine:','');
-			var files = list.split(';');
-			// var files = req.params.files, 
-			var folder;
-			// console.log(files);	
+
+		app.get('/combine:*', function(req, res, next){
+			var files = req.originalUrl.split('/combine:')[1], folder;
+			if (!files)
+				return next();
+
 			var data = [];
-			var fileName = crypto.createHash('md5').update(list).digest('hex');//+'.js';
-			var hash = fileName;
-			 // console.log("scripts/combine".greenBG.bold, fileName, files)
-			if(cache[hash]) {
-				// console.log("cache",hash,cache[hash].length)
-				res.setHeader('Content-Type', 'text/javascript');
-				res.end(cache[hash]);
-				return;
-			}
+			var hash = crypto.createHash('md5').update(files).digest('hex');
+			//console.log("scripts/combine".greenBG.bold, hash, files, files.split(';').length)
+			if(cache[hash])				
+				return self.sendHashContent({files:files, hash: hash, req:req, res:res, next:next});
 
-			/*
-			if(fs.existsSync(scriptsPath+fileName)){
-				res.setHeader('Content-Type', 'text/javascript');
-				var r = fs.createReadStream(scriptsPath+fileName);
-                r.pipe(res)//.send(data.join("\n\r"))
-                return;
-			}*/
+			core.asyncMap(files.split(';'), function(file, callback){
+				if (!file)
+					return callback();
 
-			core.asyncMap(files, function(file, callback){
 				folder = _.find(self._httpFolders, function(_folder){
 					//console.log("_folder+file".greenBG, _folder+file)
 					return fs.existsSync(_folder+file);
 				});
 				if (!folder)
 					return callback({error:file+": File not found"});
-				//console.log("reading js file:", p)
+				if (file.indexOf('..') > -1)
+					return callback({error: file+": is not valid name"})
+
 				fs.readFile(folder+file, function(err, _data){
 					if (err)
 						return callback(err);
@@ -121,52 +110,31 @@ function ZETTA_Polymer(core) {
 					data.push("\n\r/* ---["+file+"]---\*/\r\n"+_data);
 					callback()
 				});
-
 			}, function(err){
 				if (err) {
 					next()
 					return console.log("combine-js:1:".greenBG, err);
 				}
 
-                res.setHeader('Content-Type', 'text/javascript');
-				var content = cache[hash] = data.join("\n\r");
-				res.end(content);
-				console.log('combine:'.green.bold, hash.bold, content.length);
-				console.log(files);
+				cache[hash] = data.join("\n\r");
+				self.sendHashContent({files:files, hash: hash, req:req, res:res, next:next});
+			});
 
 
-				/*
-
-				var orig_code = data.join("\n\r");
-				var i = 0;
-				console.log(i++);
-				var ast = jsp.parse(orig_code); // parse code and get the initial AST
-				console.log(i++);
-				ast = pro.ast_mangle(ast); // get a new AST with mangled names
-				console.log(i++);
-				ast = pro.ast_squeeze(ast); // get an AST with compression optimizations
-				console.log(i++);
-				var final_code = pro.gen_code(ast); // compressed code here
-				console.log("done");
-
-
-				cache[hash] = final_code; //data.join("\n\r").replace(/ {2,}/g,' ');
-				res.end(final_code);
-				*/
-
-				/*
-				fileName = scriptsPath+fileName;
-				fs.writeFile(fileName, data.join("\n\r"), function (err, status) {
-                    //if (err)
-                        //return console.log("combine-js:2:".greenBG, err);
-                    res.setHeader('Content-Type', 'text/javascript');
-                    res.send(data.join("\n\r"))
-                    //callback(null, {fields:fields, file:file});
-                });
-				*/
-			})
-			//next()
 		});
+
+		self.sendHashContent = function(args){
+			var files 	= args.files;
+			var res 	= args.res;
+			var hash    = args.hash;
+			if (files.indexOf('.html;') > -1){
+				res.setHeader('Content-Type', 'text/html');
+			}else{
+				res.setHeader('Content-Type', 'text/javascript');
+			}
+			res.end(cache[hash]);
+		}
+
 		app.use('/deps', ServeStatic(path.join(__dirname, 'bower_components')));
 		app.use('/ZETTA/scripts', ServeStatic(path.join(__dirname, 'http/scripts')));
 	    app.use('/ZETTA', ServeStatic(path.join(__dirname, 'http/zetta')));
