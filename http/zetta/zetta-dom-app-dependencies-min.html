@@ -14244,7 +14244,7 @@ ZETTA.define('ZETTA.progressImages', [
         var tabs = self.$.tabs.querySelectorAll('paper-tab');
         var tab = {}, hash;
         var items = self.$.pages.items;
-        console.log("buildPagesAnchors:items", items)
+        //console.log("buildPagesAnchors:items", items)
         _.each(tabs, function(t, index){
           hash = t.dataTabId || t.getAttribute('data-tab-id');
           if (!hash || !items[index])
@@ -14254,7 +14254,7 @@ ZETTA.define('ZETTA.progressImages', [
           //a.innerHTML = "###"+hash.toUpperCase()+"####";
           items[index].insertBefore(a, items[index].children[0]);
         });
-        console.log("buildPagesAnchors")
+        //console.log("buildPagesAnchors")
         self.restoreLocationHash();
       }
     },
@@ -14437,6 +14437,10 @@ ZETTA.define('ZETTA.progressImages', [
       if (!self.$.tabs || !self.$.tabs.items) {
         return log(this, "Tabs missing");
       };
+      //bar missing: issue
+      self.$.tabs._tabChanged(self.$.tabs._previousTab);
+      self.$.tabs._onResize();
+
       if (self.verticalanimation) {
         if (oldValue !== undefined && newValue > oldValue) {
           self.entryanimation = 'slide-from-down-animation';
