@@ -14244,7 +14244,7 @@ ZETTA.define('ZETTA.progressImages', [
         var tabs = self.$.tabs.querySelectorAll('paper-tab');
         var tab = {}, hash;
         var items = self.$.pages.items;
-        console.log("buildPagesAnchors:items", items)
+        //console.log("buildPagesAnchors:items", items)
         _.each(tabs, function(t, index){
           hash = t.dataTabId || t.getAttribute('data-tab-id');
           if (!hash || !items[index])
@@ -14254,7 +14254,7 @@ ZETTA.define('ZETTA.progressImages', [
           //a.innerHTML = "###"+hash.toUpperCase()+"####";
           items[index].insertBefore(a, items[index].children[0]);
         });
-        console.log("buildPagesAnchors")
+        //console.log("buildPagesAnchors")
         self.restoreLocationHash();
       }
     },
@@ -14437,6 +14437,10 @@ ZETTA.define('ZETTA.progressImages', [
       if (!self.$.tabs || !self.$.tabs.items) {
         return log(this, "Tabs missing");
       };
+      //bar missing: issue
+      self.$.tabs._tabChanged(self.$.tabs._previousTab);
+      self.$.tabs._onResize();
+
       if (self.verticalanimation) {
         if (oldValue !== undefined && newValue > oldValue) {
           self.entryanimation = 'slide-from-down-animation';
@@ -14846,18 +14850,18 @@ ZETTA.define('ZETTA.progressImages', [
   </script>
 </dom-module>
 
-<dom-module id="zetta-animated-page">
+<dom-module id="zetta-animated-page1">
   <style>:host{display: block;}</style>
   <template>
     <content></content>
   </template>
   <script>
     Polymer({
-      is:'zetta-animated-page'
+      is:'zetta-animated-page1'
     })
   </script>
 </dom-module>
-<dom-module id="zetta-animated-pages">
+<dom-module id="zetta-animated-pages1">
   <style>
     :host{
       overflow-y: auto;
@@ -14874,7 +14878,7 @@ ZETTA.define('ZETTA.progressImages', [
   </template>
   <script>
     Polymer({
-      is:'zetta-animated-pages',
+      is:'zetta-animated-pages1',
       properties:{
         selected: {
           type: Number,
