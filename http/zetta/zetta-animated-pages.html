@@ -178,7 +178,7 @@
 				if (page.subApp) {
 					self.toggleClass('sub-app-active', true);
 					page.toggleClass('active', true);
-					$(page).fadeIn(1000);
+					$(page).fadeIn(200);
 					self.debounce('animating', function(){
 						self.animating = false;
 					}, 100);
@@ -186,7 +186,7 @@
 						if (page == item)
 							return;
 						if (item.subApp && item.classList.contains('active')){
-							$(item).fadeOut(500, function(){
+							$(item).fadeOut(10, function(){
 								item.toggleClass('active', false);
 							});
 						}else{
@@ -199,7 +199,7 @@
 					_.each(self.items, function(item){
 						if (item.subApp && item.classList.contains('active')){
 							doScroll = false;
-							$(item).fadeOut(500, function(){
+							$(item).fadeOut(10, function(){
 								item.toggleClass('active', false);
 								scroll();
 							});
