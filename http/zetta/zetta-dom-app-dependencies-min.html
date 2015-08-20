@@ -14225,7 +14225,6 @@ ZETTA.define('ZETTA.progressImages', [
       self.tabsAdded = true;
       ZETTA.loadTheme('theme1.html');
       self.toggleClass('loading', false, document.body);
-      //self.restoreLocationHash();
     },
     getLocationHash: function(){
       return window.location.hash;
@@ -14244,12 +14243,10 @@ ZETTA.define('ZETTA.progressImages', [
         var tabs = self.$.tabs.querySelectorAll('paper-tab');
         var tab = {}, hash;
         var items = self.$.pages.items;
-        //console.log("buildPagesAnchors:items", items)
         _.each(tabs, function(t, index){
           hash = t.dataTabId || t.getAttribute('data-tab-id');
           if (!hash || !items[index])
             return;
-          //console.log("index", index)
           var a = self.create('A', {name:hash, style:"display:block"});
           //a.innerHTML = "###"+hash.toUpperCase()+"####";
           items[index].insertBefore(a, items[index].children[0]);
@@ -14262,16 +14259,18 @@ ZETTA.define('ZETTA.progressImages', [
       var self = this;
       if (ZETTA._locationHash){
         self.async(function(){
-          //var id = ('hash_'+Math.random(1, 1000)).replace('.', '_');
-          //$(document.body).append('<a id="'+id+'" href="'+hash+'">hash</a>');
-          //var a = $('#'+id);
           self.setLocationHash('');
           var hash = ZETTA._locationHash;
           ZETTA._locationHash = '';
           self.setLocationHash(hash);
-          //console.log("self.asyncself.asyncself.async: ZETTA._locationHash", hash);
-          
-        }, 100);
+          var tab = self.getTab(hash.replace('#', ''));
+          if (tab && tab.tab)
+            self.selected = tab.index;
+
+          console.log("self.asyncself.asyncself.async: ZETTA._locationHash", hash);
+        }, 500);
+      }else{
+        self.restoreLastTab();
       }
     },
     attached: function(){
@@ -14394,10 +14393,10 @@ ZETTA.define('ZETTA.progressImages', [
     },
     onPagesReady: function(){
       var self = this;
+     
       self.debounce('onPagesReady', function(){
         if(self.tabsAdded){
-          //if(!window.location.hash)
-          self.restoreLastTab();
+          self.buildPagesAnchors();
           self.tabsAdded = false;
         }
       }, 200);
@@ -14473,19 +14472,14 @@ ZETTA.define('ZETTA.progressImages', [
             }else{
               window.location.hash = '';
             }
-            //tabId && (window.location.hash = '#'+tabId);
           }, 600);
         }
-        //self.debounce('selectedChanged', function(){
-          //window.location.hash = '';
-        //}, 600);
       }
       if ( tab == 'logout') {
         window.location.href = self.logoutPath;
         return;
       };
       self.selectedpage = self.selected;
-      self.buildPagesAnchors();
       self.$.pages.fire('neon-animation-begin');
       if (oldValue !== undefined && tab!='login') {
         self.localStorage('tabIndex', self.selected);
@@ -14493,6 +14487,7 @@ ZETTA.define('ZETTA.progressImages', [
     },
     restoreLastTab: function(){
       var self = this;
+      console.log("restoreLastTab", ZETTA._locationHash, window.location.hash)
       if (this.msg && this.msg.activation){
         this.selected = this.getTab('login').index;
         return;
@@ -14500,7 +14495,9 @@ ZETTA.define('ZETTA.progressImages', [
       var tabIndex = self.localStorage('tabIndex');
       if(typeof  tabIndex != 'undefined'){
         this.selected = parseInt(tabIndex);
+        return;
       }
+      this.selected = 0;
     },
     toggleDrawer: function(){
       this.$.drawer.togglePanel();
@@ -14921,9 +14918,9 @@ ZETTA.define('ZETTA.progressImages', [
         
         self._isReady = true;
 
-        if(!ZETTA._locationHash){
+        //if(!ZETTA._locationHash){
           self.onSelectedChange();
-        }
+        //}
       },
       getLocationHash: function(){
         return window.location.hash;
@@ -14975,9 +14972,9 @@ ZETTA.define('ZETTA.progressImages', [
       },
       onSelectedChange: function(){
         var self = this;
-        if (ZETTA._locationHash) {
-          return;
-        };
+        //if (ZETTA._locationHash) {
+          //return;
+        //};
         //console.log("onSelectedChange", ZETTA._locationHash, arguments)
         if (self.selected === false || !self._isReady || !self.items.length)
           return;
@@ -15055,11 +15052,11 @@ ZETTA.define('ZETTA.progressImages', [
         var self = this;
         self.set('items', self.getChildren());
         self.setMinHeightOfChildren();
-        if(ZETTA._locationHash){
-          self.async(function(){
-            self.updateSelected();
-          }, 10);
-        }
+        //if(ZETTA._locationHash){
+          //self.async(function(){
+            //self.updateSelected();
+          //}, 10);
+        //}
       },
       setMinHeightOfChildren: function(){
         var self = this;
