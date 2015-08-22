@@ -28,14 +28,22 @@
             },
 
             onHolderChange: function(key){
-                if (key)
+                if (key){
+                    this.connect();
                     window[key].rpc = this;
+                }
             },
 
             ready : function() {
                 var self = this;
                 self.timeout = this.timeout || 30;
                 self.connected = false;
+            },
+            connect: function(){
+                var self = this;
+                if (self._connected)
+                    return;
+                self._connected = true;
 
             	self.events.emitAsync('rpc-connecting');
                 self.socket = io(window.location.origin+self.path);
