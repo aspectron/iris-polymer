@@ -178,7 +178,7 @@ function ZETTA_Polymer(core) {
 				if(!data[category])
 					data[category] = [ ]
 
-				// console.log(ident,file,category,id);
+				console.log('generating icon:'.green.bold, (ident+'').bold);
 
 				folder = _.find(self._httpFolders, function(_folder){
 					//console.log("_folder+file".greenBG, _folder+file)
