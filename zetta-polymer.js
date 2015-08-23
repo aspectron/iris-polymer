@@ -130,7 +130,7 @@ function ZETTA_Polymer(core) {
 
 			var data = {};
 			var hash = crypto.createHash('md5').update(files).digest('hex');
-			console.log("icons".greenBG.bold, hash, files, files.split(';').length)
+			// console.log("icons".greenBG.bold, hash, files, files.split(';').length)
 			if(cache[hash]) {
 				res.setHeader('Content-Type', 'text/html');
 				res.end(cache[hash]);
@@ -178,7 +178,7 @@ function ZETTA_Polymer(core) {
 				if(!data[category])
 					data[category] = [ ]
 
-				console.log(ident,file,category,id);
+				// console.log(ident,file,category,id);
 
 				folder = _.find(self._httpFolders, function(_folder){
 					//console.log("_folder+file".greenBG, _folder+file)
