@@ -123,6 +123,122 @@ function ZETTA_Polymer(core) {
 
 		});
 
+		app.get('/icons:*', function(req, res, next){
+			var files = req.originalUrl.split('/icons:')[1], folder;
+			if (!files)
+				return next();
+
+			var data = {};
+			var hash = crypto.createHash('md5').update(files).digest('hex');
+			console.log("icons".greenBG.bold, hash, files, files.split(';').length)
+			if(cache[hash]) {
+				res.setHeader('Content-Type', 'text/html');
+				res.end(cache[hash]);
+				return;
+			}
+/*
+			var list = [ ]
+			files = files.split(';');
+			_.each(files, function(f) {
+				var parts = f.split(':');
+				var path = parts[0];
+				var icons = parts[1];
+				if(!path || !icons)
+					return;
+				var file = path+'.html';
+				var category = path.split('/').pop();
+
+				if(!data[category])
+					data[category] = []
+
+				_.each(icons.split(','), function(icon) {
+
+					list.push()
+
+				})
+
+			})
+*/
+
+
+			core.asyncMap(files.split(';'), function(ident, callback){
+				if (!ident)
+					return callback();
+
+				var parts = ident.split(':');
+				if(parts.length == 1) {
+					var t = parts.shift().split('/');
+					parts[1] = t.pop();
+					parts[0] = t.join('/');
+				}
+				var ref = parts.shift();
+				var file = ref+'.html';
+				var category = ref.split('/').pop();
+				var id = parts.shift();
+				if(!data[category])
+					data[category] = [ ]
+
+				console.log(ident,file,category,id);
+
+				folder = _.find(self._httpFolders, function(_folder){
+					//console.log("_folder+file".greenBG, _folder+file)
+					return fs.existsSync(path.join(_folder,file));
+				});
+
+				if (!folder)
+					return callback({error:file+": File not found"});
+
+				if (file.indexOf('..') > -1)
+					return callback({error: file+": is not valid name"})
+
+				fs.readFile(path.join(folder,file), function(err, _data){
+					if (err)
+						return callback(err);
+
+//console.log(_data.toString())
+var regexpA = new RegExp("<g\\sid=\""+id+"\"><g>.*<\/g><\/g>","ig");
+var regexpB = new RegExp("<g\\sid=\""+id+"\">.*<\/g>","ig");
+//console.log(regexp);
+					var text = _data.toString();
+					var icon = text.match(regexpA);
+					if (!icon)
+						icon = text.match(regexpB);
+					if (!icon)
+						return callback({error:ident+": Icon not found"});
+
+					data[category].push(icon.shift());
+					callback()
+				});
+			}, function(err){
+				if (err) {
+					next()
+					return console.log("icons-js:1:".greenBG, err);
+				}
+//console.log(data);
+				var text = '<link rel="import" href="/deps/iron-iconset-svg/iron-iconset-svg.html">';
+
+//				var text = '';
+
+				_.each(data, function(g, category) {
+//console.log("category:",category);
+					text += '<iron-iconset-svg name="'+category+'" size="50"><svg><defs>';
+					_.each(g, function(g) {
+						// console.log(g);
+						text += g;
+					})
+					text += '</defs></svg></icon-iconset-svg>';
+
+				})
+
+
+				cache[hash] = text;
+				res.setHeader('Content-Type', 'text/html');
+				res.end(text);
+			});
+
+
+		});
+
 		self.sendHashContent = function(args){
 			var files 	= args.files;
 			var res 	= args.res;
