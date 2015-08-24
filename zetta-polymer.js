@@ -215,9 +215,9 @@ var regexpB = new RegExp("<g\\sid=\""+id+"\">.*<\/g>","ig");
 					return console.log("icons-js:1:".greenBG, err);
 				}
 //console.log(data);
-				var text = '<link rel="import" href="/deps/iron-iconset-svg/iron-iconset-svg.html">';
+//				var text = '<link rel="import" href="/deps/iron-iconset-svg/iron-iconset-svg.html">';
 
-//				var text = '';
+				var text = '';
 
 				_.each(data, function(g, category) {
 //console.log("category:",category);
