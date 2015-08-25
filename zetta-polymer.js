@@ -35,32 +35,28 @@ var pro	= require('uglify-js').uglify;
 console.log("jsp",jsp);
 console.log("pro",pro)
 */
-function ZETTA_Polymer(core) {
+function ZETTA_Polymer(core, options) {
 	var self = this;
-
-	self._httpFolders = [];
-	self.addHttpResourcesFolders = function(folders){
-		if (_.isArray(folders)) {
-			self._httpFolders = self._httpFolders.concat(folders);
-		}else{
-			self._httpFolders.push(folders);
-		}
-		self._httpFolders = _.uniq(self._httpFolders);
-	}
+	options 		= options || {};
+	var combiner 	= options.httpCombiner || core.httpCombiner;
 
 	self.initHttp = function(app) {
-
-		var cache = { }
+		var depsComponetsPath = path.join(__dirname,'/bower_components/');
 		var componetsPath = path.join(__dirname,'/http/zetta/');
 		var scriptsPath   = path.join(__dirname,'/http/scripts/');
 
-		self.addHttpResourcesFolders([
-			scriptsPath,
-			componetsPath+'icons/',
-			core.appFolder+'/http/',
-			core.appFolder+'/http/scripts/',
-			core.appFolder+'/lib/manage/resources/'
-		]);
+		if (combiner && combiner.addHttpFolders) {
+			combiner.addHttpFolders([
+				scriptsPath,
+				componetsPath,
+				componetsPath+'icons/',
+				depsComponetsPath
+			]);
+			combiner.addHttpFolderAlias({
+				deps: depsComponetsPath,
+				ZETTA:componetsPath
+			})
+		};
 
 		var list = fs.readdirSync(componetsPath);
 		var ignoreList = ['.', '..', '.DS_Store'];
@@ -79,65 +75,9 @@ function ZETTA_Polymer(core) {
 	        });
 		});
 
-		app.get('/combine:*', function(req, res, next){
-			var files = req.originalUrl.split('/combine:')[1], folder;
-			if (!files)
-				return next();
-
-			var data = [];
-			var hash = crypto.createHash('md5').update(files).digest('hex');
-			//console.log("scripts/combine".greenBG.bold, hash, files, files.split(';').length)
-			if(cache[hash])				
-				return self.sendHashContent({files:files, hash: hash, req:req, res:res, next:next});
-
-			core.asyncMap(files.split(';'), function(file, callback){
-				if (!file)
-					return callback();
-
-				folder = _.find(self._httpFolders, function(_folder){
-					//console.log("_folder+file".greenBG, _folder+file)
-					return fs.existsSync(_folder+file);
-				});
-				if (!folder)
-					return callback({error:file+": File not found"});
-				if (file.indexOf('..') > -1)
-					return callback({error: file+": is not valid name"})
-
-				fs.readFile(folder+file, function(err, _data){
-					if (err)
-						return callback(err);
-
-					data.push("\n\r/* ---["+file+"]---\*/\r\n"+_data);
-					callback()
-				});
-			}, function(err){
-				if (err) {
-					next()
-					return console.log("combine-js:1:".greenBG, err);
-				}
-
-				cache[hash] = data.join("\n\r");
-				self.sendHashContent({files:files, hash: hash, req:req, res:res, next:next});
-			});
-
-
-		});
-
-		self.sendHashContent = function(args){
-			var files 	= args.files;
-			var res 	= args.res;
-			var hash    = args.hash;
-			if (files.indexOf('.html;') > -1){
-				res.setHeader('Content-Type', 'text/html');
-			}else{
-				res.setHeader('Content-Type', 'text/javascript');
-			}
-			res.end(cache[hash]);
-		}
-
-		app.use('/deps', ServeStatic(path.join(__dirname, 'bower_components')));
-		app.use('/ZETTA/scripts', ServeStatic(path.join(__dirname, 'http/scripts')));
-	    app.use('/ZETTA', ServeStatic(path.join(__dirname, 'http/zetta')));
+		app.use('/deps', ServeStatic(depsComponetsPath));
+		app.use('/ZETTA/scripts', ServeStatic(scriptsPath));
+	    app.use('/ZETTA', ServeStatic(componetsPath));
 	}
 }
 
