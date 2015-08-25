@@ -1,5 +1,6 @@
-<!--link rel="import" href="animations/show-down-animation.html" />
-<link rel="import" href="animations/hide-up-animation.html" /-->
+<link rel="import" href="/deps/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="animations/show-down-animation.html" />
+<link rel="import" href="animations/hide-up-animation.html" />
 <script>
 	var ZETTA = window.ZETTA || {};
 	window.ZETTA = ZETTA;
@@ -106,7 +107,7 @@
    ];
 </script>
 
-<dom-module id="animatable-el">
+<dom-module id="animatable-el" attributes="sss sss">
 	<style>:host{overflow: hidden;}</style>
 	<template><content></content></template>
 	<script>
