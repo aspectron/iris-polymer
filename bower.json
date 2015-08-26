@@ -25,6 +25,8 @@
     "paper-item": "PolymerElements/paper-item",
     "paper-dialog": "PolymerElements/paper-dialog",
     "paper-checkbox": "PolymerElements/paper-checkbox",
+    "paper-radio-group": "PolymerElements/paper-radio-group",
+    "paper-radio-button": "PolymerElements/paper-radio-button",
     "paper-input": "PolymerElements/paper-input",
     "paper-slider": "PolymerElements/paper-slider",
     "neon-animation": "PolymerElements/neon-animation",
