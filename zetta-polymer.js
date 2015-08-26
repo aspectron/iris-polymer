@@ -54,7 +54,8 @@ function ZETTA_Polymer(core, options) {
 			]);
 			combiner.addHttpFolderAlias({
 				deps: depsComponetsPath,
-				ZETTA:componetsPath
+				ZETTA:componetsPath,
+				'ZETTA/scripts': scriptsPath
 			})
 		};
 
