@@ -14550,16 +14550,27 @@ ZETTA.define('ZETTA.progressImages', [
             },
 
             onHolderChange: function(key){
-                if (key)
+                if (key){
+                    this.connect();
                     window[key].rpc = this;
+                }
             },
 
             ready : function() {
                 var self = this;
                 self.timeout = this.timeout || 30;
                 self.connected = false;
-
-              self.events.emitAsync('rpc-connecting');
+                window.ZETTA.rpc = self;
+                if (self.holder && self.path) {
+                  self.connect();
+                };
+            },
+            connect: function(){
+                var self = this;
+                if (self._connected || !self.path)
+                    return;
+                self._connected = true;
+                self.events.emitAsync('rpc-connecting');
                 self.socket = io(window.location.origin+self.path);
                 self.socket.on('ready', function(){
                     self.online = true;

@@ -38,14 +38,17 @@
                 var self = this;
                 self.timeout = this.timeout || 30;
                 self.connected = false;
+                window.ZETTA.rpc = self;
+                if (self.holder && self.path) {
+                  self.connect();
+                };
             },
             connect: function(){
                 var self = this;
-                if (self._connected)
+                if (self._connected || !self.path)
                     return;
                 self._connected = true;
-
-            	self.events.emitAsync('rpc-connecting');
+                self.events.emitAsync('rpc-connecting');
                 self.socket = io(window.location.origin+self.path);
                 self.socket.on('ready', function(){
                     self.online = true;
