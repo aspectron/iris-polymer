@@ -39,6 +39,7 @@
     "paper-button": "PolymerElements/paper-button",
     "paper-drawer-panel": "PolymerElements/paper-drawer-panel",
     "paper-icon-button": "PolymerElements/paper-icon-button",
-    "google-map":"GoogleWebComponents/google-map"
+    "google-map":"GoogleWebComponents/google-map",
+    "google-youtube": "GoogleWebComponents/google-youtube"
   }
 }
