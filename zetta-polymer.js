@@ -44,12 +44,13 @@ function ZETTA_Polymer(core, options) {
 		var depsComponetsPath = path.join(__dirname,'/bower_components/');
 		var componetsPath = path.join(__dirname,'/http/zetta/');
 		var scriptsPath   = path.join(__dirname,'/http/scripts/');
+		var iconPath   = path.join(__dirname,'/http/zetta/icons/');
 
 		if (combiner && combiner.addHttpFolders) {
 			combiner.addHttpFolders([
 				scriptsPath,
 				componetsPath,
-				componetsPath+'icons/',
+				iconPath,
 				depsComponetsPath
 			]);
 			combiner.addHttpFolderAlias({
