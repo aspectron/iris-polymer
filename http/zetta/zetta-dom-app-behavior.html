@@ -355,9 +355,13 @@
 			console.log("//bar missing")
 			self.$.tabs._onResize();
 			self.$.tabs._tabChanged(self.$.tabs._previousTab);
+			self.$.tabs._onResize();
 			self.async(function(){
 				self.$.tabs._onResize();
 			}, 1000)
+			self.async(function(){
+				self.$.tabs._onResize();
+			}, 2000)
 			
 
 			if (self.verticalanimation) {
