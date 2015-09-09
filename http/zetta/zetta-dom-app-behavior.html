@@ -113,6 +113,10 @@
 				value: 0,
 				notify: true
 			},
+			doRestoreLastTab:{
+				type: String,
+				value: "1"
+			},
 			verticalanimation: Boolean
 		},
 		listeners:{
@@ -163,13 +167,30 @@
 					items[index].insertBefore(a, items[index].children[0]);
 				});
 				//console.log("buildPagesAnchors")
-				self.restoreLocationHash();
+				//self.restoreLocationHash();
 			}
 		},
 		restoreLocationHash:function(){
 			var self = this;
 			if (ZETTA._locationHash){
 				self.async(function(){
+
+					var hash = ZETTA._locationHash;
+					hash = hash.replace('#', '');
+
+					var info = self.getTab(hash);
+					ZETTA._locationHash = '';
+					if (info.tab) {
+						self.set('selected', info.index);
+					};
+					self.$.tabs._onResize();
+					self.async(function(){
+						self.$.tabs._onResize();
+					}, 1000);
+					
+
+
+					/*
 					//var id = ('hash_'+Math.random(1, 1000)).replace('.', '_');
 					//$(document.body).append('<a id="'+id+'" href="'+hash+'">hash</a>');
 					//var a = $('#'+id);
@@ -182,6 +203,7 @@
 					if (hash=='#schedule') {
 						self.set('selected', 3)
 					};
+					*/
 				}, 100);
 			}
 		},
@@ -202,6 +224,24 @@
 			self.listen(self.$.content, 'neon-animation-finish', 'onPageAnimationFinished');
 
 			//self.updateLanguageTitle(self.language.locale);
+			if(self.$.tabs){
+				self.restoreLocationHash();
+				/*
+				self.$.tabs._onResize();
+				self.async(function(){
+					console.log("self.async _onResize1")
+					self.$.tabs._onResize();
+				}, 1000);
+				self.async(function(){
+					console.log("self.async _onResize2")
+					self.$.tabs._onResize();
+				}, 2000);
+				self.async(function(){
+					console.log("self.async _onResize3")
+					self.$.tabs._onResize();
+				}, 3000);
+				*/
+			}
 			self.tabsAdded = true;
 		},
 
@@ -308,7 +348,12 @@
 			self.debounce('onPagesReady', function(){
 				if(self.tabsAdded){
 					//if(!window.location.hash)
-					self.restoreLastTab();
+					if(self.doRestoreLastTab === '1'){
+						self.restoreLastTab();
+					}else{
+						//self.restoreLocationHash();
+					}
+					console.log("(self.doRestoreLastTab === '1')", (self.doRestoreLastTab === '1'), self.doRestoreLastTab)
 					self.tabsAdded = false;
 				}
 			}, 200);
@@ -346,11 +391,12 @@
 		selectedChanged:function(newValue, oldValue){
 			var self = this;
 			if (ZETTA._locationHash=='#schedule') {
-				self.restoreLocationHash();
+				//self.restoreLocationHash();
 			};
 			if (!self.$.tabs || !self.$.tabs.items) {
 				return log(this, "Tabs missing");
 			};
+			/*
 			//bar missing: issue
 			console.log("//bar missing")
 			self.$.tabs._onResize();
@@ -361,7 +407,8 @@
 			}, 1000)
 			self.async(function(){
 				self.$.tabs._onResize();
-			}, 2000)
+			}, 3000)
+			*/
 			
 
 			if (self.verticalanimation) {
