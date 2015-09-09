@@ -345,6 +345,9 @@
 		},
 		selectedChanged:function(newValue, oldValue){
 			var self = this;
+			if (ZETTA._locationHash=='#schedule') {
+				self.restoreLocationHash();
+			};
 			if (!self.$.tabs || !self.$.tabs.items) {
 				return log(this, "Tabs missing");
 			};
