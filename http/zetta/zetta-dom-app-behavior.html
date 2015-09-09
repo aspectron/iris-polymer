@@ -352,8 +352,13 @@
 				return log(this, "Tabs missing");
 			};
 			//bar missing: issue
-			self.$.tabs._tabChanged(self.$.tabs._previousTab);
+			console.log("//bar missing")
 			self.$.tabs._onResize();
+			self.$.tabs._tabChanged(self.$.tabs._previousTab);
+			self.async(function(){
+				self.$.tabs._onResize();
+			}, 1000)
+			
 
 			if (self.verticalanimation) {
 				if (oldValue !== undefined && newValue > oldValue) {
