@@ -232,8 +232,10 @@
 					tabs._tabChanged(event.detail.item, tabs._previousTab);
 					tabs._previousTab = event.detail.item;
 					tabs.cancelDebouncer('tab-changed');
-				},
-				self.restoreLocationHash();
+				};
+				if(self.doRestoreLastTab !== '1'){
+					self.restoreLocationHash();
+				}
 				/*
 				self.$.tabs._onResize();
 				self.async(function(){
