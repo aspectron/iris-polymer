@@ -1,14 +1,14 @@
 {
-  "name": "zetta-polymer",
+  "name": "iris-polymer",
   "version": "0.0.1",
   "author": {
     "name": "ASPECTRON Inc.",
     "email": "info@aspectron.com"
   },
-  "description": "Zetta Polymer Library",
-  "main" : "zetta-polymer.js",
+  "description": "IRIS Polymer Library",
+  "main" : "iris-polymer.js",
   "scripts": {
-      "start": "node zetta-polymer"
+      "start": "node iris-polymer"
   },
   "dependencies": {
     "underscore" : "*",

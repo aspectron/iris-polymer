@@ -1,0 +1,88 @@
+<!--link rel="import" href="/deps/iron-flex-layout/iron-flex-layout.html" />
+<link rel="import" href="/deps/neon-animation/neon-animation.html" />
+<link rel="import" href="/deps/paper-input/paper-input.html" />
+<link rel="import" href="/deps/paper-button/paper-button.html" />
+<link rel="import" href="/deps/paper-tabs/paper-tabs.html" /-->
+<link rel="import" href="iris-login-behavior.html" />
+
+<dom-module id="iris-login" attributes="msg entryAnimation exitAnimation passrecoveryurl afterloginurl redirectafterlogin">
+	<style>
+		.form-ctr{
+			font-size: 14px;
+			font-family: "Droid Sans Mono";
+			background-color: white;
+			text-align: left;
+			min-width: 250px;
+			display: block;
+		}
+		form{
+			padding: 25px;
+			margin: 16px;
+			@apply(--shadow-elevation-4dp);
+			width: 300px;
+			display: block;
+		}
+		.hide{display: none}
+		h2{margin-top: 0px;}
+		.checkbox-container{margin: 5px 0px 15px;}
+		.submit{margin-left: 0px; margin-bottom: 10px;}
+		.msg{min-height: 25px; color: #F00; font-size: 12px; margin-bottom:5px;}
+		.msg.success{color: #3169F5;}
+		a{cursor:  pointer;}
+		.align-right{float: right}
+		neon-animated-pages{min-height: inherit;}
+	</style>
+	<template>
+		<neon-animated-pages on-dom-change="onPagesReady" selected="[[selectedPage]]" class="flex" entry-animation="[[entryAnimation]]" exit-animation="[[exitAnimation]]">
+			<neon-animatable>
+				<div class="horizontal layout center-center">
+					<form id="loginform" on-submit="submit" role="form">
+						<h2><%= _T("Login") %></h2>
+						<paper-input class="form-ctr" on-keypress="onKeyPress" name="username" label="<%= _T("E-Mail") %>" value="{{username}}" required></paper-input>
+						<paper-input class="form-ctr" on-keypress="onKeyPress" name="password" type="password" label="<%= _T("Password") %>" value="{{password}}" required></paper-input>
+						<div class="form-group hide" id="totpdialog">
+							<paper-input class="form-ctr" name="totp" tabindex="3" on-keypress="onKeyPress" label="<%= _T("One time password") %>" value="{{totp}}"></paper-input>
+						</div>
+						<div id="status" class="msg"></div>
+						<div class="checkbox-container">
+							<input type="checkbox" tabindex="4" class="" name="remember" id="remember">
+							<label for="remember"><%= _T("Remember Me") %></label>
+						</div>
+						<paper-button on-click="submit" tabindex="4" raised class="submit primary"><%= _T("Log In") %></paper-button>
+						<div>
+							<a tabindex="5" class="forgot-password" on-click="showPassRecoveryForm"><%= _T("Forgot Password?") %></a>
+							<a tabindex="6" class="align-right" on-click="showRegisterForm"><%= _T("Register") %></a>   
+						</div>
+					</form>
+				</div>
+			</neon-animatable>
+			<neon-animatable>
+				<div class="horizontal layout center-center">
+					<form id="registerform" on-submit="submitRegister" role="form">
+						<h2><%= _T("Register") %></h2>
+						<paper-input class="form-ctr" on-keypress="onKeyPressR" type="email" name="usernameRegister" label="<%= _T("E-Mail") %>" value="{{usernameRegister}}" required></paper-input>
+						<paper-input class="form-ctr" on-keypress="onKeyPressR" name="passwordRegister" type="password" label="<%= _T("Password") %>" value="{{passwordRegister}}" required></paper-input>
+						<div id="statusRegister" class="msg"></div>
+						<paper-button on-click="submitRegister" tabindex="4" raised class="submit primary"><%= _T("Register") %></paper-button>
+						<div>
+							<a on-click="showLoginForm"><%= _T("Cancel") %></a>
+						</div>
+					</form>
+				</div>
+			</neon-animatable>
+		</neon-animated-pages>
+	</template>
+	<script>
+		Polymer({
+			is:"iris-login",
+			behaviors:[IRIS.IRISLoginBehavior],
+			/*
+			//Example: how to customize/override behavior
+			submit: function () {
+				IRIS.IRISLoginBehavior.submit.apply(this, arguments)
+			}
+			*/
+		});
+	</script>
+</dom-module>
+

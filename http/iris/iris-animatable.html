@@ -1,0 +1,120 @@
+<link rel="import" href="/deps/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="animations/show-down-animation.html" />
+<link rel="import" href="animations/hide-up-animation.html" />
+<script>
+	var IRIS = window.IRIS || {};
+	window.IRIS = IRIS;
+	IRIS.animatableBehavior = {
+		properties: {
+			animationConfig: {
+				type: Object,
+				value: function() {
+					return {
+						'entry': [{
+							name: 'show-down-animation',
+							node: this
+						}],
+						'exit': [{
+							name: 'hide-up-animation',
+							node: this/*,
+							timing: {
+							duration: 1000,
+							easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+							fill: 'both'
+							}*/
+						}]
+					}
+				}
+			},
+
+			_showing: {
+				type: Boolean,
+				value: false
+			},
+
+			autoHide: {
+				type: String,
+				value: ''
+			}
+
+		},
+
+		listeners: {
+			'click': '_onClick',
+			'neon-animation-finish': '_onAnimationFinish'
+		},
+
+		ready: function(){
+			this.setInitDisplayStyle(this.style.display);
+			this._showing = this.style.display !='none';
+		},
+
+		setInitDisplayStyle: function(style){
+			this._initDisplayStyle = style;
+		},
+
+		_onAnimationFinish: function() {
+			var self = this;
+			if (self._showing) {
+				this._autoHide(true);
+			} else {
+				self.style.display = 'none';
+			}
+		},
+
+		_onClick: function(){
+			this._autoHide();
+		},
+
+		_autoHide: function(force){
+			var self = this;
+			if (force===false){
+				self.cancelDebouncer('autoHide');
+				return;
+			}
+			if (force && self.autoHide) {
+				self.debounce('autoHide', function(){
+					self.hide();
+				}, parseInt(this.autoHide), 10);
+			}else if(self.isDebouncerActive('autoHide')){
+				self._autoHide(true);
+			}
+		},
+
+		show: function() {
+			this.style.display = this._initDisplayStyle;
+			this._showing = true;
+			this.playAnimation('entry');
+		},
+
+		hide: function() {
+			this._showing = false;
+			this.playAnimation('exit');
+		},
+
+		toggle: function(){
+			if (this._showing){
+				this.hide();
+			}else{
+				this.show();
+			}
+		}
+  }
+
+  IRIS.animatableElBehavior = [
+	  Polymer.NeonAnimationRunnerBehavior,
+	  IRIS.animatableBehavior
+   ];
+</script>
+
+<dom-module id="animatable-el">
+	<style>:host{overflow: hidden;}</style>
+	<template><content></content></template>
+	<script>
+	  Polymer({
+		is: 'animatable-el',
+		extends:'div',
+		behaviors:[IRIS.animatableElBehavior]
+	  });
+	</script>
+</dom-module>

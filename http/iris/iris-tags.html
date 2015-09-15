@@ -1,0 +1,116 @@
+<dom-module id="iris-tags">
+	<style type="text/css">
+		.tag{
+			padding: 0px 0px 0px 3px;margin:3px 0px 0px 3px;border: 1px solid #DDD;box-sizing: border-box;
+			display: inline-block;background-color: #EFEFEF;float: left;
+		}
+		.tag-icon{width: 20px;height: 20px;cursor: pointer;}
+		.tags{border: 1px solid #DDD;padding: 0px 3px 3px 0px;}
+		#input{border: 1px;padding: 4px 5px 4px 5px;margin-top: 2px;margin-bottom: 0px;float: left;font-size: 16px}
+		#input:focus{outline-width: 0px;}
+		.gray{color: gray;}
+		.clear{clear: both;}
+	</style>
+	<template>
+		<div class="tags" id="tags" on-tap="focusInput">
+			<template is="dom-repeat" items="[[tags]]">
+				<span class="tag">{{item}}<iron-icon icon="[[closeIcon]]" class="tag-icon gray" data-tag="[[item]]" on-tap="removeTag"></iron-icon></span>
+			</template>
+			<input type="text" id="input" on-keyup="onKey">
+			<div class="clear"></div>
+		</div>
+	</template>
+	<script>
+		Polymer({
+			is: "iris-tags",
+			properties:{
+				tags:{
+					type: Array,
+					value:[],
+					notify:true,
+					observer:'tagsChanged'
+				},
+				closeIcon:{
+					type: String,
+					value: 'close'
+				}
+			},
+			observers:['tagsChanged(tags.*)'],
+			ready : function() {
+				var self = this;
+			},
+
+			removeTag: function(e, i, el){
+				var self = this, index = self.tags.indexOf(e.target.dataTag);
+				if (index > -1) {
+					self.splice('tags', index, 1);
+					this.fire('remove', e.target.dataTag);
+				};
+			},
+
+			tagsChanged: function(){
+				var self = this;
+				self.debounce('tagsChanged', function(){
+					var box = self.$.tags.getBoundingClientRect(), width = box.width-7, w = 0, w1, margin = 5+2;
+					var tagElements = self.$.tags.querySelectorAll('.tag');
+					var lastTag = tagElements[tagElements.length-1];
+					if (!lastTag) {
+						return;
+					};
+					var lastTagTop =  lastTag.getBoundingClientRect().top, b;
+					_.each(tagElements, function(t){
+						b = t.getBoundingClientRect();
+						if (b.top != lastTagTop) {
+							return;
+						};
+						w1 = b.width + margin;
+						if ( (w + w1) > width) {
+							w = 0;
+						};
+						w += w1;
+					});
+
+					var inputWidth = width-w-5;
+					if (inputWidth < 30) {
+						inputWidth = width
+					};
+					self.setInputStyle({width: inputWidth+'px'});
+				}, 500);
+
+				self.fire('change', {tags: self.get('tags'), el: self});
+				self.$.input.value = '';
+			},
+
+			onKey: function (e) {
+				var self = this;
+				if(e.which == 13){
+					var tags = [], v = self.$.input.value || '';
+					var _tags = self.get('tags');
+					if (!_tags){
+						_tags = [];
+						self.set('tags', []);
+					}
+					self.setInputStyle({width: '2px'});
+					//_.each(v.split(' '), function(t){
+						if (v && _tags.indexOf(v) == -1) {
+							tags.push(v)
+						};
+					//});
+
+					self.push('tags', tags);
+					self.$.input.value = '';
+				}
+			},
+
+			setInputStyle: function(style){
+				var self = this, s = self.$.input.style;
+				_.each(style, function(v, k){
+					s[k] = v;
+				})
+			},
+			focusInput:function(){
+				this.$.input.focus();
+			}
+		})
+	</script>
+</dom-module>

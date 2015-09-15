@@ -1,0 +1,505 @@
+<script>
+	function log(){
+		if (arguments[0].tagName){
+			var tagName = arguments[0].tagName+":";
+			arguments = Array.prototype.slice.call(arguments, 1);
+			arguments.unshift(tagName)
+		}
+		console.log.apply(console, arguments)
+	};
+
+	window.IRIS = window.IRIS || {};
+	IRIS._locationHash  = window.location.hash+'';
+	window.IRIS.IRISDomAppBehavior = {
+		properties:{
+			appName: {
+				type: String,
+				value: ''
+			},
+			mediaquery:{
+				type: String,
+				value: 'max-width: 767px'
+			},
+			isnarrow: {
+				type: Boolean,
+				observer: 'onNarrowChange'
+			},
+			ismobile:{
+				type: Boolean,
+				value: false,
+				notify: true,
+				observer: 'isMobileChanged'
+			},
+			rpcPath: {
+				type: String,
+				value: '/rpc'
+			},
+			rpcHolder:{
+				type: String,
+				value: ''
+			},
+			selected:{
+				type: Number,
+				value: 0,
+				notify: true,
+				observer: 'selectedChanged'
+			},
+			leftselected:{
+				type: Number,
+				value: 0,
+				observer: 'leftselectedChanged'
+			},
+			lefttabs: {
+				type: Array,
+				value:[],
+				notify: true,
+				observer: 'subtabChanged'
+			},
+			logoutPath:{
+				type: String,
+				value: '/logout'
+			},
+			logintab:{
+				type: String,
+				value: 'Login',
+				notify: true
+			},
+			logintask:{
+				type: String,
+				value: 'login',
+				notify: true
+			},
+			languageselector:{
+				type: Boolean,
+				observer: 'onLanguageSelectorChange'
+			},
+			user:{
+				type: Object,
+				observer: 'onUserChange'
+			},
+			msg:{
+				type: Object,
+				value: {},
+				observer:'onMsgChange'
+			},
+			languagetitle:{
+				type: String,
+				notify: true,
+				observer: 'onLanguageTitleChange'
+			},
+			entryanimation:{
+				type: String,
+				notify: true,
+				value: 'slide-from-right-animation'
+			},
+			exitanimation:{
+				type: String,
+				notify: true,
+				value: 'slide-left-animation'
+			},
+			language:{
+				type: Object,
+				value:{},
+				notify: true,
+				observer: 'onLanguageChange'
+			},
+			selectedlang: {
+				type: String,
+				value: '',
+				//observer:'onSelectedlangChange'
+			},
+			selectedpage: {
+				type: Number,
+				value: 0,
+				notify: true
+			},
+			doRestoreLastTab:{
+				type: String,
+				value: "1"
+			},
+			verticalanimation: Boolean
+		},
+		listeners:{
+			'pages-ready': 'onPagesReady',
+			'drawerMenus.click': 'onDrawerMenuItemClick',
+			'page-animation-finished': 'onPageAnimationFinished'
+		},
+		ready: function(){
+			var self = this;
+			self.rpc 				= self.$.rpc;
+			//self.selectedpage 		= self.selected;
+
+			self.classList.add('layout');
+			self.classList.add('vertical');
+
+			//log(this, self)
+
+			self.tabsAdded = true;
+			IRIS.loadTheme('theme1.html');
+			self.toggleClass('loading', false, document.body);
+			//self.restoreLocationHash();
+		},
+		getLocationHash: function(){
+			return window.location.hash;
+		},
+		setLocationHash:function(hash){
+			if (!hash){
+				window.location.hash = "";
+				return;
+			}
+			window.location.hash = hash;
+		},
+		buildPagesAnchors: function(){
+			var self = this;
+			if(!self.__pagesInitiated && self.$.pages && self.$.pages.items && self.$.pages.items.length){
+				self.__pagesInitiated = true;
+				var tabs = self.$.tabs.querySelectorAll('paper-tab');
+				var tab = {}, hash;
+				var items = self.$.pages.items;
+				//console.log("buildPagesAnchors:items", items)
+				_.each(tabs, function(t, index){
+					hash = t.dataTabId || t.getAttribute('data-tab-id');
+					if (!hash || !items[index])
+						return;
+					//console.log("index", index)
+					var a = self.create('A', {name:hash, style:"display:block"});
+					//a.innerHTML = "###"+hash.toUpperCase()+"####";
+					items[index].insertBefore(a, items[index].children[0]);
+				});
+				//console.log("buildPagesAnchors")
+				//self.restoreLocationHash();
+			}
+		},
+		restoreLocationHash:function(){
+			var self = this;
+			if (IRIS._locationHash){
+				self.async(function(){
+
+					var hash = IRIS._locationHash;
+					hash = hash.replace('#', '');
+
+					var info = self.getTab(hash);
+					IRIS._locationHash = '';
+					if (info.tab) {
+						self.set('selected', info.index);
+					};
+					self.$.tabs._onResize();
+					self.async(function(){
+						self.$.tabs._onResize();
+						self.$.tabs.set('noSlide', false);
+					}, 1000);
+
+					/*
+					//var id = ('hash_'+Math.random(1, 1000)).replace('.', '_');
+					//$(document.body).append('<a id="'+id+'" href="'+hash+'">hash</a>');
+					//var a = $('#'+id);
+					self.setLocationHash('');
+					var hash = IRIS._locationHash;
+					IRIS._locationHash = '';
+					self.setLocationHash(hash);
+					console.log("IRIS._locationHash", hash);
+
+					if (hash=='#schedule') {
+						self.set('selected', 3)
+					};
+					*/
+				}, 100);
+			}
+		},
+		attached: function(){
+			var self = this;
+			_.each(['tabs', 'pages', 'lefttabs'], function(id){
+				self.$[id] = self.querySelector('#'+id);
+			});
+
+			//self.$.header = self.querySelector('iris-dom-app-header');
+			self.$.content = self.querySelector('.iris-dom-app-content');
+			self.$.toggleDrawerBtns = self.querySelectorAll('[toggle-drawer]');
+			_.each(self.$.toggleDrawerBtns, function(btn){
+				self.listen(btn, 'click', 'toggleDrawer');
+			})
+
+			self.listen(self.$.content, 'dom-change', 'onPagesReady');
+			self.listen(self.$.content, 'neon-animation-finish', 'onPageAnimationFinished');
+
+			//self.updateLanguageTitle(self.language.locale);
+			if(self.$.tabs){
+				var tabs = self.$.tabs;
+				tabs._onIronSelect = function(event) {
+					if (!event.target || event.target.tagName != 'PAPER-TABS') {
+						return;
+					};
+					tabs._tabChanged(event.detail.item, tabs._previousTab);
+					tabs._previousTab = event.detail.item;
+					tabs.cancelDebouncer('tab-changed');
+				};
+				if(self.doRestoreLastTab !== '1'){
+					self.restoreLocationHash();
+				}
+				/*
+				self.$.tabs._onResize();
+				self.async(function(){
+					console.log("self.async _onResize1")
+					self.$.tabs._onResize();
+				}, 1000);
+				self.async(function(){
+					console.log("self.async _onResize2")
+					self.$.tabs._onResize();
+				}, 2000);
+				self.async(function(){
+					console.log("self.async _onResize3")
+					self.$.tabs._onResize();
+				}, 3000);
+				*/
+			}
+			self.tabsAdded = true;
+		},
+
+		toUpperCase : function(v) {
+			return (v+'').toUpperCase();
+		},
+		toLowerCase : function(v) {
+			return (v+'').toLowerCase();
+		},
+
+		onNarrowChange: function(){
+			//console.log("onNarrowChange", this.isnarrow)
+		},
+
+		isMobileChanged:function(ismobile){
+			var self = this;
+			//console.log("ismobile", ismobile)
+			this.toggleClass('mobile', ismobile);
+			if (!self.$.tabs){
+				self._isMobileChangedDebounceCount = self._isMobileChangedDebounceCount || 0;
+				self._isMobileChangedDebounceCount++;
+				if (self._isMobileChangedDebounceCount > 20) {
+					return;
+				};
+				self.debounce('isMobileChanged', function(){
+					self.isMobileChanged(self.ismobile);
+				}, 100);
+				return;
+			}
+			self._isMobileChangedDebounceCount = 0;
+			if(!self._tabsParent){
+				self._tabsParent = self.$.tabs.parentNode;
+			}
+			var drawerMenuItems = self.querySelectorAll('.drawer-menu');
+			_.each(drawerMenuItems, function(menu){
+				if (!menu.__pNode){
+					menu.__pNode = menu.parentNode;
+				}
+			})
+
+			if (ismobile){
+				self.$.drawerMenus.appendChild(self.$.tabs);
+				_.each(drawerMenuItems, function(menu){
+					self.$.drawerMenus.appendChild(menu);
+				});
+			}else{
+				self._tabsParent.appendChild(self.$.tabs);
+				_.each(drawerMenuItems, function(menu){
+					menu.__pNode.appendChild(menu)
+				})
+			}
+			//self.$.tabs.selected = self.selected;
+		},
+		onDrawerMenuItemClick:function(e){
+			var self = this;
+			var tab = _.find(e.path, function(t){return t.tagName == 'PAPER-TAB'});
+			if (!tab || !tab.hasAttribute)
+				return;
+			var dontHide = tab.hasAttribute('dont-hide') || (tab.classList && tab.classList.contains('dont-hide'));
+			if (dontHide) {
+				return;
+			};
+			self.toggleDrawer();
+		},
+		onUserChange: function(user){
+			var self = this;
+			//console.log("onUserChange", self.user, self.get('user'), user);
+			self.set('logintab', self.get('user') ? 'Logout': 'Login');
+			self.set('logintask',  self.get('user') ? 'logout': 'login');
+		},
+
+		onMsgChange: function(msg){
+		},
+
+		onLanguageSelectorChange: function(){
+		},
+
+		onLanguageTitleChange: function(){
+		},
+		onLanguageChange: function(){
+			//if(this.$.header){
+				//this.$.header.language = this.language;
+			//}
+		},
+
+		updateLanguageTitle: function(code){
+		},
+		leftselectedChanged: function(){
+		},
+		subtabChanged: function(){
+			var self = this;
+			//console.log("subtabChanged", arguments, self.$.lefttabs)
+			if (!self.$.lefttabs) {
+				self.$.lefttabs = self.querySelector('#lefttabs');
+			}
+            if(self.$.lefttabs)
+			    self.$.lefttabs._onResize();
+		},
+		onPageAnimationFinished: function(){
+			//console.log("onPageAnimationFinished")
+		},
+		onPagesReady: function(){
+			var self = this;
+			self.debounce('onPagesReady', function(){
+				if(self.tabsAdded){
+					//if(!window.location.hash)
+					if(self.doRestoreLastTab === '1'){
+						self.restoreLastTab();
+					}else{
+						//self.restoreLocationHash();
+					}
+					//console.log("(self.doRestoreLastTab === '1')", (self.doRestoreLastTab === '1'), self.doRestoreLastTab)
+					self.tabsAdded = false;
+				}
+			}, 200);
+		},
+		getTab: function(id){
+			var self = this;
+			var tabs = self.$.tabs.querySelectorAll('paper-tab');
+			var tab = {};
+			_.each(tabs, function(t, index){
+				if (t.dataTabId == id || t.getAttribute('data-tab-id') == id){
+					tab.tab = t;
+					tab.index = index;
+				}
+			});
+			return tab;
+		},
+		getActiveTabId: function(){
+			var self = this;
+			var seletedTab = self.$.tabs && self.$.tabs.items[self.get('selected')];
+			if (!seletedTab){
+				return false;
+			}
+			return seletedTab.dataTabId || seletedTab.getAttribute('data-tab-id');
+		},
+		toUpperCase : function(v) {
+			return (v+'').toUpperCase();
+		},
+		toLowerCase : function(v) {
+			return (v+'').toLowerCase();
+		},
+		showHome : function() {
+			var self = this;
+			self.selected = 0;
+		},
+		selectedChanged:function(newValue, oldValue){
+			var self = this;
+			if (IRIS._locationHash=='#schedule') {
+				//self.restoreLocationHash();
+			};
+			if (!self.$.tabs || !self.$.tabs.items) {
+				return log(this, "Tabs missing");
+			};
+			/*
+			//bar missing: issue
+			console.log("//bar missing")
+			self.$.tabs._onResize();
+			self.$.tabs._tabChanged(self.$.tabs._previousTab);
+			self.$.tabs._onResize();
+			self.async(function(){
+				self.$.tabs._onResize();
+			}, 1000)
+			self.async(function(){
+				self.$.tabs._onResize();
+			}, 3000)
+			*/
+			
+
+			if (self.verticalanimation) {
+				if (oldValue !== undefined && newValue > oldValue) {
+					self.entryanimation = 'slide-from-down-animation';
+					self.exitanimation = 'slide-up-animation';
+				}else{
+					self.entryanimation = 'slide-down-animation';
+					self.exitanimation = 'slide-from-up-animation';
+				}
+			}else{
+				if (oldValue !== undefined && newValue > oldValue) {
+					self.entryanimation = 'slide-from-right-animation';
+					self.exitanimation = 'slide-left-animation';
+				}else{
+					self.entryanimation = 'slide-from-left-animation';
+					self.exitanimation = 'slide-right-animation';
+				}
+			}
+			var seletedTab = self.$.tabs.items[self.selected];
+			if (!seletedTab){
+				self.selectedpage = 0;
+				return;
+			}
+			var tab = seletedTab.dataTab || seletedTab.getAttribute('data-tab');
+			if (!IRIS._locationHash){
+				var tabId = seletedTab.dataTabId || seletedTab.getAttribute('data-tab-id');
+				if(tabId){
+					self.debounce('selectedChanged', function(){
+						if(tabId && history.replaceState) {
+							history.replaceState(null, null, '#' + tabId);
+						}else{
+							window.location.hash = '';
+						}
+						//tabId && (window.location.hash = '#'+tabId);
+					}, 600);
+				}
+				//self.debounce('selectedChanged', function(){
+					//window.location.hash = '';
+				//}, 600);
+			}
+			if ( tab == 'logout') {
+				window.location.href = self.logoutPath;
+				return;
+			};
+			self.selectedpage = self.selected;
+			self.buildPagesAnchors();
+			self.$.pages.fire('neon-animation-begin');
+			if (oldValue !== undefined && tab!='login') {
+				self.localStorage('tabIndex', self.selected);
+			}
+		},
+		restoreLastTab: function(){
+			var self = this;
+			if (this.msg && this.msg.activation){
+				this.selected = this.getTab('login').index;
+				return;
+			}
+			var tabIndex = self.localStorage('tabIndex');
+			if(typeof  tabIndex != 'undefined'){
+				this.selected = parseInt(tabIndex);
+			}
+		},
+		toggleDrawer: function(){
+			this.$.drawer.togglePanel();
+		},
+		localStorage: function(key, value){
+			var self = this;
+			key = (self.appName || 'app').toLowerCase()+'-'+key;
+			if (arguments.length == 1)
+				return localStorage[key];
+
+			if (value === undefined){
+				value = localStorage[key];
+				delete localStorage[key];
+				return value;
+			}
+
+			localStorage[key] = value;
+			return value;
+		}
+	};
+</script>
+
