@@ -8,11 +8,18 @@
   "description": "IRIS Polymer Library",
   "main" : "iris-polymer.js",
   "scripts": {
-      "start": "node iris-polymer"
+      "start": "node iris-polymer",
+      "install": "bower install"
   },
+  "files":[
+    "http",
+    "bower.json",
+    "LICENSE",
+    "iris-polymer.js",
+    "README.md"
+  ],
   "dependencies": {
     "underscore" : "*",
-    "serve-static" : "*",
-    "node-uuid" : "*"
+    "serve-static" : "*"
   }
 }
