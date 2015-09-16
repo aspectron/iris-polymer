@@ -44,13 +44,11 @@ function IRIS_Polymer(core, options) {
 		var depsComponetsPath = path.join(__dirname,'/bower_components/');
 		var componetsPath = path.join(__dirname,'/http/iris/');
 		var scriptsPath   = path.join(__dirname,'/http/scripts/');
-		var iconPath   = path.join(__dirname,'/http/iris/icons/');
 
 		if (combiner && combiner.addHttpFolders) {
 			combiner.addHttpFolders([
 				scriptsPath,
 				componetsPath,
-				iconPath,
 				depsComponetsPath
 			]);
 			combiner.addHttpFolderAlias({
