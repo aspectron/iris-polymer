@@ -1,0 +1,12 @@
+<script>
+(function(){
+	console.log('iris-override.html', Polymer.IronSelectableBehavior)
+	if(Polymer.IronSelectableBehavior){
+		var attached = Polymer.IronSelectableBehavior.attached;
+		Polymer.IronSelectableBehavior.attached = function(){
+			attached.apply(this, arguments);
+			this._activateEventChanged && this._activateEventChanged('tap', this.activateEvent);
+		}
+	}
+})();
+</script>
