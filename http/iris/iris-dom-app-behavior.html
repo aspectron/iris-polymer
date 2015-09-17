@@ -294,11 +294,13 @@
 
 			if (ismobile){
 				self.$.drawerMenus.appendChild(self.$.tabs);
+				self.$.tabs._activateEventChanged && self.$.tabs._activateEventChanged('tap', self.$.tabs.activateEvent);
 				_.each(drawerMenuItems, function(menu){
 					self.$.drawerMenus.appendChild(menu);
 				});
 			}else{
 				self._tabsParent.appendChild(self.$.tabs);
+				self.$.tabs._activateEventChanged && self.$.tabs._activateEventChanged('tap', self.$.tabs.activateEvent);
 				_.each(drawerMenuItems, function(menu){
 					menu.__pNode.appendChild(menu)
 				})
