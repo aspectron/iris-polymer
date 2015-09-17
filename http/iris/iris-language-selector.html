@@ -7,7 +7,7 @@
 	.astab::content #dropdown{margin-top: 48px !important; margin-left:5px; margin-right: 5px;}
 	</style>
 	<template>
-		<paper-menu-button class="astab">
+		<paper-menu-button class="astab" horizontal-align="[[hAlign]]">
 			<div class="dropdown-trigger display">
 				<iron-icon icon="translate"></iron-icon>
 				<span>[[languagetitle]]</span>
@@ -44,6 +44,10 @@
 				notify: true,
 				observer:'onLangChange'
 			},
+			hAlign:{
+				type:String,
+				value: 'right'
+			}
 		},
 		observers:[
 			'onLangChange(language.list)'
