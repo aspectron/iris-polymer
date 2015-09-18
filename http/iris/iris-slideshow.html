@@ -1,0 +1,168 @@
+<link rel="import" href="/deps/neon-animation/neon-animated-pages.html">
+<link rel="import" href="/deps/neon-animation/neon-animations.html">
+<link rel="import" href="/deps/neon-animation/neon-animatable.html">
+
+<dom-module id="iris-slideshow">
+	<style>
+		#pages::content neon-animatable{background:center center no-repeat;background-size: cover; }
+	</style>
+	<template>
+		<neon-animated-pages class="flex" id="pages" selected="[[selected]]" entry-animation="[[entryAnimation]]" exit-animation="[[exitAnimation]]">
+			<content select="neon-animatable"></content>
+		</neon-animated-pages>
+	</template>
+	<script>
+		Polymer({
+			is:'iris-slideshow',
+			properties:{
+				selected:{
+					type: Number
+				},
+				autoStart:{
+					type: Boolean
+				},
+				delay:{
+					type: Number,
+					value: 2000
+				},
+				animation:{
+					type: String,
+					value: 'slide'
+				},
+				bgImgPrefix:{
+					type: String,
+					value: '/'
+				},
+				slideAnimations:{
+					type: Object,
+					value:{
+						prev:{
+							entry:'slide-from-left-animation',
+							exit:'slide-right-animation'
+						},
+						next:{
+							entry:'slide-from-right-animation',
+							exit:'slide-left-animation'
+						}
+					}
+				},
+				slideUpAnimations:{
+					type: Object,
+					value:{
+						prev:{
+							entry:'show-down-animation',
+							exit:'slide-from-up-animation'
+						},
+						next:{
+							entry:'slide-from-down-animation',
+							exit:'hide-up-animation'
+						}
+					}
+				},
+				fadeAnimations:{
+					type: Object,
+					value:{
+						entry:'fade-in-animation',
+						exit:'fade-out-animation'
+					}
+				}
+			},
+			listeners:{
+				'mouseover':'onMouseOver',
+				'mouseout':'onMouseOut'
+			},
+			ready: function(){
+				var self = this;
+				self.toggleClass('layout', true);
+				self.toggleClass('vertical', true);
+				self.setupAnimations('next');
+			},
+			attached: function(){
+				var self = this;
+				self.buildItems();
+				self.selected = 0;
+				self.autoStart && self.start();
+			},
+			onMouseOver: function(){
+				var self = this;
+				self._wasRunning = self._running;
+				self._running = false;
+				self.cancelDebouncer('animation');
+			},
+			onMouseOut: function(){
+				var self = this;
+				self._running = self._wasRunning;
+				if (self._running) {
+					self.run();
+				};
+			},
+			onKeyPress: function(event){
+				if(event.which == 13){
+					this.submit();
+				}
+				return false
+			},
+			buildItems: function(){
+				var self = this;
+				self.items = self.querySelectorAll('neon-animatable');
+
+				var img, imgPrefix = self.bgImgPrefix;
+				_.each(self.items, function(slide){
+					img = slide.bgImg || slide.getAttribute('bg-img');
+					if (img) {
+						slide.style.backgroundImage = 'url('+(slide.bgImgPrefix || slide.getAttribute('bg-img-prefix') || imgPrefix)+img+')';
+					};
+				})
+			},
+			start: function(){
+				var self = this;
+				if (self.items.length < 2) {
+					return;
+				};
+				self._running = true;
+				self.run();
+			},
+			run: function(){
+				var self = this;
+				if (!self._running) {
+					return;
+				};
+
+				self.debounce('animation', function(){
+					self.nextSlide();
+					self.run();
+				}, self.get('delay'));
+			},
+			getAnimation: function(direction){
+				var self = this;
+				var ani = self.get(self.animation+'Animations');
+				var values = {};
+				if (ani[direction]) {
+					values = ani[direction];
+				}else{
+					values = ani;
+				}
+				return values;
+			},
+			setupAnimations: function(direction){
+				var self = this;
+				var ani = self.getAnimation(direction);
+				self.entryAnimation = ani.entry;
+				self.exitAnimation = ani.exit;
+			},
+			prevSlide: function() {
+				var self = this;
+				self.setupAnimations('prev');
+				self.selected = self.selected === 0 ? (self.items.length-1) : (self.selected - 1);
+			},
+			nextSlide: function() {
+				var self = this;
+				self.setupAnimations('next');
+				self.selected = self.selected === (self.items.length-1) ? 0 : (self.selected + 1);
+			}
+		})
+	</script>
+</dom-module>
+
+
+
