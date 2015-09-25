@@ -6,12 +6,15 @@
 <dom-module id="iris-color-input">
 	<style>
 		paper-menu-button ::content iron-dropdown{margin-top: 33px;margin-right: 39px;}
+		:host(.is-bottom-align) paper-menu-button ::content iron-dropdown{
+			margin-bottom: 33px;
+		}
 	</style>
 	<template>
 		<div class="layout horizontal end">
 			<paper-input class="flex-1" id="input" label="{{label}}" value="{{value}}"></paper-input>
 			<div>
-				<paper-menu-button vertical-align="top" horizontal-align="right" on-paper-open="showPicker">
+				<paper-menu-button vertical-align="[[vAlign]]" horizontal-align="right" on-paper-open="showPicker">
 					<iron-icon class="dropdown-trigger" icon="expand-more"></iron-icon>
 					<div id="dropdown" class="dropdown-content"></div>
 				</paper-menu-button>
@@ -25,6 +28,11 @@
 				label: {
 					type: String,
 					value:''
+				},
+				vAlign:{
+					type: String,
+					value: 'top',
+					observer:'onVAlignChange'
 				},
 				value:{
 					type: String,
@@ -44,6 +52,9 @@
 					hash:true
 				});
 				self.showPicker();
+			},
+			onVAlignChange: function(v){
+				this.toggleClass('is-bottom-align', v=='bottom');
 			},
 			showPicker:function(){
 				this.colorPicker.showPicker();
