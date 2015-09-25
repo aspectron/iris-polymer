@@ -74,11 +74,20 @@
 			}
 			if (force && self.autoHide) {
 				self.debounce('autoHide', function(){
+					if(self.autoHideStoped)
+						return
 					self.hide();
-				}, parseInt(this.autoHide), 10);
+				}, parseInt(this.autoHide, 10) );
 			}else if(self.isDebouncerActive('autoHide')){
 				self._autoHide(true);
 			}
+		},
+
+		stopAutoHide: function(){
+			this.autoHideStoped = true;
+		},
+		startAutoHide: function(){
+			this.autoHideStoped = false;
 		},
 
 		show: function() {
