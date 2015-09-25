@@ -48,11 +48,16 @@
 					value: 200
 				}
 			},
+			ready: function(){
+				var self = this;
+				self.rendertype && this.createImage();
+				self.isReady = true;
+			},
 			onRendertypeChanged: function(){
-				this.rendertype && this.createImage();
+				this.isReady && this.rendertype && this.createImage();
 			},
 			onTextChanged:function(text){
-				this.rendertype && this.createImage();
+				this.isReady && this.rendertype && this.createImage();
 			},
 
 			createImage: function(){
@@ -68,6 +73,7 @@
 				var self = this;
 				if (!self.canvas) {
 					self.canvas		= document.createElement('canvas');
+					console.log("self.width", self.width, self)
 					self.canvas.width	= self.width;
 					self.canvas.height	= self.height;
 					self.$.container.appendChild(self.canvas);
