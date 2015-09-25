@@ -91,6 +91,8 @@
 			createCanvas: function(){
 				var self = this;
 				// create the qrcode itself
+				if (!self.text)
+					return;
 				var qrcode	= new QRCode(self.typeNumber, self.correctLevel);
 				qrcode.addData(self.text);
 				qrcode.make();
