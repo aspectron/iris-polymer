@@ -1,6 +1,19 @@
+
+<!--<link rel="import" href="../deps/bower_components/core-splitter/core-splitter.html">
+<link rel="import" href="../deps/bower_components/core-tooltip/core-tooltip.html" />-->
+<link rel="import" href="/deps/iron-flex-layout/iron-flex-layout.html" />
+<link rel="import" href="/deps/paper-input/paper-input.html" />
+<link rel="import" href="/deps/paper-button/paper-button.html" />
+<style>
+    .panel-ghost{margin:0px;}
+</style>
+
 <dom-module id="iris-dashboard-splitter" attributes="direction">
     <style>
-    :host{border:1px solid #F00; padding: 5px;}
+        :host{cursor: col-resize}
+        :host(:hover){background-color: #ddd;}
+        :host(.active){background-color: #ddd;}
+        :host(.v){cursor: row-resize}
     </style>
     <template></template>
     <script type="text/javascript">
@@ -42,6 +55,7 @@
                 //this.isNext = this.direction === 'right' || this.direction === 'down';
                 this.horizontal = this.direction === 'up' || this.direction === 'down';
                 this.update();
+                this.classList.toggle('v', this.horizontal);
             },
 
             update: function() {
@@ -52,25 +66,28 @@
             },
 
             targetChanged: function(old) {
-                if (old) {
-                    old.style[old.__splitterMinSize] = '';
-                }
+                //if (old) {
+                    //old.style[old.__splitterMinSize] = '';
+                //}
                 //var min = this.target.__splitterMinSize = this.horizontal ? 'minHeight' : 'minWidth';
                 //this.target.style[min] = this.minSize;
             },
             trackEnd: function(){
+                this.classList.toggle('active', false);
                 this.nextElementSibling && this.nextElementSibling.onSizeUpdate();
                 this.previousElementSibling && this.previousElementSibling.onSizeUpdate();
             },
             trackStart: function() {
-                //this.update();
+                this.classList.toggle('active', true);
                 if (this.nextElementSibling) {
                     //this.nextElementSibling.setAttribute('flex', 'flex');
+                    this.nextElementSibling.classList.remove('flex-1', 'flex-2')
                     this.nextElementSiblingSize = parseInt(this.nextElementSibling.getBoundingClientRect()[this.dimension]);
                     //this.nextElementSibling.removeAttribute('flex');
                 }
                 if (this.previousElementSibling) {
                     //this.previousElementSibling.setAttribute('flex', 'flex');
+                    this.previousElementSibling.classList.remove('flex-1', 'flex-2')
                     this.previousElementSiblingSize = parseInt(this.previousElementSibling.getBoundingClientRect()[this.dimension]);
                     //this.previousElementSibling.removeAttribute('flex');
                 }
@@ -80,37 +97,45 @@
                     return;
                 }
                 var d = e.detail[this.horizontal ? 'dy' : 'dx'];
-                if (this.nextElementSibling) {
-                    console.log("this.nextElementSibling[this.methodName]", this.methodName, this.nextElementSibling)
-                    this.nextElementSibling[this.methodName](this.nextElementSiblingSize - d);
-                }
-                if (this.previousElementSibling) {
-                    this.previousElementSibling[this.methodName](this.previousElementSiblingSize + d);
-                }
+                this.applyNewDimention(this.nextElementSibling, this.nextElementSiblingSize - d);
+                this.applyNewDimention(this.previousElementSibling, this.previousElementSiblingSize + d);
                 //this.notifyResize();
+            },
+            applyNewDimention: function(el, value){
+                if (el) {
+                    var flexCls = el.classList.contains('flex');
+                    if (flexCls) {
+                        el.classList.toggle('flex', false)
+                    }
+                    el[this.methodName](value);
+                    if (flexCls) {
+                        setTimeout(function(){el.classList.toggle('flex', true)}, 1000);
+                    }
+                }
             }
         });
     </script>
 </dom-module>
 <dom-module id="iris-dashboard-panel-proxy">
+    <style>
+        :host{
+            min-width: 100px;
+            min-height: 10px;
+            display: block;
+        }
+        #box{
+            border: 2px dashed #dedede;
+            background-color: #eeeeee;
+            box-sizing: border-box;
+            display: block;
+        }
+    </style>
     <template>
-        <style>
-            :host{
-                min-width: 100px;
-                min-height: 10px;
-                display: block;
-            }
-            #box{
-                border: 2px dashed #dedede;
-                background-color: #eeeeee;
-                box-sizing: border-box;
-                display: block;
-            }
-        </style>
         <div id="box"></div>
     </template>
     <script type="text/javascript">
         Polymer({
+            is: "iris-dashboard-panel-proxy",
             isProxy: true,
             attached: function() {
                 this.async(function(){
@@ -142,7 +167,9 @@
     </script>
 </dom-module>
 <dom-module id="iris-dashboard-row">
-    <content></content>
+    <template>
+        <content></content>
+    </template>
     <script>
         Polymer({
             is: 'iris-dashboard-row',
@@ -194,7 +221,7 @@
                 for (var i = len - 1; i >= 0; i--) {
                    data.horizontal  = this.classList.contains('horizontal');
                    data.layout      = this.classList.contains('layout');
-                   data.items.unshift(columns[i].exportConfig());
+                   columns[i].exportConfig && data.items.unshift(columns[i].exportConfig());
                 };
                 return data;
             },
@@ -211,9 +238,9 @@
                     var len = config.items.length;
                     for (var i = 0; i < len; i++) {
                         if (i > 0) {
-                            this.appendChild(iris.createElement( {tagName: 'iris-dashboard-splitter'} ))
+                            this.appendChild(IRIS.createElement( {tagName: 'iris-dashboard-splitter'} ))
                         };
-                        this.appendChild(iris.createElement(config.items[i]))
+                        this.appendChild(IRIS.createElement(config.items[i]))
                     };
                 };
             }
@@ -221,12 +248,24 @@
     </script>
 </dom-module>
 <dom-module id="iris-dashboard-column" attributes="autoremove">
-    <content></content>
+    <template>
+        <content></content>
+    </template>
     <script>
         Polymer({
             is:'iris-dashboard-column',
             behaviors:[IRIS.element],
             splitterTagName: 'IRIS-DASHBOARD-SPLITTER',
+            properties:{
+                width:{
+                    type: Number,
+                    observer: 'onWidthChange'
+                }
+            },
+            onWidthChange: function(){
+                if (this.width)
+                    this.setWidth(this.width);
+            },
             getHeightInfo: function(){
                 var info = {innerHeight: 0};
                 this.forEachChildren('iris-panel', function(child){
@@ -309,14 +348,16 @@
                 };
             },
 
-            // Fires when the element’s initial set of children and siblings are guaranteed to exist
-            domReady: function() {
-            },
-
             exportConfig: function(){
-                var items = this.querySelectorAll('.iris-panel'), len = items.length, data = {tagName: this.tagName, items:[]};
+                var items = this.querySelectorAll('.brtPanel'), len = items.length, data = {tagName: this.tagName, items:[]};
                 for (var i = len - 1; i >= 0; i--) {
                    data.style       = {width: this.getBoundingClientRect().width};
+                   data.cls         = this.className;
+                   data.cls.replace('style-scope ', '').replace(' style-scope', '');
+                    if (!items[i].exportConfig) {
+                        console.log("items[i].exportConfig missing", items[i])
+                        continue;
+                    };
                    data.items.unshift(items[i].exportConfig());
                 };
                 var id = this.getAttribute('id');
@@ -326,8 +367,12 @@
                 return data;
             },
             importConfig: function(config){
+
+                if (config.cls) {
+                    this.className = config.cls;
+                };
                 if (config.flex) {
-                    this.flex = true;
+                    this.classList.toggle('flex', true);
                 };
                 if (config.style && config.style.width) {
                     this.setWidth(config.style.width);
@@ -340,7 +385,7 @@
                 if (config.items) {
                     var len = config.items.length;
                     for (var i = 0; i < len; i++) {
-                       this.appendChild(iris.createElement(config.items[i]))
+                       this.appendChild(IRIS.createElement(config.items[i]))
                     };
                 };
             }
@@ -367,7 +412,6 @@
             width: 3px;
             min-width: 3px;
             min-height: 3px;
-            opacity:0;
         }
         ::content iris-dashboard-splitter:hover, ::content iris-dashboard-splitter:active{
             opacity:1;
@@ -434,7 +478,7 @@
                     proxyHolder.appendChild(target);
                 //}, null, 10);
                 self.showBodyCover(true);
-
+                console.log("dashboard: onPanelDragStart")
                 ce.detail.drag = function(dragInfo){
                     var info = this.findPanelByPos({x: dragInfo.event.detail.sourceEvent.clientX, y: dragInfo.event.detail.sourceEvent.clientY});
                     create = false;
@@ -533,7 +577,7 @@
             },
 
             findPanelByPos: function(pos){
-                var panels = this.querySelectorAll('.iris-panel,iris-dashboard-panel-proxy'), len = panels.length, p, w;
+                var panels = this.querySelectorAll('.brtPanel,iris-dashboard-panel-proxy'), len = panels.length, p, w;
                 for(var i=0; i< len; i++){
                     p = panels[i];
                     if(w = this.isPanelIntersect(p, pos, true)){
@@ -601,6 +645,7 @@
                 }
 
                 column.appendChild(panel)
+                return panel;
             },
 
             createNewColumn: function(parent){
@@ -614,8 +659,8 @@
 
             createNewRow: function(){
                 var row = document.createElement('iris-dashboard-row');
-                row.setAttribute('horizontal', true);
-                row.setAttribute('layout', true);
+                row.toggleClass('horizontal', true);
+                row.toggleClass('layout', true);
                 return row;
             },
 
@@ -646,7 +691,7 @@
                 if (config.items) {
                     var len = config.items.length;
                     for (var i = 0; i < len; i++) {
-                       this.appendChild(iris.createElement(config.items[i]))
+                       this.appendChild(IRIS.createElement(config.items[i]))
                     };
                 };
             }

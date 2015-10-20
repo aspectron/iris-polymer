@@ -43,25 +43,28 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				tap: 'onClick'
 			},
 			onClick: function () {
-				console.log('brt-body-cover: onClick');
+				console.log('iris-body-cover: onClick');
 			}
 		});
 	</script>
 </dom-module>
-<dom-module id="panel-resizer" attributes="direction locked minSize">
+<dom-module id="iris-panel-resizer" attributes="direction locked minSize">
 	<style>
 		:host{
 			height: 5px;
 			width: 100%;
 			display: block;
 			cursor: row-resize;
+			opacity: 0;
 		};
+		:host(:hover){opacity: 1};
+		:host(.active){opacity: 1};
 	</style>
 	<template></template>
 	<script>
 
 		Polymer({
-			is: 'panel-resizer',
+			is: 'iris-panel-resizer',
 
 			listeners:{
 				'track': '_track'
@@ -180,10 +183,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		background-color: #ffffff;
 		box-shadow: #000 0px 0px 10px 0px;
 	}
+	iris-panel[isdragable] #header{cursor: move;}
 
 	iris-panel-proxy iris-panel::shadow #content{
 		border-width: 0px;
 	}
+	iris-panel #header{background-color: #EEE;}
+	iris-panel #content{background-color: #EEE;}
 	/*
 	html /deep/ .floatingmenu core-menu core-item{
 		min-height: 30px;
@@ -201,11 +207,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	}*/
 </style>
 
-<!--
-@group BRT Core Elements
-@element brt-panel
-@homepage github.io
--->
 <dom-module id="iris-panel" class="iris-panel hide" attributes="width isdragable closeaction closeonmaskclick modal floating noheader collapsible closeable caption refreshable menuitems height minheight maxheight fixedheight fadein autoHeight">
 	<style>
 		:host{
@@ -218,7 +219,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			box-shadow: #333 0px 0px 20px 0px;
 		}
 
-		:host(.floating) panel-resizer{
+		:host(.floating) iris-panel-resizer{
 			position: absolute;
 			bottom: 0px;
 			left: 0px;
@@ -289,21 +290,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 						</core-menu>
 					</iris-dropdown>
 			</core-menu-button>-->
-			<iris-dropdown hideexpandicon="true" icon="menu" id="menu" hidden$="{{menuitems.length}}">
+			<iris-dropdown hideexpandicon="true" icon="menu" id="menu" hidden$="[[menuitems.length]]">
 				<paper-menu class="dropdown floatingmenu">
 					<template is="dom-repeat" items="[[menuitems]]">
 						<paper-item on-click="onMenuSelection" data-id="[[item.key]]">[[item.value]]</paper-item>
 					</template>
 				</paper-menu>
 			</iris-dropdown>
+			<paper-icon-button icon="settings" id="settingsBtn" hidden$="[[!settingsBtn]]" on-click="onSettingBtnClick"></paper-icon-button>
 			<paper-icon-button icon="refresh" id="refreshBtn"></paper-icon-button>
 			<paper-icon-button icon="arrow-drop-up" id="toggleBtn" hidden$="[[!collapsible]]" on-click="onToggleClick"></paper-icon-button>
 			<paper-icon-button icon="close" id="closeBtn" on-click="close"></paper-icon-button>
 		</paper-toolbar>
-		<iron-collapse id="content" opened$="[[opened]]" style="[[getContentStyle(opened)]]" class="fixedSize layout vertical" on-core-resize="onResize">
-				<content></content>
+		<iron-collapse id="content" opened$="[[opened]]" style="[[getContentStyle(opened)]]" class="fixedSize layout vertical" on-iron-resize="onResize">
+			<content></content>
 		</iron-collapse>
-		<panel-resizer id="resizerBottom" class="bottom-resizer"></panel-resizer>
+		<iris-panel-resizer id="resizerBottom" class="bottom-resizer"></iris-panel-resizer>
 	</template>
 <script>
 (function() {
@@ -367,8 +369,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	Polymer({
 		is:'iris-panel',
 		behaviors:[IRIS.element],
-
+		isProxy: false,
 		properties:{
+			settingsBtn:{
+				type: Boolean,
+				value: false
+			},
 			noheader: {
 				type: Boolean
 			},
@@ -423,7 +429,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				type: Boolean
 			},
 			isdragable:{
-				type: Boolean
+				type: Boolean,
+				reflectToAttribute: true
 			},
 			closeaction: {
 				type: String,
@@ -448,6 +455,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			//'coordinatesChanged(x)',
 			//'coordinatesChanged(y)'
 		],
+		listeners:{
+			'dom-change': 'onDomChange'
+		},
+
+		onDomChange: function (argument) {
+			var self = this;
+			var firstChild = self.$.content.children[0];
+			if (!firstChild || self.__attachTitleEvent)
+				return
+			self.__attachTitleEvent = true;
+			self.attachTitleEvent(firstChild);
+			if (_.isFunction(firstChild.askForConfig)) {
+				self.registerSettingsBtn(firstChild.askForConfig.bind(firstChild));
+			};
+		},
 
 		getContentStyle: function(opened){
 			var cssText = '', self = this;
@@ -609,6 +631,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		onStyleUpdate: function(name, value, val){
 			var self = this;
 			if (name == 'height') {
+				console.log("onStyleUpdate", value, val, this)
 				//TODO: self.$.content.horizontalChanged();
 				self.$.content.updateSize( (val - self.getHeaderHeight() - 5)+'px', null, true);
 				self.style.height = 'auto';
@@ -617,7 +640,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				};
 				var column  = IRIS.findParent(self, 'IRIS-DASHBOARD-COLUMN');
 				var row     = column ? column.parentNode : false;
-
 				if (row && row.updateColumnChildHeight && column.getHeightInfo) {
 					row.debounce('onStyleUpdate', function(){
 						row.updateColumnChildHeight(column.getHeightInfo().innerHeight);
@@ -682,6 +704,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				proxy = document.createElement('iris-panel-proxy');
 				var p = document.createElement('iris-panel');
 				p.className = "panel-ghost";
+				p.isProxy = true;
 				proxy.appendChild(p);
 				document.body.appendChild(proxy);
 				modal = document.querySelector('iris-body-cover');
@@ -695,24 +718,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			self.proxy = proxy;
 			self.opened = true;
 			self.dragging = false;
-			//self.draggingChanged();
+			self.toggleClass('brtPanel', true);
 
-			/*
-			var fadeinDuration = parseInt(self.fadein);
-			console.log("fadeinDuration",fadeinDuration)
-			function fade() {
-				console.log("fading:",fadeinDuration*1000)
-				self.className = "brt-panel show";// this.className.replace("hide","show");
-			}
-
-			if(fadeinDuration) {
-				console.log("fading:",fadeinDuration*1000)
-				//BRT.dpc(fadeinDuration*1000, fade);
-			}
-			else
-				self.style.opacity = 1;
-			//console.log("this.",this)
-			*/
+			self.listen(self.$.header, 'track', '_track');
 		},
 
 		draggingChanged: function() {
@@ -728,16 +736,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 		attached: function() {
 			var self = this;
-			var listen = function(event, handler) {
-				self.listen(self.$.header, event, handler);
-			};
-			//
-			//listen('down', 'trackStart');
-			listen('track', '_track');
-			//listen('up', 'trackEnd');
 			self.openedChanged();
 
-			var host = self;//.parentNode.host || this.parentNode;
+			var host = self.parentNode.host || this.parentNode.parentNode;
 			host.style.cssText += '; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;';
 			//console.log("self.height", self.height)
 			self.height && self.setHeight(self.height);
@@ -747,6 +748,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					this.setHeight(this.height);
 				};
 			}, null, this.$.content.duration * 1000);*/
+			self.async(function(){
+				var height = self.opened? self.getBoundingClientRect().height : parseInt(self.$.content.size.replace('px', '')) + self.getHeaderHeight() + 5;
+				//console.log("iris-panel: wwwwwwwwwwwwwwwwwwwwww", height, self)
+				self.setHeight(height);
+			}, 100);
 			self.checkFloatingChange();
 		},
 
@@ -772,7 +778,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		},
 
 		trackStart: function(event) {
-			console.log("event", event)
 			var self = this;
 			self.onMouseDown();
 			var isdragable = self.isdragable;
@@ -789,8 +794,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			self.onDragStart(self.dragInfo);
 			self.fire('drag-start', self.dragInfo);
 
-			// flaw #1: what if user doesn't need `drag()`?
 			self.dragging = Boolean(self.dragInfo.drag);
+			console.log("trackStart: isProxy:", self.isProxy, 'dragging:', self.dragging)
 			self.track(event);
 		},
 
@@ -815,6 +820,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 		trackEnd: function(event) {
 			var self = this;
+			console.log("trackEnd: isProxy:", self.isProxy, 'dragging:', self.dragging, self.dragInfo)
 			if (self.dragging) {
 				self.dragging = false;
 				var dragInfo = self.dragInfo;
@@ -867,13 +873,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		exportConfig: function(){
 			var height = this.opened? this.getBoundingClientRect().height : parseInt(this.$.content.size.replace('px', '')) + this.getHeaderHeight() + 5;
 			
-			var childNodes = this.childNodes, child;
+			var childNodes = this.$.content.children, child;
 			var items = [];
 			for (var i = childNodes.length - 1; i >= 0; i--) {
 					child = childNodes[i];
 					if (child.exportConfig) {
 						items.unshift(child.exportConfig());
 					}else{
+						console.log("exportConfig missing", child)
 						//items.unshift({tagName: child.tagName});
 					}
 			}
@@ -883,7 +890,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				menuitems: this.menuitems? this.menuitems: "",
 				opened: this.opened,
 				height: height,
-				caption: this.caption
+				caption: this.caption,
+				isdragable: !!this.isdragable
 			};
 
 			if (items.length) {
@@ -894,7 +902,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 		importConfig: function(config){
 			var self = this;
-			var keys = ['refreshable', 'menuitems', 'height', 'opened', 'caption'], k;
+			var keys = ['refreshable', 'menuitems', 'height', 'opened', 'caption', 'isdragable'], k;
 			for (var i = keys.length - 1; i >= 0; i--) {
 					k = keys[i];
 					if (config[k] != undefined) {
@@ -907,19 +915,54 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				var firstChild = false;
 				for (var i = 0; i < len; i++) {
 					if (!firstChild) {
-						firstChild = BRT.createElement(config.items[i]);
-						self.appendChild(firstChild);
+						firstChild = IRIS.createElement(config.items[i]);
+						self.$.content.appendChild(firstChild);
 					}else{
-						self.appendChild(BRT.createElement(config.items[i]));
+						self.$.content.appendChild(IRIS.createElement(config.items[i]));
 					}
 				};
 
 				if (firstChild) {
-					firstChild.addEventListener('titleupdated', function(ce){
-						self.caption = ce.detail.title;
-					})
+					self.attachTitleEvent(firstChild);
+
+					if (_.isFunction(firstChild.askForConfig)) {
+						firstChild.askForConfig(false)
+						self.registerSettingsBtn(firstChild.askForConfig.bind(firstChild));
+					};
 				}
 			};
+		},
+
+		attachTitleEvent: function(child){
+			var self = this;
+			child.title && self.set('caption', child.title);
+			function cb(ce){
+				if (ce.detail) {
+					if (ce.detail.title) {
+						self.set('caption', ce.detail.title);
+					}else{
+						self.set('caption', ce.detail);
+					}
+				}
+			}
+			self.addEventListener('titleupdated', cb);
+			child.addEventListener('title-changed', cb);
+		},
+
+		onSettingBtnClick: function(){
+			if (this.__settingsBtnCalllback) {
+				this.__settingsBtnCalllback(true);
+			};
+		},
+		registerSettingsBtn: function(callback){
+			var self = this;
+			if (callback) {
+				self.set('settingsBtn', true);
+				self.__settingsBtnCalllback = callback;
+			}else{
+				self.set('settingsBtn', false);
+				self.__settingsBtnCalllback = false;
+			}
 		}
 
 	});

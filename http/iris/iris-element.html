@@ -1,0 +1,72 @@
+<script>
+	var IRIS = window.IRIS = (window.IRIS || {});
+	IRIS.element = {
+		setWidth: function(value){
+			this.setStyle('width', value+'px');
+		},
+		setHeight: function(value){
+			this.setStyle('height', value+'px');
+		},
+
+		setStyle: function(name, value){
+			this.style[name] = value;
+			var val = value;
+			if (value.substr(-2) == 'px') {
+				val = value.substr(0, value.length-2);
+			};
+			this.onStyleUpdate && this.onStyleUpdate(name, value, val);
+		},
+
+		destroy: function(){
+			var items = this.childNodes, len = items.length;
+			for (var i = len - 1; i >= 0; i--) {
+				items[i].destroy && items[i].destroy();
+			}
+			this.remove();
+			this.fire('destroy', this);
+		},
+
+		forEachChildren: function(selector, callback){
+			var items = this.querySelectorAll(selector), len = items.length;
+			for (var i = 0; i < len; i++) {
+				if(callback(items[i], items) === false){
+					break;
+				}
+			}
+		},
+		getStyle: function (styleProp, clean){
+			var self = this;
+			if (self.currentStyle)
+				var y = self.currentStyle[styleProp];
+			else if (window.getComputedStyle)
+				var y = document.defaultView.getComputedStyle(self, null).getPropertyValue(styleProp);
+
+			if (clean && y.indexOf('px') > -1) {
+				y = parseFloat(y.replace('px'), '');
+			};
+			return y;
+		},
+
+		getHeight: function(padding, margin){
+			var height = this.getBoundingClientRect().height;// this.getStyle('height', true);
+			if (padding) {
+				height += this.getStyle('padding-top', true) + this.getStyle('padding-bottom', true);
+			};
+			if (margin) {
+				height += this.getStyle('margin-top', true) + this.getStyle('margin-bottom', true);
+			};
+			return height;
+		},
+		setHidden: function(hidden, display){
+			this.setStyle('display', hidden ? 'none': (display? display: ''));
+			this.onHiddenChange && this.onHiddenChange(!!hidden);
+		},
+		onMutation: function(node, listener) {
+			var observer = new MutationObserver(function(mutations) {
+				listener.call(this, observer, mutations);
+				observer.disconnect();
+			}.bind(this));
+			observer.observe(node, {childList: true, subtree: true});
+		}
+	}
+</script>
