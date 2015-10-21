@@ -11,13 +11,27 @@
 		paper-menu-button{display: block; padding: 4px 0px;}
 		paper-menu-button ::content #dropdown{display: block; width: 100%}
 		paper-menu-button ::content paper-item.iron-selected{display: none};
-		.tag-container{min-height: 27px}
+		.tag-container{min-height: 27px;}
+		.input-holder {
+	        position: relative; /* to make a stacking context */
+	        outline: none;
+	        box-shadow: none;
+	        padding: 0;
+	        width: 100%;
+	        background: transparent;
+	        border: none;
+	        color: var(--paper-input-container-input-color, --primary-text-color);
+	        -webkit-appearance: none;
+
+	        @apply(--paper-font-subhead);
+	        @apply(--paper-input-container-input);
+	     }
 	</style>
 	<template>
 		<paper-input-container no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]" auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
 			<content select="[prefix]"></content>
 			<label hidden$="[[!label]]">[[label]]</label>
-			<div>
+			<div class="input-holder">
 				<!--div>{{toJSON(value)}}</div-->
 				<div class="tag-container" on-tap="onContainerTap">
 					<template is="dom-repeat" items="[[value]]">
@@ -41,7 +55,7 @@
 					aria-labelledby$="[[_ariaLabelledBy]]"
 					aria-describedby$="[[_ariaDescribedBy]]"
 					disabled$="[[disabled]]"
-					bind-value1="{{value}}"
+					bind-value="{{_value}}"
 					invalid="{{invalid}}"
 					prevent-invalid-input="[[preventInvalidInput]]"
 					allowed-pattern="[[allowedPattern]]"
@@ -75,9 +89,9 @@
 	Polymer({
 		is:'iris-tags-input',
 		behaviors: [
-			//Polymer.IronFormElementBehavior,
-			//Polymer.PaperInputBehavior,
-			//Polymer.IronControlState
+			Polymer.IronFormElementBehavior,
+			Polymer.PaperInputBehavior,
+			Polymer.IronControlState
 		],
 		properties:{
 			removeIcon:{
@@ -95,6 +109,10 @@
 				type:Array,
 				notify:true,
 				value:[]
+			},
+			_value:{
+				type: String,
+				value:""
 			},
 			items:{
 				type: Array,
@@ -116,7 +134,7 @@
 		],
 		ready: function (argument) {
 			var self = this;
-			
+			self._value = (self.value || []).join(',');
 		},
 		attached: function(){
 			var self = this;
@@ -137,6 +155,7 @@
 		},
 		onContainerTap: function(e){
 			var self = this;
+			console.log("onContainerTap", e)
 			if(e.target.icon == self.removeIcon){
 				self.removeItem(e.target.dataTag)
 				return;
@@ -170,6 +189,7 @@
 			}, 100);
 			self.debounce('onValueChange2', function(){
 				self.fire('change', self.value);
+				self.set('_value', self.value.join(','));
 				self.set('allSelected', (menu.selectedValues.length == items.length));
 			}, 300);
 		},
