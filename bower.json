@@ -32,6 +32,7 @@
     "neon-animation": "PolymerElements/neon-animation",
     "paper-toolbar": "PolymerElements/paper-toolbar",
     "paper-item": "PolymerElements/paper-item",
+    "paper-fab": "PolymerElements/paper-fab",
     "paper-dialog": "PolymerElements/paper-dialog",
     "paper-header-panel": "PolymerElements/paper-header-panel",
     "paper-menu": "PolymerElements/paper-menu",
