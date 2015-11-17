@@ -12,9 +12,9 @@
 	</style>
 	<template>
 		<div class="layout horizontal end">
-			<paper-input class="flex-1" id="input" label="{{label}}" value="{{value}}"></paper-input>
+			<paper-input class="flex-1" id="input" readonly$="[[readonly]]" label="{{label}}" value="{{value}}" on-tap="onInputTap"></paper-input>
 			<div>
-				<paper-menu-button vertical-align="[[vAlign]]" horizontal-align="right" on-paper-open="showPicker">
+				<paper-menu-button id="menu" vertical-align="[[vAlign]]" horizontal-align="right" on-paper-open="showPicker" on-paper-dropdown-open="showPicker">
 					<iron-icon class="dropdown-trigger" icon="expand-more"></iron-icon>
 					<div id="dropdown" class="dropdown-content"></div>
 				</paper-menu-button>
@@ -39,6 +39,14 @@
 					value: '#FFFFFF',
 					notify: true,
 					observer:'onValueChange'
+				},
+				readonly:{
+					type: Boolean,
+					value: false
+				},
+				showPickerOnTap: {
+					type: Boolean,
+					value: false
 				}
 			},
 			ready: function (argument) {
@@ -66,6 +74,12 @@
 						self.colorPicker._updateField();
 					}, 300)
 				}	
+			},
+			onInputTap: function(){
+				if (this.showPickerOnTap) {
+					this.showPicker();
+					this.$.menu.open();
+				};
 			}
 		})
 	</script>

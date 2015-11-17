@@ -6,11 +6,11 @@
 		<paper-dialog id="dialodBox" modal>
 			<h2>[[data.title]]</h2>
 			<div>[[data.text]]</div>
-			<div class="dialog-contents">
+			<div class="dialog-contents" hidden$="[[!data.isprompt]]">
 				<paper-input class="field" type="[[data.fieldType]]" no-float-label value="{{data.value}}" on-keyup="onkeyup"></paper-input>
 			</div>
 			<div class="buttons">
-				<paper-button on-click="cancel" dialog-dismiss raised>[[data.closeBtn]]</paper-button>
+				<paper-button on-click="cancel" dialog-dismiss raised hidden$="[[!data.hasCloseBtn]]">[[data.closeBtn]]</paper-button>
 				<paper-button on-click="done" raised>[[data.okBtn]]</paper-button>
 			</div>
 		</paper-dialog>
@@ -24,11 +24,41 @@
 				closeBtn: '<%= _T("CLOSE") %>',
 				fieldType: 'text',
 				required: true,
+				isprompt: true,
+				hasCloseBtn: true,
 				callback: callback
 			}, args);
 			this.irisPrompt.set('data', data);
-			this.irisPrompt.toggle();
-		},
+			this.irisPrompt.open();
+		};
+		window.IRIS.Alert = function(args, callback){
+			var data = _.extend({
+				text: '',
+				okBtn: '<%= _T("OK") %>',
+				closeBtn: '<%= _T("CLOSE") %>',
+				isprompt: false,
+				required: false,
+				hasCloseBtn: false,
+				callback: callback
+			}, args);
+			this.irisPrompt.set('data', data);
+			this.irisPrompt.open();
+		};
+
+		window.IRIS.Confirm = function(args, callback){
+			var data = _.extend({
+				text: '',
+				okBtn: '<%= _T("OK") %>',
+				closeBtn: '<%= _T("CANCEL") %>',
+				isprompt: false,
+				required: false,
+				hasCloseBtn: true,
+				callback: callback
+			}, args);
+			this.irisPrompt.set('data', data);
+			this.irisPrompt.open();
+		};
+
 		Polymer({
 			is:'iris-prompt',
 			properties:{
@@ -42,6 +72,8 @@
 						closeBtn: 'CLOSE',
 						fieldType: 'text',
 						required: true,
+						isprompt: true,
+						hasCloseBtn: true,
 						callback: false
 					}
 				},
@@ -64,6 +96,12 @@
 			toggle:function(){
 				this.$.dialodBox.toggle();
 			},
+			open:function(){
+				this.$.dialodBox.open();
+			},
+			close:function(){
+				this.$.dialodBox.close();
+			},
 			doCallback: function(btn, value){
 				var self = this;
 				var data = self.data;
@@ -71,7 +109,7 @@
 				if (data.required && btn == 'ok' && !value) {
 					return;
 				};
-				self.toggle();
+				self.close();
 				if(data.callback){
 					data.callback(btn, value);
 				}

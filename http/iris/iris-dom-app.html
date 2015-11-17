@@ -38,14 +38,16 @@
 		<iron-media-query query="[[mediaquery]]" query-matches="{{ismobile}}"></iron-media-query>
 		<iris-rpc id="rpc" path="[[rpcPath]]" holder="[[rpcHolder]]"></iris-rpc>
 		<paper-textarea class="textarea-bug"></paper-textarea>
-		<paper-drawer-panel id="drawer" narrow="{{isnarrow}}" force-narrow>
+		<paper-drawer-panel id="drawer" narrow="{{isnarrow}}" force-narrow="{{!dontForceNarrow}}">
 			 <paper-header-panel drawer id="drawerLeft">
-				<paper-toolbar>
+			 	<content select=".drawer-content-before"></content>
+				<paper-toolbar hidden$="[[hideDrawerToolbar]]">
 					<content select=".drawer-toolbar-item"></content>
 				</paper-toolbar>
 				<div id="drawerMenus">
 			 		<content select=".drawer-item"></content>
 			 	</div>
+			 	<content select=".drawer-content-after"></content>
 			 </paper-header-panel>
 			<div main class="flex-1 layout vertical" id="drawerMain"><content select=".main-item"></content></div>
 		</paper-drawer-panel>
