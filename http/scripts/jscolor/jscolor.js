@@ -622,9 +622,9 @@ var jscolor = {
 			p.box.onmouseout = function() { target.focus(); };
 			p.box.onmousedown = function() { abortBlur=true; };
 			p.box.onmousemove = function(e) {
-				if (holdPad || holdSld) {
-					holdPad && setPad(e);
-					holdSld && setSld(e);
+				if (THIS.holdPad || THIS.holdSld) {
+					THIS.holdPad && setPad(e);
+					THIS.holdSld && setSld(e);
 					if (document.selection) {
 						document.selection.empty();
 					} else if (window.getSelection) {
@@ -633,15 +633,17 @@ var jscolor = {
 					dispatchImmediateChange();
 				}
 			};
+			var hashTouchStart = false;
 			if('ontouchstart' in window) { // if touch device
+				hashTouchStart = true;
 				var handle_touchmove = function(e) {
 					var event={
 						'offsetX': e.touches[0].pageX-touchOffset.X,
 						'offsetY': e.touches[0].pageY-touchOffset.Y
 					};
-					if (holdPad || holdSld) {
-						holdPad && setPad(event);
-						holdSld && setSld(event);
+					if (THIS.holdPad || THIS.holdSld) {
+						THIS.holdPad && setPad(event);
+						THIS.holdSld && setSld(event);
 						dispatchImmediateChange();
 					}
 					e.stopPropagation(); // prevent move "view" on broswer
@@ -651,20 +653,22 @@ var jscolor = {
 				p.box.addEventListener('touchmove', handle_touchmove, false)
 			}
 			p.padM.onmouseup =
-			p.padM.onmouseout = function() { if(holdPad) { holdPad=false; jscolor.fireEvent(valueElement,'change'); } };
+			p.padM.onmouseout = function() { if(THIS.holdPad) { if(!hashTouchStart) { THIS.holdPad=false; }; jscolor.fireEvent(valueElement,'change'); } };
 			p.padM.onmousedown = function(e) {
 				// if the slider is at the bottom, move it up
 				switch(modeID) {
 					case 0: if (THIS.hsv[2] === 0) { THIS.fromHSV(null, null, 1.0); }; break;
 					case 1: if (THIS.hsv[1] === 0) { THIS.fromHSV(null, 1.0, null); }; break;
 				}
-				holdSld=false;
-				holdPad=true;
+				THIS.holdSld=false;
+				THIS.holdPad=true;
 				setPad(e);
 				dispatchImmediateChange();
 			};
-			if('ontouchstart' in window) {
+			if(hashTouchStart) {
 				p.padM.addEventListener('touchstart', function(e) {
+					THIS.holdSld=false;
+					THIS.holdPad=true;
 					touchOffset={
 						'X': e.target.offsetParent.offsetLeft,
 						'Y': e.target.offsetParent.offsetTop
@@ -676,15 +680,17 @@ var jscolor = {
 				});
 			}
 			p.sldM.onmouseup =
-			p.sldM.onmouseout = function() { if(holdSld) { holdSld=false; jscolor.fireEvent(valueElement,'change'); } };
+			p.sldM.onmouseout = function() { if(THIS.holdSld) { if(!hashTouchStart) { THIS.holdSld=false; }; jscolor.fireEvent(valueElement,'change'); } };
 			p.sldM.onmousedown = function(e) {
-				holdPad=false;
-				holdSld=true;
+				THIS.holdPad=false;
+				THIS.holdSld=true;
 				setSld(e);
 				dispatchImmediateChange();
 			};
 			if('ontouchstart' in window) {
 				p.sldM.addEventListener('touchstart', function(e) {
+					THIS.holdPad=false;
+					THIS.holdSld=true;
 					touchOffset={
 						'X': e.target.offsetParent.offsetLeft,
 						'Y': e.target.offsetParent.offsetTop
@@ -918,6 +924,8 @@ var jscolor = {
 		}
 
 
+
+
 		function setSld(e) {
 			var mpos = jscolor.getRelMousePos(e);
 			var y = mpos.y - THIS.pickerFace - THIS.pickerInset;
@@ -942,20 +950,30 @@ var jscolor = {
 
 
 		var THIS = this;
+		THIS.setPad = setPad;
+		THIS.setSld = setSld;
+
 		var modeID = this.pickerMode.toLowerCase()==='hvs' ? 1 : 0;
 		var abortBlur = false;
 		var
 			valueElement = jscolor.fetchElement(this.valueElement),
 			styleElement = jscolor.fetchElement(this.styleElement);
-		var
-			holdPad = false,
-			holdSld = false,
-			touchOffset = {};
+		THIS.holdPad = false;
+		THIS.holdSld = false;
+		var touchOffset = {};
 		var
 			leaveValue = 1<<0,
 			leaveStyle = 1<<1,
 			leavePad = 1<<2,
 			leaveSld = 1<<3;
+
+		THIS.moveValue = function(e){
+			if (THIS.holdPad) {
+				setPad(e);
+			}else if(THIS.holdSld){
+				setSld(e);
+			}
+		}
 
 		jscolor.isColorAttrSupported = false;
 		var el = document.createElement('input');

@@ -9,12 +9,15 @@
 		:host(.is-bottom-align) paper-menu-button ::content iron-dropdown{
 			margin-bottom: 33px;
 		}
+		.layout.horizontal{@apply(--layout-horizontal);}
+		.flex, .flex-1{@apply(--layout-flex);}
+		.end{@apply(--layout-end);}
 	</style>
 	<template>
 		<div class="layout horizontal end">
 			<paper-input class="flex-1" id="input" readonly$="[[readonly]]" label="{{label}}" value="{{value}}" on-tap="onInputTap"></paper-input>
 			<div>
-				<paper-menu-button id="menu" vertical-align="[[vAlign]]" horizontal-align="right" on-paper-open="showPicker" on-paper-dropdown-open="showPicker">
+				<paper-menu-button id="menu" opened="{{opened}}" vertical-align="[[vAlign]]" horizontal-align="right" on-paper-open="showPicker" on-paper-dropdown-open="showPicker">
 					<iron-icon class="dropdown-trigger" icon="expand-more"></iron-icon>
 					<div id="dropdown" class="dropdown-content"></div>
 				</paper-menu-button>
@@ -47,6 +50,17 @@
 				showPickerOnTap: {
 					type: Boolean,
 					value: false
+				},
+				opened: {
+					type: Boolean,
+					value: false,
+					observer: "onOpenedChange"
+				},
+				initScreenX:{
+					type: Number
+				},
+				initScreenY:{
+					type: Number
 				}
 			},
 			ready: function (argument) {
@@ -60,12 +74,55 @@
 					hash:true
 				});
 				self.showPicker();
+				self.notTouchSupport = !('ontouchstart' in window);
 			},
 			onVAlignChange: function(v){
 				this.toggleClass('is-bottom-align', v=='bottom');
 			},
+			onOpenedChange: function(){
+				var self = this;
+				var body = document.body;
+				if ( self.notTouchSupport ) {
+					return;
+				};
+				if (self.opened) {
+					self.listen(body, "touchstart", "onDocumentTouchStart");
+					self.listen(body, "touchmove", "onDocumentTouchMove");
+				}else{
+					self.unlisten(body, "touchstart", "onDocumentTouchStart");
+					self.unlisten(body, "touchmove", "onDocumentTouchMove");
+				}
+			},
+			onDocumentTouchStart: function(e){
+				var self = this;
+				var touch = e.touches[0];
+				self.set("initScreenX", touch.screenX);
+				self.set("initScreenY", touch.screenY);
+				var xy = jscolor.picker.padM.style.backgroundPosition.replace(/px/g, "").split(" ");
+				xy[0] = parseInt(xy[0], 10);
+				xy[1] = parseInt(xy[1], 10);
+				self._xy = xy;
+			},
+			onDocumentTouchMove: function(e){
+				var self = this;
+				var touch = e.touches[0];
+				if (!self._xy)
+					return;
+				var dx = self.initScreenX - touch.screenX;
+				var dy = self.initScreenY - touch.screenY;
+				var offsetX = self._xy[0] - dx;
+				var offsetY = self._xy[1] - dy;
+				if (!self.colorPicker.holdPad && !self.colorPicker.holdSld) {
+					self.colorPicker.holdPad = true;
+				};
+				self.colorPicker.moveValue({
+					offsetX: offsetX,
+					offsetY: offsetY
+				})
+			},
 			showPicker:function(){
-				this.colorPicker.showPicker();
+				var self = this;
+				self.colorPicker.showPicker();
 			},
 			onValueChange: function(){
 				var self = this;

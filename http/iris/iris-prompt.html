@@ -10,8 +10,8 @@
 				<paper-input class="field" type="[[data.fieldType]]" no-float-label value="{{data.value}}" on-keyup="onkeyup"></paper-input>
 			</div>
 			<div class="buttons">
-				<paper-button on-click="cancel" dialog-dismiss raised hidden$="[[!data.hasCloseBtn]]">[[data.closeBtn]]</paper-button>
-				<paper-button on-click="done" raised>[[data.okBtn]]</paper-button>
+				<paper-button on-tap="cancel" dialog-dismiss raised hidden$="[[!data.hasCloseBtn]]">[[data.closeBtn]]</paper-button>
+				<paper-button on-tap="done" raised>[[data.okBtn]]</paper-button>
 			</div>
 		</paper-dialog>
 	</template>

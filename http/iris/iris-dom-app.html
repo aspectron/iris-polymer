@@ -32,13 +32,22 @@
 		::content [toggle-drawer]{display: none;}
 		:host(.mobile) ::content [toggle-drawer]{display: inline-block;}
 		::content #pages{overflow: hidden;}
+		.layout.vertical{
+			@apply(--layout-vertical);
+		}
+		.layout.horizontal{
+			@apply(--layout-horizontal);
+		}
+		.flex, .flex-1{
+			@apply(--layout-flex);
+		}
 	</style>
 	<template>
 		<iris-prompt holder="[[rpcHolder]]"></iris-prompt>
 		<iron-media-query query="[[mediaquery]]" query-matches="{{ismobile}}"></iron-media-query>
 		<iris-rpc id="rpc" path="[[rpcPath]]" holder="[[rpcHolder]]"></iris-rpc>
 		<paper-textarea class="textarea-bug"></paper-textarea>
-		<paper-drawer-panel id="drawer" narrow="{{isnarrow}}" force-narrow="{{!dontForceNarrow}}">
+		<paper-drawer-panel id="drawer" narrow="{{isnarrow}}" force-narrow="{{!dontForceNarrow}}" edge-swipe-sensitivity="{{edgeSwipeSensitivity}}">
 			 <paper-header-panel drawer id="drawerLeft">
 			 	<content select=".drawer-content-before"></content>
 				<paper-toolbar hidden$="[[hideDrawerToolbar]]">
