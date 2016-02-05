@@ -420,6 +420,7 @@
 				//self.restoreLocationHash();
 			};
 			if (!self.$.tabs || !self.$.tabs.items) {
+				self.selectedpage = self.selected;
 				return log(this, "Tabs missing");
 			};
 			/*
