@@ -178,6 +178,17 @@
 				//self.restoreLocationHash();
 			}
 		},
+		refreshTabsSize: function(){
+			var tabs = this.$.tabs;
+			if (!tabs) {
+				return false;
+			};
+			if(tabs._onResize){
+				tabs._onResize();
+			}else if (tabs._onTabSizingChanged){
+				tabs._onTabSizingChanged();
+			}
+		},
 		restoreLocationHash:function(){
 			var self = this;
 			if (IRIS._locationHash){
@@ -191,9 +202,10 @@
 					if (info.tab) {
 						self.set('selected', info.index);
 					};
-					self.$.tabs._onResize();
+					self.refreshTabsSize();
+
 					self.async(function(){
-						self.$.tabs._onResize();
+						self.refreshTabsSize();
 						self.$.tabs.set('noSlide', false);
 					}, 1000);
 
