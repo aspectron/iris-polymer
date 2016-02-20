@@ -97,13 +97,11 @@
 			},
 			entryanimation:{
 				type: String,
-				notify: true,
-				value: 'slide-from-right-animation'
+				notify: true
 			},
 			exitanimation:{
 				type: String,
-				notify: true,
-				value: 'slide-left-animation'
+				notify: true
 			},
 			language:{
 				type: Object,
@@ -118,7 +116,6 @@
 			},
 			selectedpage: {
 				type: Number,
-				value: 0,
 				notify: true
 			},
 			doRestoreLastTab:{
@@ -139,12 +136,9 @@
 		ready: function(){
 			var self = this;
 			self.rpc 				= self.$.rpc;
-			//self.selectedpage 		= self.selected;
 
 			self.classList.add('layout');
 			self.classList.add('vertical');
-
-			//log(this, self)
 
 			self.tabsAdded = true;
 			IRIS.loadTheme('theme1.html');
@@ -196,7 +190,7 @@
 		restoreLocationHash:function(){
 			var self = this;
 			if (IRIS._locationHash){
-				self.async(function(){
+				//self.async(function(){
 
 					var hash = IRIS._locationHash;
 					hash = hash.replace('#', '');
@@ -204,6 +198,7 @@
 					var info = self.getTab(hash);
 					IRIS._locationHash = '';
 					if (info.tab) {
+						self.selectedpage = info.index;
 						self.set('selected', info.index);
 					};
 					self.refreshTabsSize();
@@ -227,7 +222,7 @@
 						self.set('selected', 3)
 					};
 					*/
-				}, 100);
+				//}, 100);
 			}
 		},
 		attached: function(){
@@ -432,9 +427,6 @@
 		},
 		selectedChanged:function(newValue, oldValue){
 			var self = this;
-			if (IRIS._locationHash=='#schedule') {
-				//self.restoreLocationHash();
-			};
 			if (!self.$.tabs || !self.$.tabs.items) {
 				self.selectedpage = self.selected;
 				return log(this, "Tabs missing");
