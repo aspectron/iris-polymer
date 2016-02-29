@@ -1,0 +1,153 @@
+<link rel="import" href="/IRIS/iris-element.html" />
+<link rel="import" href="/deps/paper-dialog/paper-dialog.html">
+<dom-module id="iris-printable-dialog">
+    <script>
+        Polymer({
+            is: "iris-printable-dialog",
+            properties:{
+                content:{
+                    type: String,
+                    value: "",
+                    observer: '_onContentChanged'
+                },
+                title:{
+                    type: String,
+                    value: "",
+                    observer: '_onTitleChanged'
+                },
+                opened:{
+                    type: Boolean,
+                    value: false,
+                    observer: '_onOpenedChanged'
+                }/*,
+                width:{
+                    type: String,
+                    value: "100%"
+                },
+                height:{
+                    type: String,
+                    value: "100%"
+                }*/
+            },
+            //observers:['_withHeightChanged(width, height)'],
+            ready: function(){
+                var self = this;
+                self.buildDialog();
+            },
+            buildDialog: function(){
+                var self = this;
+
+                var el = '<paper-dialog id="printableDialog" modal entry-animation="slide-from-right-animation" exit-animation="fade-out-animation" with-backdrop>'+
+                        '<paper-toolbar>'+
+                            '<span class="title"></span>'+
+                            '<paper-icon-button class="print-icon" icon="print"></paper-icon-button>'+
+                            '<paper-icon-button icon="clear" dialog-dismiss></paper-icon-button>'+
+                        '</paper-toolbar>'+
+                        '<paper-dialog-scrollable class="dialog-contents">'+
+                            '<div id="dialogContent"></div>'+
+                        '</paper-dialog-scrollable>'+
+                    '</paper-dialog>';
+
+                var el2 = IRIS.createElement({
+                    attributes:{
+                        "cls": "printable-dialog-holder"
+                    }
+                });
+                el2.innerHTML = el;
+                document.body.appendChild(el2);
+                self.dialogEl = document.getElementById("printableDialog");
+                self.dialogToolbarEl = self.dialogEl.querySelector('paper-toolbar');
+                self.dialogContentEl = self.dialogEl.querySelector('#dialogContent');
+                self.dialogTitleEl  = self.dialogEl.querySelector('.title');
+                self.dialogPrintIconEl  = self.dialogEl.querySelector('.print-icon');
+
+                self.dialogToolbarEl.style.marginTop = "0px";
+
+                self.cssEl = document.createElement('style');
+                self.cssEl.innerHTML = self.getStyleContents();
+                document.body.appendChild(self.cssEl);
+
+                self.listen(self.dialogEl, 'neon-animation-finish', '_onDialogOpenedChanged');
+                self.listen(self.dialogPrintIconEl, 'click', '_onPrintIconClick');
+            },
+            getStyleContents: function(){
+                return '#printableDialog > *{margin-top:0px;}'+
+                '@media print{'+
+                    'body.printable-dialog-opened > *{display: none;}'+
+                    'body.printable-dialog-opened .printable-dialog-holder{display: block;}'+
+                    'body.printable-dialog-opened #printableDialog{'+
+                        'position: relative !important;'+
+                        'width: 100%;'+
+                        'height: auto;'+
+                        'border: 0px;'+
+                        'top: 0px !important;'+
+                        'left: 0px !important;'+
+                        'margin-top: 0px;'+
+                        'margin-left:0px;'+
+                        'margin-bottom: 0px;'+
+                        'margin-right: 0px;'+
+                        'box-shadow: none;'+
+                    '}'+
+                    'body.printable-dialog-opened #printableDialog paper-toolbar paper-icon-button{display: none}'+
+                    'body.printable-dialog-opened #printableDialog paper-dialog-scrollable,'+
+                    'body.printable-dialog-opened #printableDialog paper-dialog-scrollable #scrollable{max-height: none !important; margin-bottom: 0px; display:block;}'+
+                    'body.printable-dialog-opened{overflow-y: scroll !important; padding-bottom: 0px;}';
+                '}';
+            },
+            _onContentChanged:function(){
+                var self = this;
+                if (!self.dialogEl)
+                    return;
+                self.dialogContentEl.innerHTML = self.content + "";
+            },
+            _onTitleChanged:function(){
+                var self = this;
+                if (!self.dialogEl)
+                    return;
+                self.dialogTitleEl.innerHTML = self.title + "";
+            },
+            updateContents: function(){
+                this._onTitleChanged();
+                this._onContentChanged();
+            },
+            _onOpenedChanged: function(){
+                var self = this;
+                if (!self.dialogEl)
+                    return;
+                
+                if (self.opened) {
+                    self.updateContents();
+                    //self._withHeightChanged(self.width, self.height);
+                    self.dialogEl.open()
+                }else{
+                    self.dialogEl.close();
+                }
+            },
+            /*_withHeightChanged: function(width, height){
+                var self = this;
+                if (!self.dialogEl)
+                    return;
+                self.dialogEl.style.width = width;
+                self.dialogEl.style.height = height;
+            },*/
+            _onDialogOpenedChanged: function(){
+                var self = this;
+                self.opened = self.dialogEl.opened;
+                if (self.opened){
+                    self.__docTitle = document.title;
+                    document.title = self.title;
+                }else if(self.__docTitle){
+                    document.title = self.__docTitle;
+                }
+                self.toggleClass("printable-dialog-opened", self.dialogEl.opened, document.body);
+            },
+            _onPrintIconClick: function(){
+                try{
+                    window.print();
+                }catch(e){
+                    IRIS.Alert('<%=_T("Please try keyboard shortcuts")%>', '<%=_T("We are unable to print. Please use your keyboard shortcuts as CTRL+P or COMMAND+P ")%>')
+                }
+            }
+        })
+    </script>
+</dom-module>
