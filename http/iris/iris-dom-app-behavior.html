@@ -143,7 +143,6 @@
 			self.tabsAdded = true;
 			IRIS.loadTheme('theme1.html');
 			self.toggleClass('loading', false, document.body);
-			//self.restoreLocationHash();
 		},
 		getLocationHash: function(){
 			return window.location.hash;
@@ -162,18 +161,13 @@
 				var tabs = self.$.tabs.querySelectorAll('paper-tab');
 				var tab = {}, hash;
 				var items = self.$.pages.items;
-				//console.log("buildPagesAnchors:items", items)
 				_.each(tabs, function(t, index){
 					hash = t.dataTabId || t.getAttribute('data-tab-id');
 					if (!hash || !items[index])
 						return;
-					//console.log("index", index)
 					var a = self.create('A', {name:hash, style:"display:block"});
-					//a.innerHTML = "###"+hash.toUpperCase()+"####";
 					items[index].insertBefore(a, items[index].children[0]);
 				});
-				//console.log("buildPagesAnchors")
-				//self.restoreLocationHash();
 			}
 		},
 		refreshTabsSize: function(){
@@ -196,11 +190,12 @@
 					hash = hash.replace('#', '');
 
 					var info = self.getTab(hash);
-					IRIS._locationHash = '';
+					
 					if (info.tab) {
-						self.selectedpage = info.index;
+						self.set('selectedpage', info.index);
 						self.set('selected', info.index);
 					};
+					IRIS._locationHash = '';
 					self.refreshTabsSize();
 
 					self.async(function(){
@@ -254,6 +249,9 @@
 				};
 				if(self.doRestoreLastTab !== '1'){
 					self.restoreLocationHash();
+				}else{
+					IRIS._locationHash = "";
+					self.set('selectedpage', self.selected)
 				}
 				/*
 				self.$.tabs._onResize();
@@ -427,6 +425,8 @@
 		},
 		selectedChanged:function(newValue, oldValue){
 			var self = this;
+			if (IRIS._locationHash)
+				return;
 			if (!self.$.tabs || !self.$.tabs.items) {
 				self.selectedpage = self.selected;
 				return log(this, "Tabs missing");
