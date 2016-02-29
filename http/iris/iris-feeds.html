@@ -1,0 +1,273 @@
+<script type="text/javascript">
+	window.IRIS = window.IRIS || {};
+	window.IRIS.FeedsBehavior = {
+		properties:{
+			feeds : { type: Array, observer : 'feedsChanged' },
+			animate : { type: Boolean, value: true },
+			wide : { type: Boolean, value: false, observer : 'wideChanged' },
+			feedTagName: {type: String, value: "iris-feed-item"},
+			fetchDuration: {type: Number, value: 3001000},
+			cycleDuration: {type: Number, value: 5000},
+			url:{type: String, value: '/scrolling-feeds'},
+			blockedEntries:{type: Array, value: null},
+			attributesArray:{type: Array},
+			attributesMap:{type: Object},
+			isTweets:{type: Boolean, value: false}
+		},
+		opacity : 0.9,
+		visible : 4,
+		pow : 4.0,
+		dpc : function(fn, time){
+			if(_.isFunction(fn))
+				return setTimeout(fn, time || 1000);
+
+			return setTimeout(time, fn);
+		},
+		ready : function() {
+			var self = this;
+
+			if (self.isTweets && !self.attributesArray)
+				self.attributesArray = ['ts', 'user_url', 'user_image', 'user_name', 'user_screen_name', 'tid', 'feedkey'];
+
+			function cycle() {
+				self.cycleFeeds(function() {
+					self.dpc(self.cycleDuration, cycle);
+				})
+			}
+			self.dpc(self.cycleDuration*1.5,cycle);
+
+			function fetch() {
+				self.fetchFeeds(function() {
+					self.dpc(self.fetchDuration, fetch);
+				})
+			}
+			self.dpc(fetch);
+		},
+		wideChanged : function(v) {
+			var self = this;
+			self.visible = v ? 8 : 4;
+			console.log("visible:",self.visible)
+		},
+		updateOpacity : function(animate, shift) {
+			var self = this;
+
+			var list = $(".entry", self.$.list);
+			for(var i = 0; i < list.length; i++) {
+				var opacity = (1.0 - Math.pow((i-(shift||0)) / self.visible, self.pow)) * self.opacity;
+				if(!animate) {
+					$(list[i]).css({
+						'opacity' : opacity,
+						// visibility : opacity > 0 : 'visible' : 'hidden'
+					});
+				}
+				else {
+					$(list[i]).css({
+						// visibility : opacity > 0 : 'visible' : 'hidden'
+					})	
+					$(list[i]).animate({
+						opacity : opacity
+					}, { duration : 1000 })
+				}
+				// console.log("opacity",opacity);
+			}
+
+		},
+		cycleFeeds : function(callback) {
+			var self = this;
+
+			if(!self.animate)
+				return callback();
+
+			self.updated = false;
+			var list = $(".entry",self.$.list);
+			var target = $(".entry:nth-child(1)",self.$.list);
+			var height = target.height();
+
+			target.stop(true, false).animate({
+				opacity : 0
+			}, {
+				duration : 300,
+				always : function() {
+
+					self.updateOpacity(true, 1);
+					target.css({ visibility : 'hidden' })
+					target.stop(true, false).animate({
+						'margin-top': -height
+					}, {
+						duration: 1000,
+						always: function(){
+							target.remove();
+							if(!self.updated)
+								$(self.$.list).append(target);
+							target.css({ 
+								visibility : 'visible',
+								'margin-top': '0px',
+								opacity : 0
+							});
+							target.animate({
+								opacity : (1.0 - Math.pow((list.length-1) / self.visible, self.pow)) * self.opacity // (list.length-1)/list.length
+							}, { duration : 1000 })
+
+							callback && callback();
+						}
+					})
+				}
+			})
+		},
+		buildChildAttributes: function(data){
+			var self = this;
+			var str = [];
+			_.each(self.attributesMap, function(attrName, dataKey){
+				str.push(attrName+'="'+data[dataKey]+'"');
+			});
+
+			_.each(self.attributesArray, function(attrName){
+				str.push(attrName+'="'+data[attrName]+'"');
+			});
+
+			return str.join(" ");
+		},
+		feedsChanged : function() {
+			var self = this;
+
+			self.length = self.feeds.length;
+
+			$(self.$.list).empty();
+
+			for(var i = 0; i < self.feeds.length; i++) {
+				var t = self.feeds[i];
+				var opacity = (1.0 - Math.pow(i / self.visible, self.pow)) * self.opacity;
+				var text = t.text;
+				$(self.$.list).append(
+					'<div class="entry" style="opacity:'+opacity+';">'+
+						'<'+self.feedTagName+' ' + self.buildChildAttributes(t) + ' >'+text+'</'+self.feedTagName+'>'+
+					'</div>'
+				);
+			}
+		},
+
+		filterEntries: function(entries){
+			var self = this;
+			if (!self.blockedEntries || !self.blockedEntries.length)
+				return entries;
+
+			return _.filter(entries, function(e) {
+				return !_.contains(e, self.blockedEntries)
+			})
+		},
+
+		buildFeedItems: function(data){
+			var items = [];
+			_.each(data, function(_items, key){
+				items = items.concat(_items.entries.map(function(_item){
+					_item.feedkey = key;
+					return _item;
+				}))
+			});
+			return items;
+		},
+
+		fetchFeeds : function(callback) {
+			var self = this;
+			$.ajax({
+				url: self.url,
+				type: 'GET',
+				dataType: "json",
+			}).done(function (data) {
+				var entries = self.buildFeedItems(data);
+
+				self.feeds = self.filterEntries(entries);
+
+				// self.feeds = entries;
+				self.updated = true;
+				callback && callback();
+			}).fail(function (jqXHR) {
+				console.error(jqXHR.statusText);
+				callback && callback();
+			});
+			
+		}
+	};
+</script>
+<dom-module id="iris-feed-item">
+	<style>
+		:host{display: block;}
+		.feed-item {background-color: black;width: 500px;margin-left: 8px;margin-bottom: 2px;
+			font-size: 14px;color: white;padding: 4px;font-weight: 300;}
+		.info a,
+		.info a:visited,
+		.text .content::content a,
+		.text .content::content a:visited{color: #CBECF7;font-weight: normal;}
+		.info {font-size: 10px;padding-top: 2px;}
+		.pic{width: 48px;margin-right: 8px;}
+		.pic img {width: 48px;height: 48px;}
+		.text {font-size: 12px;overflow: hidden;padding-bottom: 2px;}
+		.ts {text-transform: uppercase;}
+		.info iron-icon {width: 16px;height: 16px;margin-top: -8px;margin-left: 10px;opacity: 0.7;}
+		.tsc {margin-top: -4px;}
+		.user {margin-top: -4px;}
+		.layout.vertical{@apply(--layout-vertical)}
+		.layout.horizontal{@apply(--layout-horizontal)}
+		.flex, .flex-1{@apply(--layout-flex)}
+	</style>
+	<template>
+		<div class='feed-item layout horizontal'>
+			<div class='pic'>
+				<a href="[[_user_url(user_screen_name, tid)]]" target="_blank"><img src="[[user_image]]"></a>
+			</div>
+			<div class='layout vertical flex'>
+				<div class='info layout horizontal'>
+					<div class='user'><!--span>[[feedkey]]</span-->
+					<a class="a" href="[[user_url]]" target="_blank">[[user_name]]</a> - <a class="a" href="[[_user_url(user_screen_name)]]" target="_blank">@<span>[[user_screen_name]]</span></a>
+					</div>
+					<div class='flex'></div>
+					<div class='ts layout horizontal'>
+						<div class='tsc'>[[ts]]</div><div><iron-icon icon="logos:twitter"></iron-icon></div>
+					</div>
+				</div>
+				<div class='text layout horizontal'>
+					<div class='flex text content'><content></content></div>
+				</div>	
+			</div>
+		</div>
+	</template>
+	<script>
+		Polymer({
+			is : 'iris-feed-item',
+			properties:{
+				tid : String,
+				ts : String,
+				user_url : String,
+				user_image : String,
+				user_name : String,
+				user_screen_name : String,
+				feedkey: String
+			},
+			_o : function(o) {
+				var self = this;
+				return 'opacity:'+o+';background-color: rgba(0,0,0,'+(o)+');';
+			},
+			_tweet_url : function(screen_name, id) {
+				return "https://twitter.com/"+screen_name+"/status/"+id
+			},
+			_user_url : function(screen_name, id) {
+				return "https://twitter.com/"+screen_name;
+			}
+		})
+	</script>
+</dom-module>
+
+<dom-module id="iris-feeds">
+	<style>
+	</style>
+	<template>
+		<iron-media-query query="(min-width: 1920px)" query-matches="{{wide}}"></iron-media-query>	
+		<div id="list" class="layout vertical"></div>
+	</template>
+	<script>
+		Polymer({
+			is : 'iris-feeds',
+			behaviors:[window.IRIS.FeedsBehavior]
+		})
+	</script>
+</dom-module>
