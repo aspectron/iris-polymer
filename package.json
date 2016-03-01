@@ -1,6 +1,6 @@
 {
   "name": "iris-polymer",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "author": {
     "name": "ASPECTRON Inc.",
     "email": "info@aspectron.com"
@@ -9,7 +9,7 @@
   "main" : "iris-polymer.js",
   "scripts": {
       "start": "node iris-polymer",
-      "install": "bower install"
+      "install": "bower install --force-latest"
   },
   "files":[
     "http",
