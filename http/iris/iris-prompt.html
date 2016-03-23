@@ -17,6 +17,15 @@
 	</template>
 	<script>
 		window.IRIS = window.IRIS || {};
+		//placeholder utill real component ready to call
+		window.IRIS.irisPrompt = {
+			set: function(key, data){
+				this[key] = data;
+			},
+			open: function(){
+				this.isCalled = true;
+			}
+		}
 		window.IRIS.Prompt = function(args, callback){
 			var data = _.extend({
 				text: '',
@@ -115,6 +124,12 @@
 				}
 			},
 			attached: function(){
+
+				if (window.IRIS.irisPrompt && window.IRIS.irisPrompt.isCalled) {
+					this.set('data', window.IRIS.irisPrompt.data);
+					this.open();
+				};
+
 				window[this.holder] && (window[this.holder].irisPrompt = this);
 				window.IRIS.irisPrompt = this;
 			}
