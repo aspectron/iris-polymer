@@ -45,6 +45,7 @@
     "paper-spinner": "PolymerElements/paper-spinner",
     "paper-dropdown-menu": "PolymerElements/paper-dropdown-menu",
     "paper-listbox": "PolymerElements/paper-listbox",
+    "paper-toggle-button": "PolymerElements/paper-toggle-button",
     "google-map":"GoogleWebComponents/google-map",
     "google-youtube": "GoogleWebComponents/google-youtube"
   }
