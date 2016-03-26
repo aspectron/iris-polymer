@@ -47,6 +47,7 @@
     "paper-dropdown-menu": "PolymerElements/paper-dropdown-menu",
     "paper-listbox": "PolymerElements/paper-listbox",
     "paper-toggle-button": "PolymerElements/paper-toggle-button",
+    "paper-date-picker": "aspectron/paper-date-picker",
     "google-map":"GoogleWebComponents/google-map",
     "google-youtube": "GoogleWebComponents/google-youtube"
   }
