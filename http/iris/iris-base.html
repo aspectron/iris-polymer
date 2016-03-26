@@ -35,6 +35,20 @@ IRIS.find = function(local, shadow) {
 	return o;
 }
 
+IRIS.findClosestBy = function(el, fn, _default, limit){
+	var i = 0;
+	limit = limit || 10;
+	return up(el) || _default;
+	function up(el){
+		if (!el || i > limit)
+			return;
+		if (fn(el)){
+			return el;
+		}
+		return up(el.parentNode);
+	}
+}
+
 IRIS.findAll = function(local, shadow) { 
 
 	var l = document.querySelectorAll(local);
