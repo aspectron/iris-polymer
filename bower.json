@@ -21,6 +21,7 @@
     "iron-form": "PolymerElements/iron-form",
     "iron-pages": "PolymerElements/iron-pages",
     "iron-collapse": "PolymerElements/iron-collapse",
+    "iron-list": "PolymerElements/iron-list",
     "paper-tabs": "PolymerElements/paper-tabs",
     "paper-item": "PolymerElements/paper-item",
     "paper-dialog": "PolymerElements/paper-dialog",
