@@ -217,17 +217,27 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			},
 
 			_onValueChanged: function(){
+				this.cancelDebouncer('_onDateChanged');
 				if (this.value && this.value instanceof Date) {
 					if (!this._date || !(this._date instanceof Date) || this._date.getTime() != this.value.getTime()){
 						this.set('_date', new Date(this.value));
 					}
-				};
+				}else{
+					//this.debounce('_onValueChanged', function(){
+						var date = new Date(this.value);
+						//console.log("new Date(this.value)", this.value, this.value && this._isValidDate(date))
+						if (this.value && this._isValidDate(date)) {
+							this.set('value', date);
+						};
+					//}, 100)
+				}
 			},
 
 			_onDateChanged: function(){
 				this.debounce('_onDateChanged', function(){
 					//console.log("this._date", this._date)
-					if (!this.value || !(this._dvalueate instanceof Date) || this.value.getTime() != this._date.getTime()){
+					//console.log("sssss:", this.value, this._date, this.value.getTime(), this._date.getTime());
+					if (this._date && this._isValidDate(this._date)){//!this.value || !(this.value instanceof Date) || this.value.getTime() != this._date.getTime()){
 						this.set('value', new Date(this._date));
 						this.updateFields();
 					}
