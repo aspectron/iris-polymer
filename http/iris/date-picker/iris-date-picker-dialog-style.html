@@ -1,0 +1,41 @@
+<style is="custom-style">
+/* mixin definitions */
+:root {
+  --iris-date-picker-dialog: {
+    margin: 0;
+    max-height: 520px !important;
+  };
+  --iris-date-picker-dialog-picker: {
+    margin-top: 0 !important;
+    padding: 0;
+  };
+  --iris-date-picker-dialog-calendar: {
+    padding-bottom: 0;
+  };
+  --iris-date-picker-dialog-heading: {
+    margin-bottom: -56px;
+  };
+}
+</style>
+
+<dom-module id="iris-date-picker-dialog-style">
+  <template>
+    <style>
+      /* Application of mixins to local .iris-date-picker-dialog elements */
+      .iris-date-picker-dialog {
+        @apply(--iris-date-picker-dialog);
+      }
+      .iris-date-picker-dialog > iris-date-picker {
+        --iris-calendar: {
+          @apply(--iris-date-picker-dialog-calendar);
+        };
+        @apply(--iris-date-picker-dialog-picker);
+      }
+      .iris-date-picker-dialog > iris-date-picker:not([narrow]) {
+        --iris-date-picker-heading: {
+          @apply(--iris-date-picker-dialog-heading);
+        };
+      }
+    </style>
+  </template>
+</dom-module>

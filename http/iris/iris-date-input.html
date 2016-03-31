@@ -1,0 +1,493 @@
+
+<link rel="import" href="/deps/polymer/polymer.html">
+<link rel="import" href="/deps/paper-input/paper-input-behavior.html">
+<link rel="import" href="/deps/paper-input/paper-input-container.html">
+<link rel="import" href="/deps/paper-input/paper-input-error.html">
+<link rel="import" href="/deps/iron-input/iron-input.html">
+<link rel="import" href="/deps/iron-form-element-behavior/iron-form-element-behavior.html">
+<link rel="import" href="/deps/iron-validator-behavior/iron-validator-behavior.html">
+<link rel="import" href="/IRIS/date-picker/iris-date-picker.html">
+
+<!--
+Simple inputs to validate date instead of using a calendar. 2 formats available: YYYY/MM/DD and DD/MM/YYYY.
+
+<iris-date-input date-format="YYYY/MM/DD" value="{{value}}"></iris-date-input>
+
+You can add constraints like max-date and min-date.
+
+<iris-date-input date-format="YYYY/MM/DD" value="{{value}}" max-date="{{maxDate}}" min-date="{{minDate}}"></iris-date-input>
+
+IMPORTANT: takes a local date as input and send back a local date. Make utc convertion in your elements.
+
+@demo demo/index.html
+-->
+
+<dom-module id="iris-date-input">
+<template>
+	<style>
+		:host {
+			display: inline-block;
+		}
+		input[is="iron-input"] {
+			font: inherit;
+			outline: none;
+			box-shadow: none;
+			border: none;
+			width: none;
+			text-align: center;
+			min-width: 50px;
+		}
+		#container::shadow .label-and-input-container{
+			@apply(--layout-horizontal);
+		}
+		#dialog{z-index: 10}
+		@media (max-width: 659px){
+        	#dialog{left: 0px; right: 0px; margin:0px; position: fixed;}
+      	}
+      	@media (max-height: 515px) and (max-width: 659px){
+      		#dialog{top:0px; bottom:0px;}
+      		#dialog #picker{height: 84%; padding:0px;}
+        	#dialog #picker::shadow #datePicker{height: 100%}
+        	#dialog #picker::shadow #heading{height: auto; @apply(--layout-horizontal);}
+        	#dialog #picker::shadow #heading .date{line-height: 1; font-size: 20px; @apply(--layout-flex); margin-left: 15px;}
+      	}
+	</style>
+
+	<paper-input-container 
+		id="container"
+		disabled$="[[disabled]]"
+		invalid="[[invalid]]"
+		always-float-label>
+
+		<label hidden$="[[!label]]">[[label]]</label>
+
+		<iris-date-validator></iris-date-validator>
+
+		<input 
+			is="iron-input"
+			type="text"
+			id="dateInputOne"
+			bind-value="{{_input1}}"
+			allowed-pattern="[0-9]+"
+			required
+		/>
+		<span class="separator">/</span>
+		<input 
+			is="iron-input"
+			type="text"
+			id="dateInputTwo"
+			bind-value="{{_input2}}"
+			allowed-pattern="[0-9]+" 
+			required
+		/>
+		<span class="separator">/</span>
+		<input 
+			is="iron-input"
+			type="text"
+			id="dateInputThree"
+			bind-value="{{_input3}}"
+			allowed-pattern="[0-9]+"
+			required
+		/>   
+		<paper-icon-button suffix icon="[[pickerIcon]]" hidden$="[[hidePicker]]" on-click="openPicker"></paper-icon-button>
+		<template is="dom-if" if="[[errorMessage]]">
+			<paper-input-error id="error">[[errorMessage]]</paper-input-error>
+		</template>
+	</paper-input-container>
+	<paper-dialog id="dialog" class="iris-date-picker-dialog" modal on-iron-overlay-closed="dismissDialog">
+		<iris-date-picker id="picker" date="{{_date}}"></iris-date-picker>
+		<div class="buttons">
+			<paper-button dialog-dismiss>Cancel</paper-button>
+			<paper-button primrary dialog-confirm>OK</paper-button>
+		</div>
+	</paper-dialog>
+</template>
+
+<script>
+	(function() {
+
+		Polymer({
+			is: 'iris-date-input',
+
+			properties: {
+				hidePicker:{
+					type: Boolean,
+					value: false
+				},
+				pickerIcon:{
+					type: String,
+					value: "editor:insert-invitation"
+				},
+				/**
+				* Input label
+				*/
+				label: {
+					type: String
+				},
+				value: {
+					notify: true,
+					type: String
+				},
+				_date: {
+					type: Date
+				},
+				/**
+				* Max date contraint
+				* @type {Date}
+				*/
+				maxDate: {
+					type: Date
+				},
+				/**
+				* Min date constraint
+				* @type {Date}
+				*/
+				minDate: {
+					type: Date
+				},
+				/**
+				* Input format available: YYYY/MM/DD or DD/MM/YYYY
+				* @type {String}
+				*/
+				format: {
+					type: String,
+					value: 'YYYY/MM/DD'
+				},
+				/**
+				* Custom validator used to validate date
+				* @type {String}
+				*/
+				validator: {
+					type: String,
+					value: 'iris-date-validator'
+				},
+				/**
+				* Store DOM input element
+				* @type {Array}
+				*/
+				_elements: {
+					type: Array,
+					value: []
+				},
+				_input1: {
+					type: String
+				},
+				_input2: {
+					type: String
+				},
+				_input3: {
+					type: String
+				}
+			},
+
+			behaviors: [
+				Polymer.IronValidatableBehavior,
+				Polymer.IronFormElementBehavior
+			],
+
+			observers: [
+				'_computeDate(_input1, _input2, _input3)',
+				'_onValueChanged(value)',
+				'_onDateChanged(_date)'
+			],
+
+			attached: function() {
+				this.dateValidator = new Polymer.IronMeta({type: 'validator'}).byKey(this.validator);
+				
+				this._getDOMInputElements();
+				this._enableDateConstraints();
+				this._attached = true;
+				this.updateFields();
+			},
+
+			updateFields: function(){
+				if (!this._attached)
+					return;
+				var dateParts = this._extractDateParts(this.value);
+				this._defineInputsPropertiesAndValue(dateParts, this.format);
+				this._setPaperInputContainerState(this.value, true);
+			},
+
+			openPicker: function(){
+				this.$.dialog.open();
+			},
+
+			dismissDialog:function(){
+				this.$.dialog.close();
+			},
+
+			_onValueChanged: function(){
+				if (this.value && this.value instanceof Date) {
+					if (!this._date || !(this._date instanceof Date) || this._date.getTime() != this.value.getTime()){
+						this.set('_date', new Date(this.value));
+					}
+				};
+			},
+
+			_onDateChanged: function(){
+				this.debounce('_onDateChanged', function(){
+					//console.log("this._date", this._date)
+					if (!this.value || !(this._dvalueate instanceof Date) || this.value.getTime() != this._date.getTime()){
+						this.set('value', new Date(this._date));
+						this.updateFields();
+					}
+				}, 100);
+			},
+
+			/** 
+			* set flag for optional constraints on date like:
+			*  - max-date
+			*  - min-date
+			*/
+			_enableDateConstraints: function() {
+				this.hasMaxDate = typeof this.maxDate !== 'undefined' ? true : false;
+				this.hasMinDate = typeof this.minDate !== 'undefined' ? true : false;
+			},
+
+			_extractDateParts: function(date) {
+				var year, month, day;
+
+				if(!this._isValidDate(date)) {
+					console.warn('date is not good: ' + date + ' - can\'t populate inputs');
+				} else {
+					year = "" + date.getFullYear();
+					month = ("0" + (date.getMonth() + 1)).slice(-2);
+					day = ("0" + date.getDate()).slice(-2);
+				}
+
+				return [year, month, day];
+			}, 
+
+			_isValidDate: function(date) {
+				return Object.prototype.toString.call(date) === "[object Date]" && !isNaN(date.getTime());
+			},
+
+			_getDOMInputElements: function() {
+				this._elements = Polymer.dom(this.$$('#container')).querySelectorAll('input');
+			},
+
+			_defineInputsPropertiesAndValue: function(dateParts, dateFormat) {
+				var dateFormatList = this._splitDateFormat(dateFormat);
+				this._defineContraintsAndValuesOnInputs(dateParts, dateFormatList);
+			},
+
+			_splitDateFormat: function(dateFormat) {
+				if(this._isValidDateFormat(dateFormat)) {
+					return dateFormat.split('/');
+				}
+
+				throw new Error('invalid format: ' + dateFormat + '(valid format are "YYYY/MM/DD" or "DD/MM/YYYY"');
+			},
+
+			_isValidDateFormat: function(dateFormat) {
+				return dateFormat.indexOf('YYYY/MM/DD') > -1 || dateFormat.indexOf('DD/MM/YYYY') > -1;
+			},
+
+			_defineContraintsAndValuesOnInputs: function(dateParts, dateFormatList) {
+				for(var i = 0; i < dateFormatList.length; i++) {
+					var selector = this._elements[i];
+					this._defineContraintsAndValueOnInput(dateFormatList[i], selector, dateParts[i]);
+				}
+			},
+
+			_defineContraintsAndValueOnInput: function(format, selector, dateValue) {
+
+				switch(format) {
+					case 'YYYY':
+					this._setInputProperties(selector, 'YYYY', 4, 4);
+					break;
+					case 'MM':
+					this._setInputProperties(selector, 'MM', 2, 2);
+					break;
+					case 'DD':
+					this._setInputProperties(selector, 'DD', 2, 2);
+					break;
+					default:
+					throw new Error('format not supported: ' + format);
+				}
+
+				if(dateValue) {
+					this._setInputValue(selector, dateValue);
+				}
+			},
+
+			_setInputValue: function(selector, value) {
+				selector.value = value;
+			},
+
+			_setInputProperties: function (selector, dateFormat, minlength, maxlength) {
+				selector.setAttribute('data-date', dateFormat);
+				selector.setAttribute('minlength', minlength);
+				selector.setAttribute('maxlength', maxlength);
+				selector.setAttribute('placeholder', dateFormat);
+			},
+
+			/**
+			* Called when inputs change
+			*/
+			_computeDate: function(_input1, _input2, _input3) {
+				var date = this._extractInputsValueBeforeValidate();
+
+				if (!date.day && !date.month && !date.year) {
+					this._setSelectedDate(null, false);
+				} else {
+					var selectedDate = date.year + '/' + date.month + '/' + date.day;  
+					var isValidDate = this._mkValidation(selectedDate);              
+					this._setPaperInputContainerState(selectedDate, isValidDate);
+					this._setSelectedDate(selectedDate, isValidDate);
+				}      
+			},
+
+			/**
+			* Split string and return an object
+			* @return {Object}
+			*/
+			_extractInputsValueBeforeValidate: function() {
+				var o = {};
+
+				if (this._elements) {
+					for(var i = 0; i < this._elements.length; i++) {
+						var format = this._elements[i].dataset.date;
+						var value = this._elements[i].value;
+						o[this._mkKey(format)] = value;
+					}
+				}
+
+				return o;
+			},
+
+			_mkKey: function(format) {
+
+				switch(format) {
+					case 'DD':
+					key = 'day';
+					break;
+					case 'MM':
+					key = 'month';
+					break;
+					case 'YYYY':
+					key = 'year';
+					break;
+					default:
+					throw new Error('format not supported: ', format);
+				}
+
+				return key;
+			},
+
+			_setSelectedDate: function(date, valid) {
+				this.value = valid ? new Date(date) : null;
+			},
+
+			/**
+			* @param  {String} selected date
+			* @return {Boolean} date valid or not
+			*/
+			_mkValidation: function(date) {
+				var isValid = false;
+				if(this.dateValidator.validate(date)) {
+					isValid = this._extraValidation(date);
+				}
+
+				return isValid;
+			},
+
+			_extraValidation: function(date) {
+				var selectedDate = new Date(date).setHours(0,0,0,0);
+				isValidMaxDate = this.hasMaxDate ? (selectedDate <= this.maxDate.setHours(0,0,0,0)) : true;
+				isValidMinDate = this.hasMinDate ? (selectedDate >= this.minDate.setHours(0,0,0,0)) : true;
+
+				return isValidMaxDate && isValidMinDate;
+			},
+
+			/**
+			* set paper-input-container state
+			* 
+			* @param {String} selected date
+			* @param {Boolean} is valid date
+			*/
+			_setPaperInputContainerState: function(date, valid) {
+				this.$.container.invalid = !valid;
+
+				this.$.container.updateAddons({
+					value: new Date(date),
+					invalid: !valid
+				});
+			}
+		});
+	})();
+</script>
+</dom-module>
+
+
+<script>
+
+	Polymer({
+		is: 'iris-date-validator',
+
+		behaviors: [
+			Polymer.IronValidatorBehavior
+		],
+
+		_buildDateObject: function(date) {
+			var list = [];
+			if(date instanceof Date) {
+				list = this._extractDatePartsToList(date);
+			} else {
+				list = date.split('/');
+			}
+
+			o = {
+				day: list[2],
+				month: list[1],
+				year: list[0]
+			};
+
+			return o;
+		},
+
+		_extractDatePartsToList: function(date) {
+			var year = "" + date.getFullYear();
+			var month = ("0" + (date.getMonth() + 1)).slice(-2);
+			var day = ("0" + date.getDate()).slice(-2);
+
+			return [year, month, day];
+		}, 
+		_validateYear: function(year) {
+			return year.match(/^[0-9]{4}$/) !== null;
+		},
+
+		_validateMonth: function(month) {
+			return month.match(/^(0?[1-9]|1[012])$/) !== null;
+		},
+
+		_validateDay: function(day, month, year) {
+			return !!day && day > 0 && day <= this._daysInMonth(month, year);
+		},
+
+		_daysInMonth: function(month, year) { // m is 0 indexed: 0-11
+			month = month - 1;
+			switch (month) {
+				case 1 :
+				return (year % 4 === 0 && year % 100) || year % 400 === 0 ? 29 : 28;
+				case 8 : case 3 : case 5 : case 10 :
+				return 30;
+				default :
+				return 31;
+			}
+		},
+
+		validate: function(value) {
+			if(!value) {
+				return false;
+			} else {
+				var date = this._buildDateObject(value);
+
+				return this._validateYear(date.year) && 
+				this._validateMonth(date.month) && 
+				this._validateDay(date.day, date.month, date.year);
+			}
+		}
+	});
+
+</script>
