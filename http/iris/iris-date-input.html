@@ -258,14 +258,14 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 				var year, month, day;
 
 				if(!this._isValidDate(date)) {
-					console.warn('date is not good: ' + date + ' - can\'t populate inputs');
+					//console.warn('date is not good: ' + date + ' - can\'t populate inputs');
 				} else {
 					year = "" + date.getFullYear();
 					month = ("0" + (date.getMonth() + 1)).slice(-2);
 					day = ("0" + date.getDate()).slice(-2);
 				}
 
-				return [year, month, day];
+				return {YYYY: year, MM: month, DD: day};
 			}, 
 
 			_isValidDate: function(date) {
@@ -296,11 +296,11 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			_defineContraintsAndValuesOnInputs: function(dateParts, dateFormatList) {
 				for(var i = 0; i < dateFormatList.length; i++) {
 					var selector = this._elements[i];
-					this._defineContraintsAndValueOnInput(dateFormatList[i], selector, dateParts[i]);
+					this._defineContraintsAndValueOnInput(dateFormatList[i], selector, dateParts);
 				}
 			},
 
-			_defineContraintsAndValueOnInput: function(format, selector, dateValue) {
+			_defineContraintsAndValueOnInput: function(format, selector, dateParts) {
 
 				switch(format) {
 					case 'YYYY':
@@ -315,6 +315,8 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 					default:
 					throw new Error('format not supported: ' + format);
 				}
+
+				var dateValue = dateParts[format];
 
 				if(dateValue) {
 					this._setInputValue(selector, dateValue);
