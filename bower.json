@@ -23,6 +23,7 @@
     "iron-pages": "PolymerElements/iron-pages",
     "iron-collapse": "PolymerElements/iron-collapse",
     "iron-list": "PolymerElements/iron-list",
+    "iron-validator-behavior" : "PolymerElements/iron-validator-behavior",
     "paper-tabs": "PolymerElements/paper-tabs",
     "paper-item": "PolymerElements/paper-item",
     "paper-dialog": "PolymerElements/paper-dialog",
