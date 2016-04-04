@@ -1,0 +1,91 @@
+<dom-module id="iris-circle-progress">
+	<style>
+		:host{display: inline-block; height: auto; width: auto;}
+		svg circle {
+			stroke-dashoffset: 0;
+			transition-property: all;
+			transition-timing-function:linear;
+			transition-duration: 1s;
+		}
+		#bar{stroke: var(--dark-primary-color);}
+	</style>
+	<template>
+		<svg width$="[[_size(radius)]]" height$="[[_size(radius)]]" viewPort="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg">
+			<circle
+				id="bg" stroke-dasharray$="[[_dashArray(radius)]]" fill="transparent"
+				r$="[[radius]]" cx$="[[_center(radius)]]" cy$="[[_center(radius)]]" style$="[[_css1(radius)]]"
+				>
+			</circle>
+			<circle
+				id="bar" stroke-dasharray$="[[_dashArray(radius)]]" fill="transparent"
+				r$="[[radius]]" cx$="[[_center(radius)]]" cy$="[[_center(radius)]]"
+				>
+			</circle>
+		</svg>
+	</template>
+	<script>
+	Polymer({
+		is:'iris-circle-progress',
+		properties:{
+			radius:{
+				type: Number,
+				value: 10
+			},
+			value: {
+				type: Number,
+				value: 50
+			},
+			duration:{
+				type: String,
+				value: 1,//seconds
+				observer:'onDurationChanged'
+			},
+			bgStrokeColor:{
+				type: String,
+				value: "rgba(255, 255, 255, 0.3)",
+				observer:'onBgStrokeColorChanged'
+			},
+			strokeColor:{
+				type: String,
+				observer:'onStrokeColorChanged'
+			}
+		},
+		observers:['onValueOrRadiusChanged(value, radius)'],
+		_css1: function(){
+			return "stroke-width:"+ (this.radius * 2)+"px";
+		},
+		onDurationChanged: function(){
+			var style = this.$.bar.style;
+			style.transitionDuration = this.duration+"s";
+		},
+		onValueOrRadiusChanged: function(){
+			var v = this.value;
+			if (v > 100)
+				v = 100;
+			if (v < 0)
+				v = 0;
+			var sdo = ((100-v)/100) * this.radius * 2 * Math.PI;
+			var style = this.$.bar.style;
+			style.strokeWidth = (this.radius * 2)+"px";
+			style.strokeDashoffset=sdo;
+		},
+		_center: function(){
+			return this.radius * 2;
+		},
+		_size: function(){
+			return this.radius * 4;
+		},
+		_dashArray: function(){
+			return this.radius * 2 * Math.PI;
+		},
+		onStrokeColorChanged: function(){
+			if (this.strokeColor) {
+				this.$.bar.style.stroke = this.strokeColor;
+			}
+		},
+		onBgStrokeColorChanged: function(){
+			this.$.bg.style.stroke = this.bgStrokeColor;
+		}
+	})
+	</script>
+</dom-module>

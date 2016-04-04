@@ -1,0 +1,308 @@
+<script>
+window.IRIS = window.IRIS || {};
+window.IRIS.IRISGridFieldBehavior = {
+	isGridHost: true,
+	properties:{
+		value:{
+			notify: true,
+			type: Array,
+			value:[]
+		},
+		dialogTitle:{
+			type: String
+		},
+		label:{
+			type: String
+		},
+		checkall:{
+			type: Boolean,
+			observer: 'onCheckAllChanged'
+		}
+	},
+	observers:[
+		'onLabelChanged(label)',
+		'onDialogTitleChanged(dialogTitle)',
+		'onValueChanged(value.*)'
+	],
+	attached: function(){
+		var self = this;
+		self._correctValueType();
+		self.$.irisFormDialog = self.$.irisFormDialog || self.querySelector('iris-form-dialog');
+		self.$.formDialog = self.$.irisFormDialog? self.$.irisFormDialog.$.formDialog : self.$.formDialog || self.querySelector('#formDialog');
+		self.$.gridFieldHeader = self.querySelector('iris-grid-field-header');
+		self.$.grid = self.querySelector('iris-grid');
+
+		_.each([self.$.grid, self.$.gridFieldHeader, self.$.irisFormDialog], function(el){
+			//console.log("el", el)
+			if (el) {
+				self.listen(el, "click", "onActionBtnClick");
+			};
+		});
+
+		if(self.$.formDialog){
+			self.listen(self.$.formDialog, "keyup", "onFormInputKeyUp");
+		}
+
+		self.onLabelChanged();
+	},
+	/*
+	onCheckAllChanged: function(){
+		console.log("onCheckAllChanged", this.checkall)
+	},
+	*/
+	_correctValueType: function(){
+		if (!_.isArray(this.value)) {
+			this.value = []
+		};
+	},
+	onValueChanged:function(){
+		this._correctValueType();
+	},
+	onLabelChanged: function(){
+		if(this.$.gridFieldHeader){
+			this.$.gridFieldHeader.label = this.label;
+		}
+	},
+	onDialogTitleChanged: function(){
+		if(this.$.irisFormDialog){
+			this.$.irisFormDialog.title = this.dialogTitle;
+		}
+	},
+	onFormInputKeyUp: function(e){
+		if(e.which == 13){
+			this.onSaveButtonClick();
+		}
+	},
+	onClearButtonClick: function(){
+		this.set('value', []);
+	},
+	onAddButtonClick: function(){
+		this.edit({}, false);
+	},
+	onRemoveButtonClick: function(e, btn, index){
+		var self = this;
+		self.splice("value", index, 1);
+	},
+	onEditButtonClick: function(e, btn, index){
+		var self = this;
+		var item = self.get("value."+index);
+		self.edit(item, index);
+	},
+	edit: function(data, index){
+		var self = this;
+		if(!self.$.formDialog)
+			return;
+		self.set('formData', _.extend({}, data));
+		self.set('_formItemIndex', index);
+		self.set('dialogTitle', index===false ? self.addTitle : self.editTitle);
+		self.$.formDialog.open();
+		//item.school = new Date();
+		//self.set("items."+index, item);
+	},
+	onSaveButtonClick: function(){
+		var self = this;
+		self.$.formDialog.close();
+		if (self._formItemIndex === false) {
+			self.push("value", self.formData);
+		}else{
+			self.set("value."+self._formItemIndex, self.formData);
+		}
+	},
+	onActionBtnClick: function(e){
+		var self = this;
+		var btn = self.findBtn(e.target);
+		if (btn) {
+			var id = btn.getAttribute('data-action-btn');
+			var actionFn = id && self['on'+id[0].toUpperCase()+id.substr(1)+'ButtonClick'];
+			if(!actionFn)
+				return
+			actionFn.call(self, e, btn, btn.parentNode.parentNode.dataIndex);
+		}
+	},
+	findBtn: function(el){
+		var self = this;
+		return IRIS.findClosestBy(el, function(el){
+			return (el.dataBtn || (el.getAttribute && el.getAttribute('data-action-btn')!=null))
+		});
+	},
+	validate: function(){
+		var self = this;
+		if (self.required && (!self.value || _.isArray(self.value)) ) {
+			return false;
+		};
+		return true;
+	}
+}
+</script>
+<dom-module id="iris-grid">
+	<style include="iron-flex">
+		:host{@apply(--layout-vertical); @apply(--layout-flex); z-index: 0;}
+		div{background: -webkit-linear-gradient(top,  rgba(255,255,255,0.2) 0%,rgba(255,255,255,0.9) 100%);}
+
+		.grid-body{overflow-y: auto; overflow-x:hidden;}
+		.grid-header {@apply(--layout-horizontal);}
+		::content grid-head {@apply(--iris-grid-header-head); box-sizing:border-box;}
+
+		::shadow  grid-row {@apply(--layout-horizontal); box-sizing:border-box; @apply(--iris-grid-item);}
+		::shadow  grid-row .center{ @apply(--layout-horizontal); @apply(--layout-center); }
+		::shadow  grid-row:last-child{border-bottom-width: 0px;}
+		::shadow  grid-row  grid-cell {@apply(--iris-grid-cell);box-sizing:border-box; overflow:hidden; text-overflow:ellipsis;}
+
+		::content grid-head:last-child,
+		::shadow  grid-row  grid-cell:last-child{border-right-width: 0px;}
+
+		::shadow  grid-row .nowrap,
+		::shadow  grid-row .nowrap div{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+		::shadow  .flex,
+		::content .flex,
+		::content [flex]{@apply(--layout-flex);}
+		.grid-footer{
+			min-height: 50px;
+			@apply(--layout-horizontal)
+		}
+	</style>
+	<template>
+		<div class="grid-header">
+			<content select="grid-head"></content>
+		</div>
+		<div class="grid-body flex" id="gridBody" >
+			<iron-list as="item" scroll-target="gridBody" id="_list"></iron-list>
+		</div>
+		<div class="grid-footer" hidden$="[[hideFooter]]">
+			<div class="grid-navigation"></div>
+			<div class="flex"></div>
+			<div class="grid-footer-info-text">
+			</div>
+		</div>
+		<div id="tpHolder">
+			<content select="template"></content>
+		</div>
+	</template>
+	<script>
+	Polymer({
+		is: "iris-grid",
+		properties:{
+			items:{
+				type: Array,
+				value:[]
+			},
+			hideFooter:{
+				type: Boolean
+			}
+		},
+		observers: [
+			'onItemsChanged(items.*)'
+		],
+		attached: function(){
+			var self = this;
+			var tp 			= self.$.tpHolder.querySelector('template');
+			var list 		= self.$._list;
+			var dataHost    = self.findGridHost();
+			tp.root 		= dataHost;
+			Polymer.dom(list).appendChild(tp);
+			list.dataHost 	= dataHost;
+			list._ensureTemplatized();
+
+			self.$.list = list;
+			self.$.list.items = self.items? self.items.concat([]) : [];
+		},
+		findGridHost: function(){
+			var self = this;
+			return IRIS.findClosestBy(self.parentNode, function(el){
+				return (el.isGridHost || (el.getAttribute && el.getAttribute('is-grid-host')!=null))
+			}, self);
+		},
+		onItemsChanged: function(change){
+			var self = this;
+			var list = self.$.list;
+			if (!list)
+				return;
+			//console.log("onItemsChanged:"+JSON.stringify(change, null, "\t"))
+			if (change.path == "items.splices") {
+				var splices = change.value.indexSplices;
+				_.each(splices, function(splice){
+					var index = splice.index;
+					var args = ["items", index, splice.removed.length];
+					for (var i=0; i < splice.addedCount; i++) {
+						args.push(splice.object[index+i]);
+					}
+					list.splice.apply(list, args);
+				});
+			}else if(change.path == "items"){
+				list.set('items', self.items ? self.items.concat([]): [])
+			}else if(change.path.indexOf("items.#") === 0){
+				list.set(change.path.replace('#', ''), _.extend(change.value));
+			}
+		}
+	})
+	</script>
+</dom-module>
+
+<dom-module id="iris-grid-field-style">
+	<style include="iron-flex app-style iron-flex-factors"></style>
+	<template>
+		<style>
+			:host{@apply(--layout-vertical); min-height: 350px;}
+			iris-grid{background-color: #FFF;}
+			.cell1{width: 40px;}
+			.cell2{width: 150px;}
+			.actions{width: 140px; text-align: center;}
+			.actions paper-button{padding: 10px 8px; min-width: 30px; background-color: transparent;}
+		</style>
+	</template>
+</dom-module>
+
+<dom-module id="iris-grid-field-header">
+	<style include="iron-flex">
+		.header{@apply(--layout-horizontal); @apply(--layout-center); padding:10px 0px 10px 10px;}
+		.header :last-child{margin-right: 0px;}
+	</style>
+	<template>
+		<div class="header">
+			<div class="flex label">[[label]]</div>
+			<paper-button data-action-btn="clear">
+				<iron-icon icon="icons:clear"></iron-icon><%=_T("Clear")%>
+			</paper-button>
+			<paper-button primrary data-action-btn="add">
+				<iron-icon icon="icons:add"></iron-icon><%=_T("Add")%>
+			</paper-button>
+		</div>
+	</template>
+	<script>
+		Polymer({
+			is: "iris-grid-field-header",
+			properties:{
+				label: String
+			}
+		})
+	</script>
+</dom-module>
+
+
+<dom-module id="iris-form-dialog">
+	<style include="iron-flex"></style>
+	<template>
+		<paper-dialog id="formDialog" modal class="dialog layout vertical" entry-animation="scale-up-animation"
+              exit-animation="fade-out-animation">
+			<paper-toolbar>
+			    <paper-icon-button icon="close" dialog-dismiss></paper-icon-button>
+			    <span class="title">[[title]]</span>
+			</paper-toolbar>
+			<paper-dialog-scrollable class="flex">
+				<content></content>
+			</paper-dialog-scrollable>
+			<div class="buttons">
+				<paper-button dialog-dismiss><%=_T("Close")%></paper-button>
+				<paper-button primrary data-action-btn="save"><%=_T("Save")%></paper-button>
+			</div>
+		</paper-dialog>
+	</template>
+	<script>
+		Polymer({
+			is: "iris-form-dialog",
+			properties:{
+				title: String
+			}
+		})
+	</script>
+</dom-module>
