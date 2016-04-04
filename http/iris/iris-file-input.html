@@ -1,0 +1,265 @@
+<dom-module id="iris-file-input">
+	<style include="iron-flex">
+		:host{
+			position: relative;
+			overflow: hidden;
+			min-width: 100px;
+			height: 250px;
+			@apply(--layout-vertical);
+			background-color: #FFF;
+		}
+		.preview-msg{
+			display: none;
+			position: absolute;
+			top: 37%;
+			left: 0px;
+			right: 0px;
+			padding: 2px;
+			background-color: rgba(53, 252, 3, 0.75);
+			-webkit-transform: rotate(-45deg);
+			color: #0F21EB;
+			text-align: center;
+			font-weight: bold;
+		}
+		.dz-image-preview, #preview, .progress-holder{
+			position: absolute;
+			top: 64px;
+			bottom: 0px;
+			left:0px;
+			right: 0px;
+			text-align: center;
+			background-color: rgba(255,255,255, 0.9);
+			display: none;
+		}
+		.progress-holder{background-color: transparent;}
+		:host(.offline-preview) .dz-image-preview,
+		:host(.offline-preview) #preview,
+		:host(.offline-preview) .preview-msg{
+			display: block;
+		}
+		.capturing{
+			/*background: url('/images/loading-128.gif') center no-repeat;*/
+			position: absolute;
+			width: 100%;
+			top: 64px;
+			bottom: 0px;
+		}
+		paper-toolbar .title{margin-left: 0px;}
+		#img{background: center top no-repeat;background-size: contain; margin: 20px;}
+		iron-icon{cursor: pointer; margin: 10px;}
+
+
+		::content .dz-remove{display: none;}
+		::content .dz-details{margin-top: 50px;}
+		::content .dz-filename{text-align: left;}
+		::content .dz-error-message,
+		::content .dz-success-mark,
+		::content .dz-error-mark,
+		::content .dz-size,
+		:host(.offline-preview) .preview-msg{display: none}
+		::content .dz-preview::content .dz-image,
+		.progress-holder{
+			@apply(--layout-vertical); @apply(--layout-center-center);
+			padding: 20px; box-sizing: border-box;
+		}
+		::content .dz-preview,
+		::content .dz-preview::content .dz-image{max-height: 100%;height: 100%;}
+		::content .dz-preview::content img{max-width: 100%; max-height: 100%;margin: 0px auto;}
+	</style>
+	<template>
+		<paper-toolbar __hidden$="[[__isToolbarHidden(recordId, shotting)]]">
+			<span class="title">[[label]]</span>
+			<iron-icon hidden$="[[!hasOfflinePreview]]" title="[[btnTitle.cancel]]" icon="cancel" on-click="cancelFiles"></iron-icon>
+			<iron-icon hidden$="[[disabled]]" id="fileUploadBtn" title="[[btnTitle.change]]" icon="attachment"></iron-icon>
+			<iron-icon hidden$="[[!hasOfflinePreview]]" title="[[btnTitle.upload]]" icon="file-upload" on-click="uploadFile"></iron-icon>
+		</paper-toolbar>
+		<div id="img" style$="[[__bgSrc(_src)]]" class="flex"></div>
+		<div id="preview" class$="[[__previewCls(hidePreview, 'flex')]]"></div>
+		<div hidden$="[[!isUploading]]" class="progress-holder">
+			<iris-circle-progress value="[[progress]]" duration="0.1"></iris-circle-progress>
+		</div>
+		<div class="capturing" hidden$="{{!shotting}}"></div>
+		<div class="preview-msg">{{msg}}</div>
+	</template>
+	<script>
+		Polymer({
+			is: "iris-file-input",
+			isFileUploadField: true,
+			properties:{
+				label:{
+					type: String,
+				},
+				hidePreview:{
+					type: Boolean,
+					value: false
+				},
+				src:{
+					type: String,
+					value: '',
+					observer:'srcChanged'
+				},
+				_src:{
+					type: String,
+					value: ''
+				},
+				hasOfflinePreview:{
+					type: Boolean,
+					value: false
+				},
+				shotting:{
+					type: Boolean,
+					value: false
+				},
+				refreshing:{
+					type: Object,
+					value: {}
+				},
+				recordId:{
+					type: String,
+					value: ''
+				},
+				uploadurl:{
+					type: String,
+					value:''
+				},
+				acceptFiles:{
+					type: String,
+					value: ""
+				},
+				fileName:{
+					type: String,
+					notify: true,
+					value: ""
+				},
+				btnTitle:{
+					type: Object,
+					value:{
+						cancel: "Cancel upload",
+						change: "Change file",
+						upload: "Upload file"
+					}
+				},
+				isUploading:{
+					type: Boolean,
+					value: false
+				},
+				progress:{
+					type: Number,
+					value: 0
+				},
+				disabled:{
+					type: Boolean
+				}
+			},
+			ready : function() {
+				var self = this, box = self.$.img.getBoundingClientRect();
+				self.toggleClass('layout', true);
+				self.toggleClass('vertical', true);
+
+				if (self.acceptedFiles) {
+					self.set('btnTitle', {
+						cancel: "Cancel upload",
+						change: "Change file",
+						upload: "Upload file"
+					});
+				};
+
+				self.dropzone = new Dropzone(this.$.fileUploadBtn, {
+					previewsContainer: self.$.preview,
+					// previewTemplate: '<div class="dz-preview dz-file-preview"><img data-dz-thumbnail /></div>',
+					acceptedFiles: self.acceptFiles, // || "image/png",
+					autoProcessQueue: false,
+					url: self.uploadurl,
+					uploadMultiple: false,
+					maxFilesize : 500,
+					addRemoveLinks: true,
+					thumbnailWidth: null,//box.width || 300,
+					thumbnailHeight: null//box.height || 220
+				});
+				self.dropzone.on("uploadprogress", function(a, progress){
+					self.progress = progress;
+					self.isUploading = progress > 0 && progress < 100;
+				});
+				self.dropzone.on("addedfile", function(file) {
+					if (self._oldFile) {
+						self.dropzone.removeFile(self._oldFile);
+					};
+					self._oldFile = file;
+					self.set('hasOfflinePreview', true);
+					self.classList.toggle('offline-preview', true);
+					self.msg = 'Offline preview';
+				});
+				self.dropzone.on("reset", function(file) {
+					self.classList.toggle('offline-preview', false);
+					self.set('hasOfflinePreview', false);
+					self.srcChanged();
+					self._oldFile = false;
+					self.isUploading = false;
+				});
+
+				self.dropzone.on("sending", function(file, xhr, formData) {
+					_.each(self.extrapostdata || [], function(v, k){
+						formData.append(k, v);
+					})
+				});
+				self.dropzone.on("success", function(file, response) {
+					self.cancelFiles();
+					self.isUploading = false;
+					self.fire('upload-success')
+					self.msg = "Online preview";
+					console.log("response", response)
+					if (response && response.fileName) {
+						console.log("fileName", response.fileName)
+						self.set('fileName', response.fileName);
+					};
+				});
+			},
+			__previewCls: function(hidePreview, cls){
+				return (hidePreview? 'hide-preview ': '')+' '+cls;
+			},
+			__isToolbarHidden:function(recordId, shotting){
+				return !recordId || shotting;
+			},
+			__bgSrc: function(url){
+				return url ? "background-image:url("+url+")" : '';
+			},
+			srcChanged: function(){
+				this.set('_src', this.get('src'));
+			},
+
+			/*
+			refreshImage: function(){
+				var self = this;
+				if (!self.customImage)
+					return reShot(self.recordId);
+
+				if (window.confirm('This is a custom uploaded thumbnail, are you sure you want to refresh from the site and erase it?'))
+					reShot(self.recordId);
+
+				function reShot(id){
+					self.fire('before-refresh', id);
+					B58.rpc.dispatch({
+						op: 're-shot',
+						pid: id
+					}, function(err){
+						if (err) {
+							if (err.inprogress) {
+								return;
+							};
+							self.fire('re-shot-failed', id);
+						};
+					})
+				}
+			},
+			*/
+
+			uploadFile: function(){
+				this.dropzone.processQueue();
+			},
+
+			cancelFiles: function(){
+				this.dropzone.removeAllFiles(true);
+			}
+		})
+	</script>
+</dom-module>
