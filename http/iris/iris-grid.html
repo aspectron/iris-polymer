@@ -136,10 +136,10 @@ window.IRIS.IRISGridFieldBehavior = {
 </script>
 <dom-module id="iris-grid">
 	<style include="iron-flex">
-		:host{@apply(--layout-vertical); @apply(--layout-flex); z-index: 0;}
+		:host{@apply(--layout-vertical); @apply(--layout-flex); z-index: 0;position: relative;}
 		div{background: -webkit-linear-gradient(top,  rgba(255,255,255,0.2) 0%,rgba(255,255,255,0.9) 100%);}
 
-		.grid-body{overflow-y: auto; overflow-x:hidden;}
+		.grid-body{overflow-y: auto; overflow-x:hidden; position: relative;}
 		.grid-header {@apply(--layout-horizontal);}
 		::content grid-head {@apply(--iris-grid-header-head); box-sizing:border-box;}
 
@@ -160,6 +160,8 @@ window.IRIS.IRISGridFieldBehavior = {
 			min-height: 50px;
 			@apply(--layout-horizontal)
 		}
+		iron-list::shadow #items grid-row:last-child{margin-bottom: 70px;}
+		paper-fab{position: absolute; right: 10px; bottom: 10px;}
 	</style>
 	<template>
 		<div class="grid-header">
@@ -168,6 +170,7 @@ window.IRIS.IRISGridFieldBehavior = {
 		<div class="grid-body flex" id="gridBody" >
 			<iron-list as="item" scroll-target="gridBody" id="_list"></iron-list>
 		</div>
+		<paper-fab primary icon="add" on-click="onAddButtonClick" hidden$="[[!showAddBtn]]"></paper-fab>
 		<div class="grid-footer" hidden$="[[hideFooter]]">
 			<div class="grid-navigation"></div>
 			<div class="flex"></div>
@@ -188,6 +191,10 @@ window.IRIS.IRISGridFieldBehavior = {
 			},
 			hideFooter:{
 				type: Boolean
+			},
+			showAddBtn: {
+				type: Boolean,
+				value: false
 			}
 		},
 		observers: [
@@ -260,10 +267,10 @@ window.IRIS.IRISGridFieldBehavior = {
 	<template>
 		<div class="header">
 			<div class="flex label">[[label]]</div>
-			<paper-button data-action-btn="clear">
+			<paper-button data-action-btn="clear" hidden$="[[_or(hideClearBtn, hideAllBtns)]]">
 				<iron-icon icon="icons:clear"></iron-icon><%=_T("Clear")%>
 			</paper-button>
-			<paper-button primrary data-action-btn="add">
+			<paper-button primrary data-action-btn="add" hidden$="[[_or(hideAddBtn, hideAllBtns)]]">
 				<iron-icon icon="icons:add"></iron-icon><%=_T("Add")%>
 			</paper-button>
 		</div>
@@ -272,7 +279,22 @@ window.IRIS.IRISGridFieldBehavior = {
 		Polymer({
 			is: "iris-grid-field-header",
 			properties:{
-				label: String
+				label: String,
+				hideClearBtn:{
+					type: Boolean,
+					value: false
+				},
+				hideAddBtn: {
+					type: Boolean,
+					value: false
+				},
+				hideAllBtns: {
+					type: Boolean,
+					value: false
+				}
+			},
+			_or: function(a, b, c){
+				return a || b || c;
 			}
 		})
 	</script>
