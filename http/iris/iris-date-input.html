@@ -95,7 +95,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 		</template>
 	</paper-input-container>
 	<paper-dialog id="dialog" class="iris-date-picker-dialog" modal on-iron-overlay-closed="dismissDialog">
-		<iris-date-picker id="picker" date="{{_date}}"></iris-date-picker>
+		<iris-date-picker id="picker" date="{{_date}}" min-date="{{minDate}}" max-date="{{maxDate}}"></iris-date-picker>
 		<div class="buttons">
 			<paper-button dialog-dismiss>Cancel</paper-button>
 			<paper-button primrary dialog-confirm>OK</paper-button>
@@ -177,7 +177,12 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 				},
 				_input3: {
 					type: String
-				}
+				},
+				invalid: {
+					type: Boolean,
+					value: false,
+					notify: true
+				},
 			},
 
 			behaviors: [
@@ -188,7 +193,9 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			observers: [
 				'_computeDate(_input1, _input2, _input3)',
 				'_onValueChanged(value)',
-				'_onDateChanged(_date)'
+				'_onDateChanged(_date)',
+				'_enableDateConstraints(minDate)',
+				'_enableDateConstraints(maxDate)'
 			],
 
 			attached: function() {
@@ -205,8 +212,18 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 					return;
 				var dateParts = this._extractDateParts(this.value);
 				this._defineInputsPropertiesAndValue(dateParts, this.format);
+				var isvalid = this.validate(this.value);
 				this._setPaperInputContainerState(this.value, true);
 			},
+
+			_getValidity: function(value) {
+				var isValid = true;
+				if (this.hasValidator()) {
+					isValid = this._validator.validate(value);
+				}
+				this._setPaperInputContainerState(this.value, isValid);
+				return isValid;
+		    },
 
 			openPicker: function(){
 				this.$.dialog.open();
@@ -400,7 +417,6 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 				if(this.dateValidator.validate(date)) {
 					isValid = this._extraValidation(date);
 				}
-
 				return isValid;
 			},
 

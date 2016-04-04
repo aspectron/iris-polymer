@@ -616,7 +616,8 @@
       },
       _withinValidRange: function(date) {
         if (this._isValidDate(date)) {
-          return (!this.minDate || date >= this.minDate) && (!this.maxDate || date <= this.maxDate);
+          var selectedDate = new Date(date).setHours(0,0,0,0);
+          return (!this.minDate || selectedDate >= this.minDate.setHours(0,0,0,0)) && (!this.maxDate || selectedDate <= this.maxDate.setHours(0,0,0,0));
         }
         return false;
       },
