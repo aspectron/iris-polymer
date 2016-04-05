@@ -62,7 +62,6 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 		<label hidden$="[[!label]]">[[label]]</label>
 
 		<iris-date-validator></iris-date-validator>
-
 		<input 
 			is="iron-input"
 			type="text"
@@ -177,12 +176,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 				},
 				_input3: {
 					type: String
-				},
-				invalid: {
-					type: Boolean,
-					value: false,
-					notify: true
-				},
+				}
 			},
 
 			behaviors: [
@@ -212,8 +206,8 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 					return;
 				var dateParts = this._extractDateParts(this.value);
 				this._defineInputsPropertiesAndValue(dateParts, this.format);
-				var isvalid = this.validate(this.value);
-				this._setPaperInputContainerState(this.value, true);
+				//this.validate(this.value);
+				//this._setPaperInputContainerState(this.value, true);
 			},
 
 			_getValidity: function(value) {
@@ -221,7 +215,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 				if (this.hasValidator()) {
 					isValid = this._validator.validate(value);
 				}
-				this._setPaperInputContainerState(this.value, isValid);
+				//this._setPaperInputContainerState(this.value, isValid);
 				return isValid;
 		    },
 
@@ -248,6 +242,10 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 						};
 					//}, 100)
 				}
+				if (this.value !== null && this.value !== undefined) {
+					this.validate(this.value);
+				};
+				this.updateFields();
 			},
 
 			_onDateChanged: function(){
@@ -256,7 +254,6 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 					//console.log("sssss:", this.value, this._date, this.value.getTime(), this._date.getTime());
 					if (this._date && this._isValidDate(this._date)){//!this.value || !(this.value instanceof Date) || this.value.getTime() != this._date.getTime()){
 						this.set('value', new Date(this._date));
-						this.updateFields();
 					}
 				}, 100);
 			},
@@ -362,7 +359,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 				} else {
 					var selectedDate = date.year + '/' + date.month + '/' + date.day;  
 					var isValidDate = this._mkValidation(selectedDate);              
-					this._setPaperInputContainerState(selectedDate, isValidDate);
+					//this._setPaperInputContainerState(selectedDate, isValidDate);
 					this._setSelectedDate(selectedDate, isValidDate);
 				}      
 			},
@@ -434,7 +431,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			* @param {String} selected date
 			* @param {Boolean} is valid date
 			*/
-			_setPaperInputContainerState: function(date, valid) {
+			_setPaperInputContainerState__: function(date, valid) {
 				this.$.container.invalid = !valid;
 
 				this.$.container.updateAddons({
