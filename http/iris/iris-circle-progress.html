@@ -7,17 +7,27 @@
 			transition-timing-function:linear;
 			transition-duration: 1s;
 		}
-		#bar{stroke: var(--dark-primary-color);}
+		#bar{stroke: var(--dark-primary-color);
+			-webkit-transform-origin: center center;
+			transform-origin: center center;
+			transform: rotate(0deg);
+		}
+		:host(.animating) #bar{
+			-webkit-animation: rotate 3s linear infinite;
+			animation: rotate 3s linear infinite;
+		}
+		@keyframes rotate {0% {transform: rotate(0deg);}  100% {transform: rotate(360deg);}}
+		@-webkit-keyframes rotate {0% {-webkit-transform: rotate(0deg);}  100% {-webkit-transform: rotate(360deg);}}
 	</style>
 	<template>
 		<svg width$="[[_size(radius)]]" height$="[[_size(radius)]]" viewPort="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg">
 			<circle
-				id="bg" stroke-dasharray$="[[_dashArray(radius)]]" fill="transparent"
+				id="bg" stroke-dasharray$="[[_dashArray(radius, animate)]]" fill="transparent"
 				r$="[[radius]]" cx$="[[_center(radius)]]" cy$="[[_center(radius)]]" style$="[[_css1(radius)]]"
 				>
 			</circle>
 			<circle
-				id="bar" stroke-dasharray$="[[_dashArray(radius)]]" fill="transparent"
+				id="bar" stroke-dasharray$="[[_dashArray(radius, animate)]]" fill="transparent"
 				r$="[[radius]]" cx$="[[_center(radius)]]" cy$="[[_center(radius)]]"
 				>
 			</circle>
@@ -48,6 +58,14 @@
 			strokeColor:{
 				type: String,
 				observer:'onStrokeColorChanged'
+			},
+			animate:{
+				type: Boolean,
+				observer:'onAnimateChanged'
+			},
+			animationLeafCount: {
+				type: Number,
+				value: 4
 			}
 		},
 		observers:['onValueOrRadiusChanged(value, radius)'],
@@ -57,6 +75,7 @@
 		onDurationChanged: function(){
 			var style = this.$.bar.style;
 			style.transitionDuration = this.duration+"s";
+			this.$.bg.style.transitionDuration = style.transitionDuration;
 		},
 		onValueOrRadiusChanged: function(){
 			var v = this.value;
@@ -64,10 +83,22 @@
 				v = 100;
 			if (v < 0)
 				v = 0;
+
 			var sdo = ((100-v)/100) * this.radius * 2 * Math.PI;
 			var style = this.$.bar.style;
 			style.strokeWidth = (this.radius * 2)+"px";
 			style.strokeDashoffset=sdo;
+		},
+		onAnimateChanged: function(newValue, oldValue){
+			var self = this;
+			var oldDuarion = self.duration;
+			console.log(arguments)
+			self.duration = oldValue? 0.5 : 0;
+			self.value = 0;
+			self.async(function(){
+				self.toggleClass('animating', self.animate);
+				self.duration = oldDuarion;
+			}, 100);
 		},
 		_center: function(){
 			return this.radius * 2;
@@ -76,7 +107,11 @@
 			return this.radius * 4;
 		},
 		_dashArray: function(){
-			return this.radius * 2 * Math.PI;
+			var v = this.radius * 2 * Math.PI;
+			if (this.animate) {
+				v = v/ (this.animationLeafCount * 2);
+			};
+			return v;
 		},
 		onStrokeColorChanged: function(){
 			if (this.strokeColor) {
