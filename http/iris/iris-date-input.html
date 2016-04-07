@@ -96,8 +96,8 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 	<paper-dialog id="dialog" class="iris-date-picker-dialog" modal on-iron-overlay-closed="dismissDialog">
 		<iris-date-picker id="picker" date="{{_date}}" min-date="{{minDate}}" max-date="{{maxDate}}"></iris-date-picker>
 		<div class="buttons">
-			<paper-button dialog-dismiss>Cancel</paper-button>
-			<paper-button primrary dialog-confirm>OK</paper-button>
+			<!--paper-button dialog-dismiss>Cancel</paper-button-->
+			<paper-button on-click="dismissDialog">Close</paper-button>
 		</div>
 	</paper-dialog>
 </template>
