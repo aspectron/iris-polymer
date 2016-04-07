@@ -17,8 +17,14 @@ window.IRIS.IRISGridFieldBehavior = {
 		checkall:{
 			type: Boolean,
 			observer: 'onCheckAllChanged'
+		},
+		readonly: {
+			type: Boolean,
+			value: false,
+			observer:'onReadonlyChanged'
 		}
 	},
+	isGridField: true,
 	observers:[
 		'onLabelChanged(label)',
 		'onDialogTitleChanged(dialogTitle)',
@@ -27,6 +33,7 @@ window.IRIS.IRISGridFieldBehavior = {
 	attached: function(){
 		var self = this;
 		self._correctValueType();
+		self.toggleClass('iris-grid-field', true);
 		self.$.irisFormDialog = self.$.irisFormDialog || self.querySelector('iris-form-dialog');
 		self.$.formDialog = self.$.irisFormDialog? self.$.irisFormDialog.$.formDialog : self.$.formDialog || self.querySelector('#formDialog');
 		self.$.gridFieldHeader = self.querySelector('iris-grid-field-header');
@@ -35,6 +42,7 @@ window.IRIS.IRISGridFieldBehavior = {
 		_.each([self.$.grid, self.$.gridFieldHeader, self.$.irisFormDialog], function(el){
 			//console.log("el", el)
 			if (el) {
+				el.readonly = self.readonly;
 				self.listen(el, "click", "onActionBtnClick");
 			};
 		});
@@ -44,6 +52,12 @@ window.IRIS.IRISGridFieldBehavior = {
 		}
 
 		self.onLabelChanged();
+	},
+	onReadonlyChanged: function(){
+		var self = this;
+		if (self.$.grid) {
+			self.$.grid.readonly = self.readonly;
+		};
 	},
 	/*
 	onCheckAllChanged: function(){
@@ -127,7 +141,7 @@ window.IRIS.IRISGridFieldBehavior = {
 	},
 	validate: function(){
 		var self = this;
-		if (self.required && (!self.value || _.isArray(self.value)) ) {
+		if (self.required && (!self.value || !_.isArray(self.value)) ) {
 			return false;
 		};
 		return true;
@@ -162,6 +176,17 @@ window.IRIS.IRISGridFieldBehavior = {
 		}
 		iron-list::shadow #items grid-row:last-child{margin-bottom: 70px;}
 		paper-fab{position: absolute; right: 10px; bottom: 10px;}
+		:host(.readonly) paper-fab,
+		:host(.readonly) iron-list::shadow #items paper-button{display: none};
+		iron-list::shadow #items grid-cell.actions,
+		::content .grid-header grid-head.actions{
+			transition: all ease 1s;
+			overflow: hidden;
+		}
+		:host(.readonly) iron-list::shadow #items grid-cell.actions,
+		:host(.readonly)::content .grid-header grid-head.actions{
+			width: 0px; padding-left:0px; padding-right: 0px;
+		}
 	</style>
 	<template>
 		<div class="grid-header">
@@ -195,6 +220,11 @@ window.IRIS.IRISGridFieldBehavior = {
 			showAddBtn: {
 				type: Boolean,
 				value: false
+			},
+			readonly: {
+				type: Boolean,
+				value: false,
+				observer:'onReadonlyChanged'
 			}
 		},
 		observers: [
@@ -218,6 +248,9 @@ window.IRIS.IRISGridFieldBehavior = {
 			return IRIS.findClosestBy(self.parentNode, function(el){
 				return (el.isGridHost || (el.getAttribute && el.getAttribute('is-grid-host')!=null))
 			}, self);
+		},
+		onReadonlyChanged: function(){
+			this.toggleClass('readonly', !!this.readonly);
 		},
 		onItemsChanged: function(change){
 			var self = this;
@@ -263,6 +296,7 @@ window.IRIS.IRISGridFieldBehavior = {
 	<style include="iron-flex">
 		.header{@apply(--layout-horizontal); @apply(--layout-center); padding:10px 0px 10px 10px;}
 		.header :last-child{margin-right: 0px;}
+		:host(.readonly) paper-button{width: 0px; transition: all ease 1s;}
 	</style>
 	<template>
 		<div class="header">
@@ -291,7 +325,15 @@ window.IRIS.IRISGridFieldBehavior = {
 				hideAllBtns: {
 					type: Boolean,
 					value: false
+				},
+				readonly: {
+					type: Boolean,
+					value: false,
+					observer:'onReadonlyChanged'
 				}
+			},
+			onReadonlyChanged: function(){
+				this.toggleClass('readonly', !!this.readonly);
 			},
 			_or: function(a, b, c){
 				return a || b || c;
