@@ -126,7 +126,8 @@
 				type: Number,
             	value: 30
 			},
-			verticalanimation: Boolean
+			verticalanimation: Boolean,
+			skipLocationHash: Boolean
 		},
 		listeners:{
 			'pages-ready': 'onPagesReady',
@@ -183,41 +184,26 @@
 		},
 		restoreLocationHash:function(){
 			var self = this;
-			if (IRIS._locationHash){
-				//self.async(function(){
+			if (IRIS._locationHash && !self.skipLocationHash){
+				var hash = IRIS._locationHash;
+				hash = hash.replace('#', '');
 
-					var hash = IRIS._locationHash;
-					hash = hash.replace('#', '');
+				var info = self.getTab(hash);
+				
+				if (info.tab) {
+					self.set('selectedpage', info.index);
+					self.set('selected', info.index);
+				};
+				IRIS._locationHash = '';
+				self.refreshTabsSize();
 
-					var info = self.getTab(hash);
-					
-					if (info.tab) {
-						self.set('selectedpage', info.index);
-						self.set('selected', info.index);
-					};
-					IRIS._locationHash = '';
+				self.async(function(){
 					self.refreshTabsSize();
-
-					self.async(function(){
-						self.refreshTabsSize();
-						self.$.tabs.set('noSlide', false);
-					}, 1000);
-
-					/*
-					//var id = ('hash_'+Math.random(1, 1000)).replace('.', '_');
-					//$(document.body).append('<a id="'+id+'" href="'+hash+'">hash</a>');
-					//var a = $('#'+id);
-					self.setLocationHash('');
-					var hash = IRIS._locationHash;
-					IRIS._locationHash = '';
-					self.setLocationHash(hash);
-					console.log("IRIS._locationHash", hash);
-
-					if (hash=='#schedule') {
-						self.set('selected', 3)
-					};
-					*/
-				//}, 100);
+					self.$.tabs.set('noSlide', false);
+				}, 1000);
+			}else{
+				IRIS._locationHash = '';
+				self.set('selectedpage', self.selected);
 			}
 		},
 		attached: function(){

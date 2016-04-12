@@ -19,6 +19,7 @@
   "dependencies": {
     "polymer": "Polymer/polymer",
     "moment-element": "aspectron/moment-element#^1.1.0",
+    "carbon-route": "PolymerElements/carbon-route",
     "iron-form": "PolymerElements/iron-form",
     "iron-pages": "PolymerElements/iron-pages",
     "iron-collapse": "PolymerElements/iron-collapse",

@@ -1,4 +1,4 @@
-<script>
+<link rel="import" href="/deps/iron-list/iron-list.html" /><script>
 window.IRIS = window.IRIS || {};
 window.IRIS.IRISGridFieldBehavior = {
 	isGridHost: true,
@@ -22,6 +22,45 @@ window.IRIS.IRISGridFieldBehavior = {
 			type: Boolean,
 			value: false,
 			observer:'onReadonlyChanged'
+		},
+		page:{
+			type: Number,
+			value: 1
+		},
+		pages:{
+			type: Number,
+			value: 0
+		},
+		limit:{
+			type: Number,
+			value: 10
+		},
+		start:{
+			type: Number,
+			value: 0
+		},
+		op:{
+			type: String,
+			value: "grid-items"
+		},
+		autoLoad: {
+			type: Boolean
+		},
+		filter:{
+			type: Object,
+			value: {}
+		},
+		startIndex: {
+			type: Number,
+			value: 1
+		},
+		endIndex: {
+			type: Number,
+			value: 1
+		},
+		total: {
+			type: Number,
+			value: 0
 		}
 	},
 	isGridField: true,
@@ -30,6 +69,36 @@ window.IRIS.IRISGridFieldBehavior = {
 		'onDialogTitleChanged(dialogTitle)',
 		'onValueChanged(value.*)'
 	],
+	buildFetchRequest: function(args){
+		return args;
+	},
+	loadItems: function(){
+		var self 	= this;
+		var start 	= 0;
+		var page 	= parseInt(self.page, 10);
+		if (page > 0){
+			start 	= (page - 1) * self.limit;
+		}
+		var args	= _.extend(self.filters || {}, {page: page, op: self.op, limit: self.limit, start: start});
+		args 		= self.buildFetchRequest(args);
+		console.log("loadItems", self.is, args)
+		App.rpc.dispatch(args, function(err, result){
+			//console.log("result", err, result)
+			if(err)
+				return App.error(err);
+
+
+
+			self.set('value', result.items),
+			self.set('pages', Math.ceil(result.total / self.limit));
+			self.set('startIndex', start + 1);
+			self.set('endIndex', start + self.limit);
+			self.set('total', result.total);
+		})
+	},
+	onPageChanged: function(){
+		this.loadItems();
+	},
 	attached: function(){
 		var self = this;
 		self._correctValueType();
@@ -52,6 +121,15 @@ window.IRIS.IRISGridFieldBehavior = {
 		}
 
 		self.onLabelChanged();
+
+		if (self.$.grid){
+			self.async(function(){
+				self.$.grid.$._list.fire('iron-resize');
+			}, 100)
+		}
+
+		if (self.autoLoad)
+			self.loadItems();
 	},
 	onReadonlyChanged: function(){
 		var self = this;
@@ -153,7 +231,7 @@ window.IRIS.IRISGridFieldBehavior = {
 		:host{@apply(--layout-vertical); @apply(--layout-flex); z-index: 0;position: relative;}
 		div{background: -webkit-linear-gradient(top,  rgba(255,255,255,0.2) 0%,rgba(255,255,255,0.9) 100%);}
 
-		.grid-body{overflow-y: auto; overflow-x:hidden; position: relative;}
+		.grid-body{overflow:hidden; position: relative;@apply(--layout-vertical);}
 		.grid-header {@apply(--layout-horizontal);}
 		::content grid-head {@apply(--iris-grid-header-head); box-sizing:border-box;}
 
@@ -193,7 +271,7 @@ window.IRIS.IRISGridFieldBehavior = {
 			<content select="grid-head"></content>
 		</div>
 		<div class="grid-body flex" id="gridBody" >
-			<iron-list as="item" scroll-target="gridBody" id="_list"></iron-list>
+			<iron-list class="flex" as="item" scroll-target="gridBody" id="_list"></iron-list>
 		</div>
 		<paper-fab primary icon="add" data-action-btn="add" hidden$="[[!showAddBtn]]"></paper-fab>
 		<div class="grid-footer" hidden$="[[hideFooter]]">
