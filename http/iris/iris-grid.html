@@ -72,6 +72,10 @@ window.IRIS.IRISGridFieldBehavior = {
 	buildFetchRequest: function(args){
 		return args;
 	},
+	
+	processPlugins: function(items){
+		return items;
+	},
 	loadItems: function(){
 		var self 	= this;
 		var start 	= 0;
@@ -87,9 +91,9 @@ window.IRIS.IRISGridFieldBehavior = {
 			if(err)
 				return App.error(err);
 
+			var items = self.processPlugins(result.items);
 
-
-			self.set('value', result.items),
+			self.set('value', items),
 			self.set('pages', Math.ceil(result.total / self.limit));
 			self.set('startIndex', start + 1);
 			self.set('endIndex', start + self.limit);
