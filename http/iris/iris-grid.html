@@ -1,9 +1,11 @@
-<link rel="import" href="/deps/iron-list/iron-list.html" /><script>
+<link rel="import" href="/deps/iron-list/iron-list.html" />
+<link rel="import" href="/deps/paper-fab/paper-fab.html" />
+<script>
 window.IRIS = window.IRIS || {};
 window.IRIS.IRISGridFieldBehavior = {
 	isGridHost: true,
 	properties:{
-		value:{
+		items:{
 			notify: true,
 			type: Array,
 			value:[]
@@ -46,7 +48,7 @@ window.IRIS.IRISGridFieldBehavior = {
 		autoLoad: {
 			type: Boolean
 		},
-		filter:{
+		filters:{
 			type: Object,
 			value: {}
 		},
@@ -61,21 +63,173 @@ window.IRIS.IRISGridFieldBehavior = {
 		total: {
 			type: Number,
 			value: 0
+		},
+		groups:{
+			type: Object,
+			value: {}
+		},
+		groupRow:{
+			type: Boolean
+		},
+		summaryRow:{
+			type: Boolean
+		},
+		_t:{
+			type: Number,
+			value: 0
 		}
 	},
 	isGridField: true,
 	observers:[
 		'onLabelChanged(label)',
 		'onDialogTitleChanged(dialogTitle)',
-		'onValueChanged(value.*)'
+		'onItemsChanged(items.*)'
 	],
 	buildFetchRequest: function(args){
 		return args;
 	},
 	
-	processPlugins: function(items){
+	_collapsed: function(row){
+		if (row._isGroup || row._isSummary)
+			return;
+
+		return this.groups[row._group] == true;
+	},
+	_icon: function(item){
+		return this.groups[item._group]? 'icons:arrow-drop-down': 'icons:arrow-drop-up';
+	},
+	groupRows: function(group, fn, includeGroupRow, includeSummaryRow){
+		var self = this;
+		var rows = [];
+		_.each(self.items, function(item, index){
+			if (item._group == group){
+				if (
+					(!item._isSummary && !item._isGroup) ||
+					(includeSummaryRow && item._isSummary) ||
+					(includeGroupRow && item._isGroup)
+				){
+					rows.push(item);
+
+					if (fn) {
+						fn(item, rows.length-1, index)
+					};
+				}
+			};
+		});
+		return rows;
+	},
+
+	buildGroupKey: function(item){
+		throw Error('Override buildGroupKey (iris-grid-field: '+this.is+')');
+	},
+
+	_buildGroupKey: function(item){
+		return this.buildGroupKey(item) || item._group;
+	},
+
+	sortItems: function(items){
 		return items;
 	},
+
+	processItems: function(items){
+		var self = this;
+
+		if (!self.groupRow && !self.summaryRow)
+			return items;
+
+		var rows = [];
+		var groups = [], group;
+		_.each(items, function(item){
+			if (item._isGroup || item._isSummary){
+				return;
+			}
+			group = self._buildGroupKey(item);
+			item._group = group;
+			item._isGroup = false;
+			if (groups.indexOf(group) < 0 ) {
+				groups.push(group);
+				rows.push({
+					_isGroup: true,
+					_group: group,
+					title: group
+				})
+			};
+			rows.push(item);
+		});
+
+		rows = _.sortBy(rows, function(a, b){
+			return groups.indexOf(a._group);
+		});
+
+		rows = self.sortItems(rows);
+
+		if (!self.summaryRow)
+			return rows;
+
+		return self.buildSummaryRows(rows);
+	},
+	buildSummaryRows: function(items){
+		var self = this;
+		var group, rows = [];
+		var groupStarted = false;
+		_.each(items, function(item, index){
+			if (item._isSummary){
+				return;
+			}
+			if (item._isGroup) {
+				if (groupStarted) {
+					rows.push({
+						_isSummary: true,
+						_group: group,
+						title: "Total"
+					});
+				};
+				rows.push(item);
+				group = self._buildGroupKey(item);
+				groupStarted = true;
+				return;
+			}else{
+				rows.push(item);
+			}
+			if(index == items.length - 1){//if last row
+				group = self._buildGroupKey(item);
+				rows.push({
+					_isSummary: true,
+					_group: group,
+					title: "Total"
+				});
+			}
+		});
+		return rows;
+	},
+
+	collapseExpand: function(e){
+		var self = this;
+		var el = e.currentTarget;
+		var $gridRow = $(el).closest('grid-row');
+		if ($gridRow.attr('isgroup') === undefined)
+			return;
+
+		var group 	= $gridRow.attr('group');
+		self.groups[group] = !self.groups[group];
+		self.set('_t', Math.random())
+
+		
+		/*
+		var $items 	= $gridRow.parent().find('[group="'+group+'"]:not([isgroup])');
+		if ($gridRow.attr('collapsed') !== "true") {
+			$gridRow.attr('collapsed', true);
+			$items.addClass('collapse');
+		}else{
+			$gridRow.attr('collapsed', false);
+			$items.removeClass('collapse');
+		}
+		*/
+		self.async(function(){
+			self.$.grid.$._list._resizeHandler();//(parseInt($gridRow.get(0).dataIndex));	
+		}, 1)
+	},
+
 	loadItems: function(){
 		var self 	= this;
 		var start 	= 0;
@@ -91,21 +245,24 @@ window.IRIS.IRISGridFieldBehavior = {
 			if(err)
 				return App.error(err);
 
-			var items = self.processPlugins(result.items);
+			var items = self.processItems(result.items);
 
-			self.set('value', items),
+			self.set('items', items);
+			self.cancelDebouncer('onItemsChanged');
 			self.set('pages', Math.ceil(result.total / self.limit));
 			self.set('startIndex', start + 1);
-			self.set('endIndex', start + self.limit);
+			self.set('endIndex', Math.min(start + self.limit, result.total));
 			self.set('total', result.total);
 		})
 	},
 	onPageChanged: function(){
-		this.loadItems();
+		this.debounce('onPageChanged', function(){
+			this.loadItems();
+		}, 100)
 	},
 	attached: function(){
 		var self = this;
-		self._correctValueType();
+		self._correctItemsType();
 		self.toggleClass('iris-grid-field', true);
 		self.$.irisFormDialog = self.$.irisFormDialog || self.querySelector('iris-form-dialog');
 		self.$.formDialog = self.$.irisFormDialog? self.$.irisFormDialog.$.formDialog : self.$.formDialog || self.querySelector('#formDialog');
@@ -146,13 +303,18 @@ window.IRIS.IRISGridFieldBehavior = {
 		console.log("onCheckAllChanged", this.checkall)
 	},
 	*/
-	_correctValueType: function(){
-		if (!_.isArray(this.value)) {
-			this.value = []
+	_correctItemsType: function(){
+		if (!_.isArray(this.items)) {
+			this.items = []
 		};
 	},
-	onValueChanged:function(){
-		this._correctValueType();
+	onItemsChanged:function(){
+		this._correctItemsType();
+
+		this.debounce('onItemsChanged', function(){
+			this.set('items', this.processItems(this.items));
+			this.cancelDebouncer('onItemsChanged');
+		}, 100);
 	},
 	onLabelChanged: function(){
 		if(this.$.gridFieldHeader){
@@ -170,18 +332,18 @@ window.IRIS.IRISGridFieldBehavior = {
 		}
 	},
 	onClearButtonClick: function(){
-		this.set('value', []);
+		this.set('items', []);
 	},
 	onAddButtonClick: function(){
 		this.edit({}, false);
 	},
 	onRemoveButtonClick: function(e, btn, index){
 		var self = this;
-		self.splice("value", index, 1);
+		self.splice("items", index, 1);
 	},
 	onEditButtonClick: function(e, btn, index){
 		var self = this;
-		var item = self.get("value."+index);
+		var item = self.get("items."+index);
 		self.edit(item, index);
 	},
 	edit: function(data, index){
@@ -199,9 +361,9 @@ window.IRIS.IRISGridFieldBehavior = {
 		var self = this;
 		self.$.formDialog.close();
 		if (self._formItemIndex === false) {
-			self.push("value", self.formData);
+			self.push("items", self.formData);
 		}else{
-			self.set("value."+self._formItemIndex, self.formData);
+			self.set("items."+self._formItemIndex, self.formData);
 		}
 	},
 	onActionBtnClick: function(e){
@@ -223,13 +385,154 @@ window.IRIS.IRISGridFieldBehavior = {
 	},
 	validate: function(){
 		var self = this;
-		if (self.required && (!self.value || !_.isArray(self.value)) ) {
+		if (self.required && (!self.items || !_.isArray(self.items)) ) {
 			return false;
 		};
 		return true;
 	}
 }
 </script>
+
+<dom-module id="iris-grid-pages">
+	<style>
+		:host{@apply(--layout-horizontal);@apply(--layout-center);}
+		.pages,.total-pages{padding: 10px;}
+		.input{width: 65px; text-align: center;}
+	</style>
+	<template>
+		<paper-icon-button icon="[[iconFirst]]" on-click="first" disabled$="[[_disable('first', page, pages)]]"></paper-icon-button>
+		<paper-icon-button icon="[[iconPrev]]" on-click="prev"  disabled$="[[_disable('prev', page, pages)]]"></paper-icon-button>
+		<div class="pages"><%=_T("Pages")%></div>
+		<paper-input class="input" value="{{page}}" disabled$="[[_disable('input', page, pages)]]" no-label-float allowed-pattern="[0-9]" pattern="[0-9]" auto-validate prevent-invalid-input></paper-input>
+		<div class="total-pages"> <%=_T("of")%> <span>[[pages]]</span></div>
+		<paper-icon-button icon="[[iconNext]]" on-click="next" disabled$="[[_disable('next', page, pages)]]"></paper-icon-button>
+		<paper-icon-button icon="[[iconLast]]" on-click="last" disabled$="[[_disable('last', page, pages)]]"></paper-icon-button>
+	</template>
+	<script>
+	Polymer({
+		is: "iris-grid-pages",
+		properties:{
+			iconFirst: {
+				type: String,
+				value: "arrow-back"
+			},
+			iconPrev: {
+				type: String,
+				value: "chevron-left"
+			},
+			iconNext: {
+				type: String,
+				value: "chevron-right"
+			},
+			iconLast: {
+				type: String,
+				value: "arrow-forward"
+			},
+			pages:{
+				type: Number,
+				value: 10
+			},
+			page:{
+				type: Number,
+				value: 1,
+				notify: true,
+				observer: 'onPageChange'
+			}
+		},
+
+		_disable: function(btn, page, pages){
+			switch(btn){
+				case 'first': return page < 2; break;
+				case 'prev': return page < 2; break;
+				case 'next': return page >= pages; break;
+				case 'last': return page >= pages; break;
+				case 'input': return !pages; break;
+			}
+		},
+
+		onPageChange: function(){
+			if (this.page > this.pages) {
+				//this.page = this.pages;
+				return;
+			}else if(this.page < 1){
+				//this.page = 1;
+				return
+			}
+			this.debounce('onPageChange', function(){
+				this.fire('page-changed', {page: this.page, pages: this.pages})
+			}, 300)
+		},
+
+		first: function(){
+			this.set('page', 1);
+		},
+		prev: function(){
+			if (!this.page){
+				this.set('page', 1);
+				return
+			}
+			if (this.page < 2)
+				return;
+			this.set('page', parseInt(this.page,10) - 1 );
+		},
+		next: function(){
+			if (!this.page){
+				this.set('page', 1);
+				return
+			}
+			if (this.page >= this.pages)
+				return;
+			this.set('page', parseInt(this.page,10) + 1 );
+		},
+		last: function(){
+			this.set('page', this.pages);
+		}
+	})
+	</script>
+</dom-module>
+<dom-module id="iris-grid-field-pages">
+	<template>
+		<style include="iron-flex">
+			.info-text{font-size: 80%; padding-right: 15px;}
+		</style>
+		<div class="layout horizontal center">
+			<iris-grid-pages page="{{page}}" pages="{{pages}}"></iris-grid-pages>
+			<paper-icon-button icon="refresh" on-click="reloadGridClick"></paper-icon-button>
+			<div class="flex"></div>
+			<div class="info-text"><%=_T("Displaying") %> <span>[[startIndex]]</span> - <span>[[endIndex]]</span> of <span>[[total]]</span></div>
+		</div>
+	</template>
+	<script>
+	Polymer({
+		is:"iris-grid-field-pages",
+		properties:{
+			page:{
+				type: Number,
+				value: 0
+			},
+			pages:{
+				type: Number,
+				value: 0
+			},
+			startIndex:{
+				type: Number,
+				value: 0
+			},
+			endIndex:{
+				type: Number,
+				value: 0
+			},
+			total:{
+				type: Number,
+				value: 0
+			}
+		},
+		reloadGridClick: function(){
+			this.fire('reload-grid-click')
+		}
+	})
+	</script>
+</dom-module>
 <dom-module id="iris-grid">
 	<style include="iron-flex">
 		:host{@apply(--layout-vertical); @apply(--layout-flex); z-index: 0;position: relative;}
@@ -359,17 +662,20 @@ window.IRIS.IRISGridFieldBehavior = {
 	})
 	</script>
 </dom-module>
-
 <dom-module id="iris-grid-field-style">
-	<style include="iron-flex app-style iron-flex-factors"></style>
 	<template>
-		<style>
+		<style include="iron-flex app-style iron-flex-factors">
 			:host{@apply(--layout-vertical); min-height: 350px;}
 			iris-grid{background-color: #FFF;}
 			.cell1{width: 40px;}
 			.cell2{width: 150px;}
 			.actions{width: 140px; text-align: center;}
 			.actions paper-button{padding: 10px 8px; min-width: 30px; background-color: transparent;}
+			grid-row[isgroup]{cursor: pointer;}
+			grid-row[collapsed]{height: 0px; overflow: hidden;border:0px;}
+			iris-grid-field-pages::shadow iris-grid-pages::shadow paper-input #input{padding-top: 5px; padding-bottom: 5px; color: var(--paper-input-container-input-color)}
+			iris-grid-field-pages::shadow iris-grid-pages::shadow paper-input .underline{display: none}
+			grid-cell{border: 0px;}
 		</style>
 	</template>
 </dom-module>
@@ -426,7 +732,9 @@ window.IRIS.IRISGridFieldBehavior = {
 
 
 <dom-module id="iris-form-dialog">
-	<style include="iron-flex"></style>
+	<style include="iron-flex">
+		#formDialog paper-toolbar{margin-top: 0px;}
+	</style>
 	<template>
 		<paper-dialog id="formDialog" modal class="dialog layout vertical" entry-animation="scale-up-animation"
               exit-animation="fade-out-animation">
