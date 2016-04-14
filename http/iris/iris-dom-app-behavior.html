@@ -127,7 +127,8 @@
             	value: 30
 			},
 			verticalanimation: Boolean,
-			skipLocationHash: Boolean
+			skipLocationHash: Boolean,
+			skipHashUpdation: Boolean
 		},
 		listeners:{
 			'pages-ready': 'onPagesReady',
@@ -455,7 +456,7 @@
 				return;
 			}
 			var tab = seletedTab.dataTab || seletedTab.getAttribute('data-tab');
-			if (!IRIS._locationHash){
+			if (!IRIS._locationHash && !self.skipHashUpdation){
 				var tabId = seletedTab.dataTabId || seletedTab.getAttribute('data-tab-id');
 				if(tabId){
 					self.debounce('selectedChanged', function(){
@@ -476,7 +477,7 @@
 				return;
 			};
 			self.selectedpage = self.selected;
-			self.buildPagesAnchors();
+			!self.skipHashUpdation && self.buildPagesAnchors();
 			self.$.pages.fire('neon-animation-begin');
 			if (oldValue !== undefined && tab!='login') {
 				self.localStorage('tabIndex', self.selected);
