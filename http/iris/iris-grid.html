@@ -83,7 +83,7 @@ window.IRIS.IRISGridFieldBehavior = {
 	observers:[
 		'onLabelChanged(label)',
 		'onDialogTitleChanged(dialogTitle)',
-		'onItemsChanged(items.*)'
+		'_onItemsChanged(items.*)'
 	],
 	buildFetchRequest: function(args){
 		return args;
@@ -308,9 +308,12 @@ window.IRIS.IRISGridFieldBehavior = {
 			this.items = []
 		};
 	},
-	onItemsChanged:function(){
+	onItemsChanged:function(items){
+		//override me if want to listen items updations
+	},
+	_onItemsChanged:function(){
 		this._correctItemsType();
-
+		this.onItemsChanged(this.items);
 		this.debounce('onItemsChanged', function(){
 			this.set('items', this.processItems(this.items));
 			this.cancelDebouncer('onItemsChanged');

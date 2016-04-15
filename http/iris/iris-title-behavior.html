@@ -1,0 +1,32 @@
+<script>
+var IRIS = window.IRIS = (window.IRIS || {});
+IRIS.TitleBehavior = {
+	properties:{
+		title:{
+			type: String,
+			notify: true
+		},
+		titles:{
+			type: Object,
+			notify: true,
+			value: function(){
+				return this.titles || {};
+			}
+		},
+		defaultTitle:{
+			type: String,
+			value: ""
+		}
+	},
+	observers:['onTitlesChanges(titles.*)'],
+	onTitlesChanges: function(){
+		if (this._lastActiveView !== undefined) {
+			this.setTitle(this._lastActiveView)
+		};
+	},
+	setTitle: function(view){
+		this._lastActiveView = view;
+		this.set('title', this.titles[view] || this.defaultTitle);
+	}
+}
+</script>

@@ -1,0 +1,16 @@
+<script>
+var IRIS = window.IRIS = (window.IRIS || {});
+IRIS.DoHashBehavior = {
+	doHash: function(e){
+		var hash = e.currentTarget.dataHash || e.currentTarget.getAttribute('data-hash');
+		if (!hash)
+			return;
+		this._doHash(hash)
+	},
+	_doHash: function(hash, force){
+		if (force)
+			window.location.hash = "";
+		window.location.hash = '#'+hash;
+	}
+}
+</script>
