@@ -1,0 +1,202 @@
+<link rel="import" href="/deps/paper-toast/paper-toast.html" />
+<dom-module id="iris-toast-messages">
+	<template>
+		<style>
+			:host{display: block;}
+			#holder::content paper-toast{
+				-webkit-transition: all 0.5s ease;
+				transition: all 0.5s ease;
+				padding-right: 40px;
+			}
+			:host(.top-align) ::content paper-toast{bottom: inherit; top: 0px;-webkit-transform: translateY(-100px);transform: translateY(-100px);}
+			:host(.right-align) ::content paper-toast{left: inherit; right: 0px;}
+			#holder::content paper-toast .close-btn{position: absolute;right: 10px;top: 10px;}
+			#holder::content paper-toast.auto-close{}
+			
+		</style>
+		<div id="holder">
+		</div>
+	</template>
+	<script>
+	(function(){
+		var currentToast = null;
+
+		Polymer({
+			is: "iris-toast-messages",
+			properties:{
+				duration:{
+					type: Number,
+					value: 5000
+				},
+				closeIcon: {
+					type: String,
+					value: "clear"
+				},
+				stack:{
+					type: Boolean,
+					value: true
+				},
+				autoCloseCls:{
+					type: String,
+					value: "auto-close"
+				},
+				vAlign:{
+					type: String,
+					value: "top",
+					observer: "onVAlignChanged"
+				},
+				hAlign:{
+					type: String,
+					value: "right",
+					observer: "onHAlignChanged"
+				},
+				msgKey:{
+					type: String,
+					value: "notify"
+				},
+				tpl: {
+					type: String,
+					value: "<h3>{{title}}</h3><div>{{text}}</div>",
+					observer: "onTplChanged"
+				}
+			},
+			onTplChanged: function(){
+				this.compileTpl();
+			},
+			compileTpl: function(){
+				this._compiledTPL = _.template(this.tpl, {interpolate: /\{\{(.+?)\}\}/g});
+			},
+			onVAlignChanged: function(){
+				this.toggleClass("top-align", this.vAlign == "top")
+			},
+			onHAlignChanged: function(){
+				this.toggleClass("right-align", this.hAlign == "right")
+			},
+			ready: function(){
+				var self = this;
+				self.rpcCheckCount = 0;
+				self.attachRPCEvents();
+				self.listen(window, "resize", "_onIronResize")
+			},
+			attachRPCEvents: function(){
+				var self = this;
+				self.rpcCheckCount++;
+				if (!App.rpc){
+					this.debounce("attachRPCEvents", function(){
+						if (this.rpcCheckCount < 100) {
+							this.attachRPCEvents();
+						};
+					}, 500);
+					return;
+				}
+				App.rpc.on(this.msgKey, function(args){
+					self.openToast(args)
+				});
+			},
+			_onIronResize: function(){
+				this.updateToastPositions();
+			},
+			openToast: function(data){
+				var toast = this.createToast(data);
+				var old = this.$.holder.querySelector("paper-toast");
+				if(old) {
+					this.$.holder.insertBefore(toast, old);
+				}else{
+					this.$.holder.appendChild(toast)
+				}
+				this.async(function(){//FF issue
+					this.updateToastPositions();
+					toast.open();
+				}, 100)
+			},
+			createToast: function(data){
+				var toast 		= document.createElement("paper-toast");
+				var closeBtn 	= document.createElement("iron-icon");
+				closeBtn.classList.add("close-btn");
+				toast.appendChild(closeBtn);
+				toast._openedChanged = this.getOpenedChangedFn();
+				toast._finishRenderClosed = this.getFinishRenderClosedFn(toast._finishRenderClosed);
+				toast.$.label.innerHTML 		= this.buildMessage(data);
+				data.cls && toast.classList.add(data.cls);
+				closeBtn.icon = this.closeIcon;
+				toast._closeBtn = closeBtn;
+				this.listen(closeBtn, "click", "closeToast");
+				this.listen(toast, "iron-overlay-closed", "updateToastPositions")
+				if (data.autoClose === false){
+					toast.duration = 0;
+				}else{
+					toast.classList.add(this.autoCloseCls);
+					toast.duration = data.duration || this.duration;
+				}
+
+				if (data.fitInto && $(data.fitInto).get(0)) {
+					toast.fitInto = $(data.fitInto).get(0);
+				}
+				return toast;
+			},
+			buildMessage: function(data){
+				if (!this._compiledTPL) {
+					this.compileTpl();
+				};
+				return this._compiledTPL(data);
+			},
+			updateToastPositions: function(){
+				var height = [];
+				this.debounce("updateToastPositions", function(){//FF issue
+					var toasts = this.$.holder.querySelectorAll("PAPER-TOAST");
+
+					_.each(toasts, function(t, index){
+						var h = $(t).outerHeight() + 5;
+						for(var i = index-1 ; i >= 0; i--){
+							if (!height[i])
+								height[i] = 0;
+							height[i] += h
+						}
+					});
+					height[toasts.length - 1] = 0;
+					var cssProp = this.vAlign == "top" ? "marginTop": "marginBottom";
+					_.each(toasts, function(t, index){
+						t.style[cssProp] = (height[index] + 5) + "px";
+					})
+				}, 100)
+			},
+			closeToast: function(e){
+				e.currentTarget.parentNode.hide();
+			},
+			getFinishRenderClosedFn: function(fn){
+				var self = this;
+				return function(){
+					fn && fn.apply(this, arguments);
+					self.listen(this._closeBtn, "click", "closeToast");
+					self.listen(this, "iron-overlay-closed", "updateToastPositions");
+					this.remove();
+				}
+			},
+			getOpenedChangedFn: function(){
+				var self = this;
+				return function() {
+					if (this._autoClose !== null) {
+						this.cancelAsync(this._autoClose);
+						this._autoClose = null;
+					}
+					if (this.opened) {
+						if (!self.stack && currentToast && currentToast !== this) {
+							currentToast.close();
+						}
+						currentToast = this;
+						this.fire('iron-announce', {
+							text: this.text
+						});
+						if (this._canAutoClose) {
+							this._autoClose = this.async(this.close, this.duration);
+						}
+					} else if (currentToast === this) {
+						currentToast = null;
+					}
+					Polymer.IronOverlayBehaviorImpl._openedChanged.apply(this, arguments);
+				};
+			}
+		})
+	})();
+	</script>
+</dom-module>

@@ -33,6 +33,7 @@
     "paper-radio-button": "PolymerElements/paper-radio-button",
     "paper-input": "PolymerElements/paper-input",
     "paper-slider": "PolymerElements/paper-slider",
+    "paper-toast": "PolymerElements/paper-toast",
     "neon-animation": "PolymerElements/neon-animation",
     "paper-toolbar": "PolymerElements/paper-toolbar",
     "paper-item": "PolymerElements/paper-item",
