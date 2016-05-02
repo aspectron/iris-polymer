@@ -1,0 +1,103 @@
+<dom-module id="iris-file-field">
+	<style>
+		:host{display: block;}
+		.holder{position: relative; overflow: hidden;padding-bottom: 1px;};
+		.proxy{display: block;width: 100%;padding: 5px; box-sizing: border-box;-moz-box-sizing: border-box;}
+		#container .input{position: absolute; top: -3px; height: 27px; width:100%; left: 0px; bottom: 0px; right: 0px; font-size: 27px; opacity: 0;}
+	</style>
+	<template>
+		<div class="holder">
+			<paper-input-container id="container" no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]" auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
+				<content select="[prefix]"></content>
+				<label hidden$="[[!label]]">[[label]]</label>
+      			<input class="proxy" id="proxy">
+				<input is="iron-input" class="input" id="input"
+					aria-labelledby$="[[_ariaLabelledBy]]"
+					aria-describedby$="[[_ariaDescribedBy]]"
+					disabled$="[[disabled]]"
+					title$="[[title]]"
+					bind-value="{{value}}"
+					invalid="{{invalid}}"
+					validator="[[validator]]"
+					type="file"
+					required$="[[required]]"
+					name$="[[name]]"
+					readonly$="[[readonly]]"
+					on-change="onFileChange"
+					tabindex$="[[tabindex]]"
+					autosave$="[[autosave]]"
+					results$="[[results]]"
+					accept$="[[accept]]"
+					multiple$="[[multiple]]">
+
+				<content select="[suffix]"></content>
+				<template is="dom-if" if="[[errorMessage]]">
+					<paper-input-error>[[errorMessage]]</paper-input-error>
+				</template>
+		    </paper-input-container>
+		</div>
+	</template>
+	<script>
+		Polymer({
+			is:"iris-file-field",
+			behaviors: [
+				Polymer.IronFormElementBehavior,
+				Polymer.PaperInputBehavior
+			],
+			properties:{
+				filedata:{
+					type: String,
+					value:'',
+					notify: true,
+					observer:"onFileDataChange"
+				},
+				fileSelectedText:{
+					type: String,
+					value: "File Selected"
+				},
+				label: {
+					type: String,
+					value: "Select File"
+				}
+			},
+			registered: function() {
+		      // These types have some default placeholder text; overlapping
+		      // the label on top of it looks terrible. Auto-float the label in this case.
+		      this._typesThatHaveText = ["date", "datetime", "datetime-local", "month",
+		          "time", "week"];
+		    },
+
+			ready: function(){
+				var self = this;
+				var _computeInputContentClass = self.$.container._computeInputContentClass;
+				self.$.container._computeInputContentClass = function(noLabelFloat, alwaysFloatLabel, focused, invalid, _inputHasContent){
+					//console.log("alwaysFloatLabel", alwaysFloatLabel, !!self.filedata)
+					return _computeInputContentClass.call(self.$.container, noLabelFloat, alwaysFloatLabel, focused, invalid, !!self.filedata);
+				}
+			},
+
+			onFileDataChange: function(){
+				var self = this;
+				self.$.container.set("_inputHasContent", !!self.filedata);
+				self.$.proxy.value = self.filedata? self.$.input.files[0].name || self.fileSelectedText : "";
+				self.fire("change", {filedata: self.filedata, files: self.$.input.files})
+			},
+
+			onFileChange: function(event){
+				var self = this;
+				self._onChange(event);
+
+				var files = self.$.input.files;
+				if (!files.length) {
+					self.filedata = "";
+					return;
+				}
+				var fileReader = new FileReader();
+	            fileReader.readAsDataURL(files[0]);
+	            fileReader.onload = function (fileEvent) {
+	                self.filedata = fileEvent.target.result;
+	            };
+	        }
+		})
+	</script>
+</dom-module>
