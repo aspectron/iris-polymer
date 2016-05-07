@@ -1,0 +1,334 @@
+<link rel="import" href="/deps/google-youtube/google-youtube.html" />
+<link rel="import" href="/deps/paper-spinner/paper-spinner.html" />
+
+<dom-module id="iris-media-view">
+	<style>
+		.content, .image-holder{min-width: 250px; min-height: 200px;position: relative;};
+		.title{text-align: center;}
+		#dialog{}
+		.loading-image{
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			width: 40px;
+			height: 40px;
+			margin-left: -20px;
+			margin-top: -20px;
+			display: none;
+		}
+		[active].loading-image{
+			display: inline-block;
+		}
+		#image{margin: auto; max-width: 100%; max-height: 100%; display: none}
+		#imageHolder{transition: all 0.5s ease;}
+		.image-holder{@apply(--layout-vertical);}
+		.flex{@apply(--layout-flex);}
+		.fit{@apply(--layout-fit);}
+	</style>
+	<template>
+		<paper-dialog id="dialog">
+			<h2 class="title" hidden$="[[!dialogConfig.title]]">[[dialogConfig.title]]</h2>
+			<div class="content">
+				<div id="imageHolder" hidden$="[[_isPlayerHidden('image', playerType)]]" class="image-holder1">
+					<div class="flex"></div>
+					<img id="image" src="[[imageSrc]]">
+					<div class="flex"></div>
+				</div>
+				<google-youtube hidden$="[[_isPlayerHidden('youtube', playerType)]]" id="googleYouTube"
+					width="[[playerWidth]]"
+					height="[[playerHeight]]"
+                    playsupported="{{playSupported}}"
+                    video-id="{{videoid}}"
+                    state="{{state}}"
+                    currenttime="{{currentTime}}"
+                    currenttimeformatted="{{currentTimeFormatted}}"
+                    duration="{{duration}}"
+                    durationformatted="{{durationFormatted}}"
+                    fractionloaded="{{fractionLoaded}}"
+                    on-google-youtube-state-change__="handleStateChange"
+                    on-google-youtube-error__="handleYouTubeError">
+		    	</google-youtube>
+		    	<paper-spinner active$="[[loading]]" class="loading-image"></paper-spinner>
+			</div>
+		</paper-dialog>
+	</template>
+	<script>
+		Polymer({
+			is:"iris-media-view",
+			properties: {
+				dialogConfig:{
+					type: Object,
+					value: {
+						modalCloseable: false,
+						modal: true,
+						title: "",
+						video: ""
+					}
+				},
+				playerType:{
+					type: String,
+					value: ''
+				},
+				loading:{
+					type: Boolean,
+					value: false
+				},
+				imageSrc:{
+					type: String,
+					value: "//"
+				},
+				videoid:{
+					type: String,
+					value: ""
+				},
+				playerWidth:{
+					type: String,
+					value: '100%'
+				},
+				playerHeight:{
+					type: String,
+					value: '100%'
+				}
+			},
+			observers:['onDialogConfigChanged(dialogConfig, dialogConfig.*)'],
+			ready: function(){
+				var self = this;
+				self.backdropElement = self.$.dialog.backdropElement;
+				if (self.backdropElement) {
+					self.listen(self.backdropElement, "click", "onBackdropElementTap")
+				};
+
+				self.listen(self.$.dialog, 'neon-animation-finish', 'onDialogOpenedChanged');
+				self.listen(self.$.image, 'load', 'onImageLoad');
+				self.listen(window, 'resize', 'onWindowResize');
+			},
+			_isPlayerHidden: function(a, b){
+				return a != b;
+			},
+			onWindowResize: function(){
+				var self = this;
+				if(!self.opened)
+					return
+				if (self.playerType == "image") {
+					$(self.$.image).fadeOut();
+					self.debounce("onWindowResize", function(){
+						self.updateImageHolder();
+					}, 300);
+				}
+			},
+			onImageLoad: function(e){
+				this.updateImageHolder(e);
+			},
+			updateImageHolder: function(e){
+				var self = this;
+				var dialog = self.$.dialog;
+				var $dialog = $(dialog);
+				var $win 	= $(window);
+				var $image = $(self.$.image)
+				var leftRightMargin = 24 + 24;
+				var topBottomMargin = self._topBottomMargin;
+				var maxWidth 	= dialog.style.maxWidth.replace('px', '') - leftRightMargin;
+				var maxHeight 	= dialog.style.maxHeight.replace('px', '')- topBottomMargin
+				var naturalWidth= self.$.image.naturalWidth;
+				var naturalHeight= self.$.image.naturalHeight;
+
+
+
+				var imgWidth 	= Math.min(naturalWidth,  maxWidth);
+				var imgHeight 	= Math.min(naturalHeight, maxHeight);
+
+				var imgWidth_  = imgHeight * naturalWidth / naturalHeight;
+				var imgHeight_ = imgWidth * naturalHeight / naturalWidth;
+				if(  imgHeight_ > maxHeight){
+					$image.width(imgWidth_);
+					imgHeight_ = imgHeight
+					$image.height("auto");
+				}else{
+					$image.height(imgHeight_);
+					imgWidth_ = imgWidth
+					$image.width("auto");
+				}
+
+				var dialogWidth = imgWidth_ + leftRightMargin;
+				var dialogHeight = imgHeight_ + topBottomMargin;
+				$dialog.animate({
+					left: ($win.width() - dialogWidth) / 2 - 40,
+					top: ($win.height() - dialogHeight) / 2 - 24,
+					width: dialogWidth,
+					height: dialogHeight
+				}, {
+					duration: 500,
+					easing: "linear",
+					done: function(){
+						$image.fadeIn();
+					}
+				})
+
+				//$image.fadeIn();
+				self.loading = false;
+			},
+			resetImageLoading(){
+				var self = this;
+				var $dialog = $(dialog);
+				var $win 	= $(window);
+				$(self.$.image).fadeOut();
+				var dialogWidth = 298;
+				var dialogHeight = 296;
+
+				$dialog.css({
+					left: ($win.width() - dialogWidth) / 2 - 40,
+					top: ($win.height() - dialogHeight) / 2 - 24,
+					width: dialogWidth,
+					height: dialogHeight,
+					position: 'absolute'
+				})
+				self.set('imageSrc', "");
+			},
+			resetVideoPlayer(){
+				var self = this;
+				var $dialog = $(dialog);
+				var $win 	= $(window);
+				$(self.$.image).fadeOut();
+				var dialogWidth = $win.width() * 0.8;
+				var dialogHeight = $win.height() * 0.8;
+
+				$dialog.css({
+					left: ($win.width() - dialogWidth) / 2 - 40,
+					top: ($win.height() - dialogHeight) / 2 - 24,
+					width: dialogWidth,
+					height: dialogHeight,
+					position: 'absolute'
+				})
+				$(self.$.googleYouTube).css({
+					height: dialogHeight - self._topBottomMargin
+				})
+				self.handlePauseVideo();
+			},
+			onBackdropElementTap: function(){
+				var self = this;
+				if (self.dialogConfig.modalCloseable) {
+					self.$.dialog.close();
+				};
+			},
+			onDialogConfigChanged: function(){
+				var self = this;
+				var config = self.dialogConfig;
+				var dialog = self.$.dialog;
+				dialog.modal = !!config.modal;
+
+				self.loading = false;
+				self._topBottomMargin = (config.title ?  24 + 28 : 0)+ 20 + 24
+				var videoUrlInfo = (config.video || "").split(':');
+				if (config.image){
+					self.playerType = 'image';
+					self.loading = true;
+					self.set('imageSrc', config.image);//+"?t="+Math.random());
+				}else if(videoUrlInfo[0] == 'youtube'){
+					self.resetVideoPlayer();
+					self.playerType = 'youtube';
+					self.videoid = videoUrlInfo[1]
+				}
+
+
+			},
+			onDialogOpenedChanged: function(){
+				var self = this;
+				self.opened = self.$.dialog.opened;
+				if(!self.opened){
+					self.resetVideoPlayer();
+					self.resetImageLoading();
+				}
+			},
+			showMedia: function(config){
+				var self = this;
+
+				self.set('dialogConfig', _.extend({}, {
+					modal: true,
+					modalCloseable: true,
+					title: "",
+					video: ""
+				}, config));
+				
+				dialog.open();
+			},
+			handlePauseVideo: function(ev) {
+				this.$.googleYouTube.pause();
+			},
+		})
+	</script>
+</dom-module>
+<dom-module id="iris-media-box">
+	<style>
+		:host{min-width: 160px; min-height: 160px; display: inline-block; position: relative;}
+		.layout.vertical{@apply(--layout-vertical);}
+		.box{@apply(--layout-fit);}
+		.flex{@apply(--layout-flex);}
+		.image{min-height: 160px;}
+		img{max-width: 160px;max-height: 160px;}
+		.descr {font-size: 12px; padding: 10px;}
+		.caption{padding: 10px}
+	</style>
+	<template>
+		<paper-material class="box" on-click="onThumbClick">
+			<div class='image layout vertical'>
+				<div class="flex"></div>
+				<div><img src="[[thumb]]" /></div>
+				<div class="flex"></div>
+			</div>
+			<div class='caption'>[[title]]</div>
+			<div class='descr'>[[descr]]</div>
+		</paper-material>
+	</template>
+	<script>
+		(function(){
+			IRIS.MediaViewer  = IRIS.MediaViewer || document.body.querySelector('#irisMediaView');
+			if (!IRIS.MediaViewer){
+				IRIS.MediaViewer = IRIS.createElement({
+                    tagName: "iris-media-view",
+                    attributes:{
+                    	id: "irisMediaView"
+                    }
+                });
+				document.body.appendChild(IRIS.MediaViewer);
+			}
+
+			Polymer({
+				is: 'iris-media-box',
+				properties : {
+					thumb:{
+						type: String
+					},
+					title: {
+						type: String,
+						value: ""
+					},
+					descr: {
+						type: String,
+						value: ""
+					},
+					image:{
+						type: String,
+						value : ""
+					},
+					video:{
+						type: String,
+						value : ""
+					}
+				},
+				ready : function() {
+					var self = this;
+				},
+				onThumbClick: function(){
+					var self = this;
+					IRIS.MediaViewer.showMedia({
+						modal: true,
+						modalCloseable: true,
+						title: self.title,
+						image: self.image,
+						video: self.video
+					})
+				}
+			})
+		})()
+	</script>
+</dom-module>
