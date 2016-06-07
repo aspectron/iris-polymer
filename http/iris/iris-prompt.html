@@ -1,17 +1,21 @@
 <dom-module id="iris-prompt">
 	<style>
 		.field{width:100%; min-width: 200px;margin-bottom:10px;}
+		paper-button.danger{background-color:var(--paper-red-400, #F00); color:#FFF;}
+		paper-button.success{background-color:var(--paper-green-400, #F00); color:#FFF;}
+		paper-button.warning{background-color:var(--paper-orange-400, #F00); color:#FFF;}
+		[notitle]>.text{padding-top:25px;}
 	</style>
 	<template>
-		<paper-dialog id="dialodBox" modal>
-			<h2>[[data.title]]</h2>
-			<div>[[data.text]]</div>
+		<paper-dialog id="dialodBox" modal class$="[[data.cls]]" notitle$="[[!data.title]]" notext$="[[!data.text]]">
+			<h2 class="title" hidden$="[[!data.title]]">[[data.title]]</h2>
+			<div class="text" hidden$="[[!data.text]]">[[data.text]]</div>
 			<div class="dialog-contents" hidden$="[[!data.isprompt]]">
 				<paper-input class="field" type="[[data.fieldType]]" no-float-label value="{{data.value}}" on-keyup="onkeyup"></paper-input>
 			</div>
 			<div class="buttons">
-				<paper-button on-tap="cancel" dialog-dismiss raised hidden$="[[!data.hasCloseBtn]]">[[data.closeBtn]]</paper-button>
-				<paper-button on-tap="done" raised>[[data.okBtn]]</paper-button>
+				<paper-button on-tap="cancel" class$="[[data.closeBtnCls]]" dialog-dismiss raised hidden$="[[!data.hasCloseBtn]]">[[data.closeBtn]]</paper-button>
+				<paper-button on-tap="done" class$="[[data.okBtnCls]]" raised>[[data.okBtn]]</paper-button>
 			</div>
 		</paper-dialog>
 	</template>
@@ -31,6 +35,9 @@
 				text: '',
 				okBtn: '<%= _T("OK") %>',
 				closeBtn: '<%= _T("CLOSE") %>',
+				closeBtnCls: "",
+				okBtnCls: "",
+				cls: "",
 				fieldType: 'text',
 				required: true,
 				isprompt: true,
@@ -45,6 +52,9 @@
 				text: '',
 				okBtn: '<%= _T("OK") %>',
 				closeBtn: '<%= _T("CLOSE") %>',
+				closeBtnCls: "",
+				okBtnCls: "",
+				cls: "",
 				isprompt: false,
 				required: false,
 				hasCloseBtn: false,
@@ -59,6 +69,9 @@
 				text: '',
 				okBtn: '<%= _T("OK") %>',
 				closeBtn: '<%= _T("CANCEL") %>',
+				closeBtnCls: "",
+				okBtnCls: "",
+				cls: "",
 				isprompt: false,
 				required: false,
 				hasCloseBtn: true,
