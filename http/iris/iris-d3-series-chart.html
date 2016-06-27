@@ -1,0 +1,297 @@
+<link rel="import" href="iris-size-listener.html" />
+<dom-module id="iris-d3-series-chart">
+	<template>
+		<style>
+			:host{@apply(--layout-horizontal);position:relative;overflow:hidden;}
+			#chart{@apply(--layout-flex);font-size: 10px;overflow:hidden;}
+			#chart ::content .axis path,
+			#chart ::content .axis line {
+				fill: none;
+				stroke: #000;
+				shape-rendering: crispEdges;
+			}
+			#chart ::content .x.axis .tick text{
+				text-anchor: end;
+			}
+			#chart ::content .x.axis path { /*display: none; */}
+			#chart ::content .series {
+				fill: none;
+				stroke-width: 1px;
+			}
+			#chart ::content .legend{
+				stroke-width: 0px;
+    			font-size: 8px;
+			}
+		</style>
+		<div id="chart"></div>
+	</template>
+	<script>
+	Polymer({
+		is: "iris-d3-series-chart",
+		behaviors: [IRIS.SizeListenerBehavior],
+		properties:{
+			tiltX: Boolean,
+			debugSize:Boolean,
+			tiltXAngle: {
+				type: Number,
+				value: -20
+			},
+			marginTop: {
+				type: Number,
+				value: 20
+			},
+			marginBottom: {
+				type: Number,
+				value: 32
+			},
+			marginLeft: {
+				type: Number,
+				value: 50
+			},
+			marginRight: {
+				type: Number,
+				value: 100
+			},
+			dateFormat: {
+				type: String,
+				value: "%Y%m%d"
+			},
+			yLegend:{
+				type: String,
+				value: ""
+			},
+			xLegend:{
+				type: String,
+				value: ""
+			},
+			xScale: {
+				type: String,
+				value: ""//"time"
+			},
+			lineInterpolate: {
+				type: String,
+				value: "basis"
+			},
+			data: {
+				type: Array
+			},
+			yTicksCount: Number,
+			xTicksCount: Number,
+			title: {
+				type: String,
+				value: ""
+			},
+			noLegendBox: Boolean,
+			noLegend: Boolean,
+			legendColor: {
+				type: String,
+				value: "#000"
+			},
+			lineLegend: Boolean
+		},
+		observers: ['drawChart(data.*)'],
+		onSizeChange: function(){
+			self.debugSize && console.log("onSizeChange", this, this.render)
+			this.debounce("onSizeChange", this.render, 300);
+		},
+		attached: function(){
+			var self = this;
+			this.async(function(){
+				this.reRender();
+			}, 100);
+			this.listen(window, "resize", "reRender");
+			this._resetSizeProxy();
+		},
+		reRender: function(){
+			this.debounce("render", this.render, 200);
+		},
+		render: function(){
+			var self 		= this;
+			if(self.svgRoot){
+				self.svgRoot.attr("width", 1).attr("height", 1)
+			}
+
+			var chartBox 	= self.getBoundingClientRect();
+			var margin 		= {
+				top: self.marginTop,
+				bottom: self.marginBottom,
+				left: self.marginLeft,
+				right: self.marginRight
+			};
+			self.margin 	= margin;
+			var	width 		= chartBox.width - margin.left - margin.right;
+			var height 		= chartBox.height - margin.top - margin.bottom;
+
+			self._width 	= width;
+			self._height 	= height;
+
+			self.svgRoot 	= self.svgRoot || d3.select(self.$.chart).append("svg");
+
+			self.debugSize && console.log("onSizeChange", chartBox.height+"")
+			self.svgRoot.attr("width", chartBox.width).attr("height", chartBox.height+"")
+
+			self.svg 		= self.svg || self.svgRoot.append("g");
+			self.svg.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+			var _title = self._titleG = self._titleG || self.svg.append("text");
+			_title.attr("class", "title")
+				.attr("transform", "translate("+ self._width / 2 +"," + -5 + ")")
+				.text(self.title)
+				.style("text-anchor", "middle");
+			self.drawChart();
+		},
+		drawChart: function(){
+			var self 		= this;
+			var data 		= self.data;
+			
+			if (!self.svg || !data || !data.length)
+				return
+
+			var svg 		= self.svg;
+			var color 		= d3.scale.category10();
+			if (self.xScale == "time"){
+				var x 		= d3.time.scale().range([0, self._width]);
+			}else{
+				var x 		= d3.scale.linear().range([0, self._width]);
+			}
+			var y 			= d3.scale.linear().range([self._height, 0]);
+
+			var xAxis 		= d3.svg.axis().scale(x).orient("bottom");
+			var yAxis 		= d3.svg.axis().scale(y).orient("left");
+			if(self.yTicksCount)
+				yAxis.ticks(self.yTicksCount)
+			if(self.xTicksCount)
+				xAxis.ticks(self.xTicksCount)
+
+			var line = d3.svg.line()
+				.interpolate(self.lineInterpolate)
+				.x(function(d) { return x(d.x); })
+				.y(function(d) { return y(d.y); });
+
+			color.domain(d3.keys(data[0]).filter(function(key) { return key !== "x"; }));
+
+			if (self.xScale == "time"){
+				if (self.dateFormat == "%t") {
+					var parseDate = function(d){
+						return new Date(d);
+					}
+				}else{
+					var parseDate 	= d3.time.format.utc(self.dateFormat).parse;
+				}
+				data.forEach(function forEach(d) {
+					if(!d.x.getMonth)
+						d.x = parseDate(d.x);
+				});
+			}else{
+				data.forEach(function forEach(d) {
+					d.x = +d.x;
+				});
+			}
+
+			var seriesData = color.domain().map(function(name) {
+				return {
+					name: name,
+					values: data.map(function(d) {
+						return {
+							x: d.x,
+							y: +d[name]
+						};
+					})
+				};
+			});
+
+			x.domain(d3.extent(data, function(d) { return d.x; }));
+
+			y.domain([
+				d3.min(seriesData, function(c) { return d3.min(c.values, function(v) { return v.y; }); }),
+				d3.max(seriesData, function(c) { return d3.max(c.values, function(v) { return v.y; }); })
+			]);
+
+			var _x = self._xG = self._xG || svg.append("g");
+				_x.attr("class", "x axis")
+				.attr("transform", "translate(0," + self._height + ")")
+				.call(xAxis);
+
+			if (self.xLegend) {
+				_x.legend = _x.legend = _x.legend || _x.append("text");
+				_x.legend.attr("class", "x-title")
+				.attr("y", self.margin.bottom - 10)
+				.attr("x", self._width / 2)
+				.attr("dy", ".71em")
+				.style("text-anchor", "middle")
+				.text(self.xLegend);
+			}
+
+			if (self.tiltX){
+				svg.selectAll(".x.axis .tick text") // select all the text elements for the xaxis
+					.attr("transform", function(d) {
+					    return "translate(" + (this.getBBox().height * 0.5 + 4) + ", "+(-5)+") rotate("+self.tiltXAngle+")";
+					})
+					.style("text-anchor", "end")
+			}
+			
+			var _y = self._yG = self._yG || svg.append("g");
+				_y.attr("class", "y axis")
+				.call(yAxis)
+
+			if (self.yLegend) {
+				_y.legend = _y.legend = _y.legend || _y.append("text");
+
+				_y.legend.attr("class", "y-title")
+				.attr("transform", "rotate(-90)")
+				.attr("y", -self.margin.left)
+				.attr("x", -self._height / 2)
+				.attr("dy", ".71em")
+				.style("text-anchor", "end")
+				.text(self.yLegend);
+			}
+			svg.selectAll(".series").remove();
+			var series = svg.selectAll(".series")
+				.data(seriesData)
+				.enter().append("g")
+				.attr("class", "series");
+
+			series.append("path")
+				.attr("class", "line")
+				//.attr("d", function(d) { return line(d.values); })
+				.style("stroke", function(d) { return color(d.name); });
+
+			svg.selectAll('.series .line').attr("d", function(d) {return line(d.values); })
+			svg.selectAll('.legend').remove();
+
+			if (self.lineLegend){
+				series.append("text")
+					.datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; })
+					.attr("transform", function(d) { return "translate(" + x(d.value.x) + "," + y(d.value.y) + ")"; })
+					.attr("x", 3)
+					.attr("dy", ".35em")
+					.attr("class", "legend")
+					.text(function(d) { return d.name; })
+					.style("fill", function(d) { return color(d.name); });
+			}else if(!self.noLegend){
+				var lHolder = svg.selectAll('.legend').data(seriesData);
+				var legendHolder = lHolder.enter().append("g").attr("class", "legend");
+				lHolder.attr("transform", function(d, i) {return "translate(" + (self._width + 10) + "," + (i * 10)+ ")"; })
+				if (!self.noLegendBox){
+					legendHolder.append("rect")
+						.attr("width", 5)
+						.attr("height", 5)
+						.attr("x", 0)
+						.attr("y", -5)
+						.style("fill", function(d) { return color(d.name); });
+				}
+				var legendText = legendHolder.append("text")
+					.attr("x", self.noLegendBox ? 0 : 8)
+					.attr("y", 0)
+					.text(function(d) { return d.name; });
+				if (!self.legendColor) {
+					legendText.style("fill", function(d) { return color(d.name); });
+				}else{
+					legendText.style("fill", self.legendColor);
+				}
+			}
+			
+		}
+	})
+	</script>
+</dom-module>

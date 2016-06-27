@@ -1,0 +1,88 @@
+<dom-module id="iris-overlap-edit-field">
+	<template>
+		<style include="app-style">
+			:host {display: inline-block;position: relative;padding-bottom: 2px;}
+			:host([block]){display: block;}
+			.tigger{min-height: 30px; min-width: 30px; cursor: pointer;}
+			.tigger[disabled]{cursor:default;}
+			#dropdown{display:block;}
+			#dropdown::shadow #contentWrapper.iron-dropdown > *{max-height: 200px !important;box-shadow: 2px 2px 2px 3px #DDD;}
+			#dropdown::shadow paper-input{background-color: transparent;}
+			#dropdown::shadow paper-input::shadow paper-input-container,
+			#dropdown::shadow .bg-color{background-color: #FFF; padding-bottom:2px;}
+		</style>
+		<div class="tigger" on-tap="open" id="trigger" disabled$="[[disabled]]">
+			<content select=".dropdown-trigger"></content>
+		</div>
+		<iron-dropdown id="dropdown"
+			vertical-align="[[verticalAlign]]"
+			horizontal-align="[[horizontalAlign]]"
+			vertical-offset="10"
+			disabled="[[disabled]]"
+			open-animation-config="[[openAnimationConfig]]"
+			close-animation-config="[[closeAnimationConfig]]"
+			>
+			<content select=".dropdown-content"></content>
+		</iron-dropdown>
+	</template>
+	<script>
+		Polymer({
+			is: 'iris-overlap-edit-field',
+
+			properties: {
+				verticalAlign: String,
+				horizontalAlign: String,
+				disabled: Boolean,
+				openAnimationConfig: {
+					type: Array,
+					value: function() {
+						return [{
+							name: 'fade-in-animation',
+							timing: {
+								delay: 150,
+								duration: 50
+							}
+						},{
+							name: 'scale-up-animation',
+							transformOrigin: "top",
+							axis: "y",
+							timing: {
+								delay: 150,
+								duration: 100
+							}
+						}];
+					}
+				},
+
+				closeAnimationConfig: {
+					type: Array,
+					value: function() {
+						return [{
+							name: 'scale-down-animation',
+							axis: "y",
+							timing: {
+								duration: 200
+							}
+						}];
+					}
+				}
+			},
+
+			attached: function(){
+				var self = this;
+				self.$.dropdown.verticalOffset = self.getBoundingClientRect().height;
+				var closeEls = self.$.dropdown.querySelectorAll("[close]");
+				_.each(closeEls, function(el){
+					self.listen(el, "click", "close")
+				})
+			},
+			close: function(){
+				this.$.dropdown.close();
+			},
+			open: function() {
+				this.$.dropdown.verticalOffset = this.getBoundingClientRect().height;
+				this.$.dropdown.open();
+			}
+		});
+	</script>
+</dom-module>

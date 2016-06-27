@@ -1,0 +1,309 @@
+<link rel="import" href="iris-size-listener.html" />
+<dom-module id="iris-d3-sunburst-chart">
+	<template>
+		<style>
+			:host{@apply(--layout-horizontal)}
+			#chartHolder{@apply(--layout-flex); font-size: 10px;position:relative;overflow:hidden;}
+			#chart{position:absolute;left:0px;top:0px;right:0px;bottom:0px;}
+			#legend{width:100px;}
+			::content .legend-box{display:inline-block;}
+			::content .h-box{
+				padding:5px;
+    			font-size: 8px;
+    			@apply(--layout-horizontal);
+    			@apply(--layout-center)
+			}
+			::content .legend-box .box{
+				display:inline-block;min-width:10px;min-height:10px;width:10px;height:10px;margin-right:5px;
+			}
+			#explanation {
+				position: absolute;
+				top:50%;
+				left:25%;
+				width:50%;
+				text-align: center;
+				color: #666;
+				margin-top:-30px;
+			}
+			#percentage {font-size: 2.5em;}
+		</style>
+		<div id="legend"></div>
+		<div id="chartHolder">
+			<div id="chart">
+				<div id="explanation" style="visibility: hidden;">
+					<div id="percentage"></div>
+					<div id="nodename"></div>
+				</div>
+			</div>
+		</div>
+	</template>
+	<script>
+	String.prototype.hashCode = function() {
+	  var hash = 0, i, chr, len;
+	  if (this.length === 0) return hash;
+	  for (i = 0, len = this.length; i < len; i++) {
+	    chr   = this.charCodeAt(i);
+	    hash  = ((hash << 5) - hash) + chr;
+	    hash |= 0; // Convert to 32bit integer
+	  }
+	  return hash;
+	};	
+	Polymer({
+		is: "iris-d3-sunburst-chart",
+		behaviors: [IRIS.SizeListenerBehavior],
+		properties:{
+			sizeProxyHolder:{
+				type: String,
+				value: "#chartHolder"
+			},
+			marginTop: {
+				type: Number,
+				value: 20
+			},
+			marginBottom: {
+				type: Number,
+				value: 20
+			},
+			marginLeft: {
+				type: Number,
+				value: 20
+			},
+			marginRight: {
+				type: Number,
+				value: 20
+			},
+			noLegend: Boolean,
+			data: Array,
+			title: {
+				type: String,
+				value: ""
+			},
+			infoFormatter:Function,
+			color : { type : String, value : null }
+		},
+		observers: ['drawChart(data.*)'],
+		attached: function(){
+			var self = this;
+			this.async(function(){
+				this.reRender();
+			}, 100);
+			this.listen(window, "resize", "reRender");
+			$(self.$.explanation).on("mouseover", function(){
+				self.cancelDebouncer("onmouseleave");
+			})
+		},
+		onSizeChange: function(){
+			this.debounce("render", this.render, 300);
+		},
+		reRender: function(){
+			this.debounce("render", this.render, 200);
+		},
+		render: function(){
+			var self 		= this;
+			var margin 		= {
+				top: self.marginTop,
+				bottom: self.marginBottom,
+				left: self.marginLeft,
+				right: self.marginRight
+			};
+			self.margin 	= margin;
+			self.svgRoot 	= self.svgRoot || d3.select(self.$.chart).append("svg");
+			self.setChartSize();
+    		self.drawChart();
+		},
+		setChartSize: function(){
+			var self 		= this;
+			if(self.svgRoot)
+				self.svgRoot.attr("width", 0)
+
+			var chartBox 	= self.$.chart.getBoundingClientRect();
+			var margin 		= self.margin;
+			var	width 		= chartBox.width - margin.left - margin.right;
+			var height 		= chartBox.height - margin.top - margin.bottom;
+
+			self._width 	= width;
+			self._height 	= height;
+			self._chartBox	= chartBox;
+			self.svgRoot
+				.attr("width", self._width + margin.left + margin.right)
+				.attr("height", self._height + margin.top + margin.bottom)
+
+			self.svg = self.svg = self.svg || self.svgRoot.append("g");
+			self.svg.attr("id", "container")
+    				.attr("transform", "translate(" + (chartBox.width / 2) + "," + (chartBox.height / 2) + ")");
+		},
+		drawChart: function(){
+			var self 		= this;
+			var data 		= self.data;
+			
+			if (!self.svg || !data || !data.children || !data.children.length)
+				return
+
+			var svg 		= self.svg;
+			var colors 		= d3.scale.category20c();
+			if(!self.color)
+				colors.domain( d3.map(data.children, function(a){return a.name; /*a.price; a.name.charCodeAt(0)*/ }).keys() );
+
+			self._colors = colors;
+			self.drawLegend();
+			self.setChartSize();
+			if (!self.offsetHeight || !self.offsetWidth)
+				return
+
+			var radius 		= Math.min(self._width, self._height) / 2;
+			var totalSize 	= 0;
+			var partition = d3.layout.partition()
+			    .size([2 * Math.PI, radius * radius])
+			    .value(function(d) { return d.size; })
+			    .sort(function(a, b) {
+				  var n = a.name.hashCode() - b.name.hashCode()
+				  return n ? n : a.size-b.size;
+				})
+
+			var arc = d3.svg.arc()
+			    .startAngle(function(d) {return d.x; })
+			    .endAngle(function(d) { return d.x + d.dx; })
+			    .innerRadius(function(d) { return Math.sqrt(d.y); })
+			    .outerRadius(function(d) { return Math.sqrt(d.y + d.dy); });
+
+			// Bounding circle underneath the sunburst, to make it easier to detect
+			// when the mouse leaves the parent g.
+			svg.select(".circle").remove()
+			svg.insert("circle", ":first-child")
+				.attr("r", radius)
+				.attr("class", "circle")
+				.style("opacity", 0);
+
+			// For efficiency, filter nodes to keep only those large enough to see.
+			var nodes = partition.nodes(data)
+				.filter(function(d) {
+					return (d.dx > 0.005); // 0.005 radians = 0.29 degrees
+				})
+			svg.selectAll("path").remove()
+
+			var color = self.color || 'name';
+			var path = svg.selectAll("path")
+				.data(nodes)
+				.enter().append("svg:path")
+				.attr("display", function(d) { return (d.depth && !d.hide) ? null : "none"; })
+				.attr("d", arc)
+				.attr("fill-rule", "evenodd")
+				.style("fill", function(d) {return colors(d[color]); })
+				.style("opacity", 1)
+				.on("mousemove", null)
+				.each(function(){
+					d3.select(this).on("mousemove", self.onSVGMouseOver.bind(self))
+				})
+				//.on("mousemove", self.onSVGMouseOver.bind(self))
+				.on("click", self.onSVGMouseOver.bind(self));
+
+			// Add the mouseleave handler to the bounding circle.
+			$(svg.node()).on("mouseleave", null).on("mouseleave", self.onSVGMouseLeave.bind(self));
+
+			if (path.node()){
+				self._totalSize = path.node().__data__.value;
+				self.fire("in-active");
+			}
+		},
+		onSVGMouseOver: function(d){
+			var self 	= this;
+			var svg 	= self.svg;
+			var size 	= self._totalSize || 0;
+			self.cancelDebouncer("onmouseleave");
+			if (_.isFunction(self.infoFormatter)) {
+				self.infoFormatter(d, size, self);
+			}else{
+				var percentage = (100 * d.value / size).toPrecision(3);
+				var percentageString = percentage + "%";
+				if (percentage < 0.1) {
+					percentageString = "< 0.1%";
+				}
+				d3.select(self.$.percentage).text(size+" ("+percentageString+")");
+				d3.select(self.$.explanation).style("visibility", "");
+				var name = d.parent.name != "root" ? d.parent.name+" <br /> " : "";
+				d3.select(self.$.nodename).html(name + d.name);
+			}
+
+			var sequenceArray = self.getAncestors(d);
+
+			// Fade all the segments.
+			svg.selectAll("path").style("opacity", 0.3);
+
+			// Then highlight only those that are an ancestor of the current segment.
+			svg.selectAll("path")
+				.filter(function(node) {
+					return (sequenceArray.indexOf(node) >= 0);
+				})
+				.style("opacity", 1);
+		},
+		onSVGMouseLeave: function(e){
+			var self 	= this;
+
+			self.debounce("onmouseleave", function(){
+				var svg 	= self.svg;
+				// Hide the breadcrumb trail
+				//svg.select("#trail").style("visibility", "hidden");
+
+				// Deactivate all segments during transition.
+				//svg.selectAll("path").on("mouseover", null);
+
+				// Transition each segment to full opacity and then reactivate it.
+				svg.selectAll("path")
+					.transition()
+					.duration(100)
+					.style("opacity", 1)
+					.each("end", function() {
+						//d3.select(this).on("mouseover", self.onSVGMouseOver.bind(self));
+					});
+
+				d3.select(self.$.explanation).style("visibility", "hidden");
+				self.fire("in-active");
+			}, 200);
+		},
+		// Given a node in a partition layout, return an array of all of its ancestor
+		// nodes, highest first, but excluding the root.
+		getAncestors: function (node) {
+			var path = [];
+			var current = node;
+			while (current.parent) {
+				path.unshift(current);
+				current = current.parent;
+			}
+			return path;
+		},
+		drawLegend: function () {
+			var self = this;
+			if(self.noLegend)
+				return
+			// Dimensions of legend item: width, height, spacing, radius of rounded rect.
+			var li = {
+				w: 40, h: 30, s: 3, r: 3
+			};
+			var colors = self._colors;
+			var legend = d3.select(self.$.legend);
+			var data = self.data.children;
+			if (!data.length)
+				return
+			var span = legend.selectAll("span")
+				.data(data)
+				.enter()
+				.append("span")
+				.attr("class", "legend-box")
+				.append("span")
+				.attr("class", "h-box")
+			span.append("span")
+				.attr("class", "box")
+				.style("background-color", function(d) { return colors(d.name); });
+			span.append("span").text(function(d) { return d.name; });
+		},
+		toggleLegend: function () {
+			var legend = d3.select("#legend");
+			if (legend.style("visibility") == "hidden") {
+				legend.style("visibility", "");
+			} else {
+				legend.style("visibility", "hidden");
+			}
+		}
+	})
+	</script>
+</dom-module>

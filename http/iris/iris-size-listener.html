@@ -1,0 +1,78 @@
+<script type="text/javascript">
+	IRIS.SizeListenerBehavior = {
+		properties:{
+			sizeProxyHolder: String
+		},
+		ready: function(){
+			this._initSizeListenerBehavior();
+		},
+		attached: function(){
+			this._resetSizeProxy();
+		},
+		_initSizeListenerBehavior: function(){
+			var self = this;
+			if (self.$.sizeProxy1)
+				return;
+			var $sizeProxyHolder = self.sizeProxyHolder? $(self).find(self.sizeProxyHolder) : $(self);
+			$sizeProxyHolder.css({position: "relative"});
+			var $sizeProxy1 = $("<div id='sizeProxy1' class='iris-size-proxy'><div></div></div>");
+			$sizeProxyHolder.append($sizeProxy1);
+			var $sizeProxy2 = $("<div id='sizeProxy2' class='iris-size-proxy'><div></div></div>");
+			$sizeProxyHolder.append($sizeProxy2);
+			self.$.sizeProxy1 = $sizeProxyHolder.find("#sizeProxy1").get(0);
+			self.$.sizeProxy2 = $sizeProxyHolder.find("#sizeProxy2").get(0);
+			$sizeProxyHolder.find(".iris-size-proxy").css({
+				display: "block",
+				position: "absolute",
+				top: 0,
+				bottom: 0,
+				left: 0,
+				right: 0,
+				overflow: "scroll",
+				"z-index": -1,
+				visibility: "hidden",
+				//_backgroundColor: "#F00",
+				//backgroundColor: "rgba(255, 0, 0, 0.3)"
+			}).on("scroll", self._onSizeProxyScroll.bind(self))
+
+			$sizeProxy1.find("div").css({
+				//position: "absolute",
+				//top: 0,
+				//left: 0,
+				width: 100000,
+				height: 100000
+			});
+			$sizeProxy2.find("div").css({
+				position: "absolute",
+				top: 0,
+				left: 0,
+				transition: "0s",
+				width: "200%",
+				height: "200%"
+			});
+			self.async(self._resetSizeProxy, 500);
+		},
+		_onSizeProxyScroll: function(){
+			this.debounce("onSizeProxyScroll", this._onSizeChange, 100);
+		},
+		_resetSizeProxy: function(){
+			$(this.$.sizeProxy1).find("div").css({
+				width: 100000,
+				height: 100000
+			});
+			this.$.sizeProxy1.scrollTop = 100000;
+			this.$.sizeProxy1.scrollLeft = 100000;
+			this.$.sizeProxy2.scrollTop = 100000;
+			this.$.sizeProxy2.scrollLeft = 100000;
+
+			this.debugSize && console.log("this.$.sizeProxy1.scrollTop", this.$.sizeProxy1.scrollTop, this)
+		},
+		_onSizeChange: function(){
+			this._resetSizeProxy();
+			this.onSizeChange();
+		},
+		onSizeChange: function(){
+			//override me
+		}
+	}
+</script>
