@@ -32,6 +32,7 @@
 		properties:{
 			tiltX: Boolean,
 			debugSize:Boolean,
+			tinyViewSize:{type: Number, value: 0},
 			tiltXAngle: {
 				type: Number,
 				value: -20
@@ -118,12 +119,22 @@
 				left: self.marginLeft,
 				right: self.marginRight
 			};
+			self.tinyViewActive = false;
+			if (self.tinyViewSize && chartBox.height <= self.tinyViewSize){
+				margin.left = margin.right = margin.bottom = 0;
+				margin.top = 20;
+				self.tinyViewActive = true;
+			}
+			
 			self.margin 	= margin;
 			var	width 		= chartBox.width - margin.left - margin.right;
 			var height 		= chartBox.height - margin.top - margin.bottom;
 
 			self._width 	= width;
 			self._height 	= height;
+			self._yTicksCount = self.yTicksCount;
+			if (self._height < 50)
+				self._yTicksCount = 2;
 
 			self.svgRoot 	= self.svgRoot || d3.select(self.$.chart).append("svg");
 
@@ -158,8 +169,12 @@
 
 			var xAxis 		= d3.svg.axis().scale(x).orient("bottom");
 			var yAxis 		= d3.svg.axis().scale(y).orient("left");
-			if(self.yTicksCount)
-				yAxis.ticks(self.yTicksCount)
+			if (self.tinyViewActive) {
+				xAxis.tickFormat("")
+				yAxis.tickFormat("")
+			};
+			if(self._yTicksCount)
+				yAxis.ticks(self._yTicksCount)
 			if(self.xTicksCount)
 				xAxis.ticks(self.xTicksCount)
 
@@ -212,7 +227,7 @@
 				.attr("transform", "translate(0," + self._height + ")")
 				.call(xAxis);
 
-			if (self.xLegend) {
+			if (self.xLegend && !self.tinyViewActive) {
 				_x.legend = _x.legend = _x.legend || _x.append("text");
 				_x.legend.attr("class", "x-title")
 				.attr("y", self.margin.bottom - 10)
@@ -234,7 +249,7 @@
 				_y.attr("class", "y axis")
 				.call(yAxis)
 
-			if (self.yLegend) {
+			if (self.yLegend && !self.tinyViewActive) {
 				_y.legend = _y.legend = _y.legend || _y.append("text");
 
 				_y.legend.attr("class", "y-title")
@@ -258,7 +273,8 @@
 
 			svg.selectAll('.series .line').attr("d", function(d) {return line(d.values); })
 			svg.selectAll('.legend').remove();
-
+			if (self.tinyViewActive)
+				return;
 			if (self.lineLegend){
 				series.append("text")
 					.datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; })
