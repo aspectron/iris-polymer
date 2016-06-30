@@ -44,7 +44,7 @@
 	<template>
 		<iris-prompt holder="[[rpcHolder]]"></iris-prompt>
 		<iron-media-query query="[[mediaquery]]" query-matches="{{ismobile}}"></iron-media-query>
-		<iris-rpc id="rpc" path="[[rpcPath]]" holder="[[rpcHolder]]"></iris-rpc>
+		<iris-rpc id="rpc" path="[[rpcPath]]" holder="[[rpcHolder]]" block-ui="[[blockUi]]" block-ui-text="[[blockUiText]]"></iris-rpc>
 		<paper-textarea class="textarea-bug"></paper-textarea>
 		<paper-drawer-panel id="drawer" narrow="{{isnarrow}}" responsive-width="{{responsiveWidth}}" force-narrow="{{!dontForceNarrow}}" edge-swipe-sensitivity="{{edgeSwipeSensitivity}}">
 			 <paper-header-panel drawer id="drawerLeft">

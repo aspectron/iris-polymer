@@ -1,5 +1,6 @@
 <script src="/IRIS/scripts/math.uuid.js"></script>
 <script src="/socket.io/socket.io.js"></script>
+<link rel="import" href="iris-overlap-panel.html" />
 
 <dom-module id="iris-rpc" attributes="path timeout trace holder">
     <script>
@@ -18,6 +19,11 @@
                 path:{
                     type: String,
                     value : '/rpc'
+                },
+                blockUi: Boolean,
+                blockUiText:{
+                    type: String,
+                    value: '<%=_T("Connecting...")%>'
                 }
             },
 
@@ -36,18 +42,30 @@
 
             ready : function() {
                 var self = this;
+                self._blockUI();
+
                 self.timeout = this.timeout || 30;
                 self.connected = false;
                 window.IRIS.rpc = self;
                 if (self.holder && self.path) {
-                  self.connect();
+                    self.connect();
                 };
+            },
+            _blockUI: function(){
+                console.log("_blockUI", this.blockUi)
+                if (this.blockUi)
+                    IRIS.OverlapPanel(this.blockUiText);
+            },
+            _unblockUI: function(){
+                IRIS.OverlapPanel(false);
+                console.log("_unblockUI", this.blockUi)
             },
             connect: function(){
                 var self = this;
                 if (self._connected || !self.path)
                     return;
                 self._connected = true;
+                self._blockUI();
                 self.events.emitAsync('rpc-connecting');
                 self.socket = io(window.location.origin+self.path);
                 self.socket.on('ready', function(){
@@ -56,6 +74,7 @@
                 self.socket.on('connect', function() {
                     console.log("RPC connected");
                     self.events.emit('rpc-connect');
+                    self._unblockUI();
                 })
                 self.socket.on('error', function() { 
                     console.log("RPC error", arguments);
@@ -68,7 +87,7 @@
                     self.online = false;
                     console.log("RPC disconnected",arguments);
            			self.events.emit('rpc-disconnect');
-
+                    self._blockUI();
                     _.each(self.pending, function(info, id) {
                         info.callback({ error : "Connection Closed"});
                     })

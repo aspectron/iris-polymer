@@ -1,0 +1,100 @@
+<dom-module id="iris-overlap-panel">
+	<style>
+		paper-dialog{
+			border: 1px solid #777;
+			padding:50px;
+		}
+		.title{margin:0px;padding:0px 20px;}
+		.icon{margin-right:25px;-webkit-animation: rotate 2s linear infinite;animation: rotate 2s linear infinite;-webkit-transform-origin: center center;transform-origin: center center;width:50px;height:50px;}
+		.icon circle{-webkit-animation: dash 1.5s ease-in-out infinite;animation: dash 1.5s ease-in-out infinite;stroke-linecap: round;stroke-dasharray: 90,10;stroke: #0057e7;}
+		@-webkit-keyframes rotate {100% {-webkit-transform: rotate(360deg);}}
+		@keyframes rotate {100% {transform: rotate(360deg);}}
+		@-webkit-keyframes dash {0% {stroke-dasharray: 1,200;stroke-dashoffset: 0;}50% {stroke-dasharray: 89,200;stroke-dashoffset: -35;}100% {stroke-dasharray: 89,200;stroke-dashoffset: -124;}}
+		@keyframes dash {0% {stroke-dasharray: 1,200;stroke-dashoffset: 0;}50% {stroke-dasharray: 89,200;stroke-dashoffset: -35;}100% {stroke-dasharray: 89,200;stroke-dashoffset: -124;}}
+		.content{@apply(--layout-horizontal);@apply(--layout-center);margin-bottom:0px;margin-top:0px;padding:0px;}
+	</style>
+	<template>
+		<paper-dialog id="dialodBox" modal class$="[[cls]]" notitle$="[[!title]]" opened="{{opened}}">
+			<div class="content">
+				<span>
+					<svg class="icon" viewBox="25 25 50 50">
+						<circle cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10"></circle>
+					</svg>
+				</span>
+				<h2 class="title" hidden$="[[!title]]">[[title]]</h2>
+			</div>
+		</paper-dialog>
+	</template>
+	<script>
+		window.IRIS = window.IRIS || {};
+		//placeholder utill real component ready to call
+		window.IRIS.overlapPanel = {
+			isPlaceholder: true,
+			set: function(key, value){
+				this[key] = value;
+			},
+			open: function(){
+				this.called = "open";
+			},
+			close: function(){
+				this.called = "close";
+			}
+		}
+		
+
+		window.IRIS.OverlapPanel = function(title, callback){
+			if (this.overlapPanel.isPlaceholder){
+				var el = document.createElement("iris-overlap-panel");
+				document.body.appendChild(el);
+			}
+			if (title === false)
+				return this.overlapPanel.close();
+			this.overlapPanel.set('title', title || '<%= _T("Please wait...") %>');
+			this.overlapPanel.set('callback', callback);
+			this.overlapPanel.open();
+		};
+
+		Polymer({
+			is:'iris-overlap-panel',
+			properties:{
+				title:{
+					type: String,
+					value: "Connecting.."
+				},
+				callback: {
+					type: Function,
+					value: false
+				},
+				opened:{
+					type: Boolean,
+					observer: "onOpenedChanged"
+				}
+			},
+			open:function(){
+				this.$.dialodBox.open();
+			},
+			close:function(){
+				this.$.dialodBox.close();
+			},
+			doCallback: function(btn){
+				this.close();
+				if(data.callback){
+					data.callback(btn, value);
+				}
+			},
+			attached: function(){
+				var oPanel = window.IRIS.overlapPanel;
+				if ( oPanel && oPanel.called) {
+					this.set('title', oPanel.title);
+					this.set('callback', oPanel.callback);
+					this[oPanel.called]();
+				};
+				window.IRIS.overlapPanel = this;
+			},
+			onOpenedChanged: function(){
+				this.toggleClass("iris-overlap-panel-opened", this.opened, document.body);
+			}
+		})
+	</script>
+</dom-module>
+
