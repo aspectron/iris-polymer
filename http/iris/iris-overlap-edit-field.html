@@ -6,6 +6,7 @@
 			.tigger{min-height: 30px; min-width: 30px; cursor: pointer;}
 			.tigger[disabled]{cursor:default;}
 			#dropdown{display:block;}
+			#dropdown::shadow #contentWrapper .dropdown-content{max-width:none !important;}
 			#dropdown::shadow #contentWrapper.iron-dropdown > *{max-height: 200px !important;box-shadow: 2px 2px 2px 3px #DDD;}
 			#dropdown::shadow paper-input{background-color: transparent;}
 			#dropdown::shadow paper-input::shadow paper-input-container,
@@ -74,14 +75,39 @@
 				var closeEls = self.$.dropdown.querySelectorAll("[close]");
 				_.each(closeEls, function(el){
 					self.listen(el, "click", "close")
-				})
+				});
 			},
 			close: function(){
 				this.$.dropdown.close();
 			},
 			open: function() {
 				this.$.dropdown.verticalOffset = this.getBoundingClientRect().height;
+				this.adjustPosition();
 				this.$.dropdown.open();
+			},
+			adjustPosition: function(){
+				var $dropdown = $(this.$.dropdown);
+				$dropdown.css({
+					visibility: "hidden",
+					display: "block",
+					marginLeft: -1000,
+					minHeight: 1
+				});
+				var dc = this.$.dropdown.$.contentWrapper.querySelector(".dropdown-content");
+				var position = $dropdown.position();
+				var dropdownBox = dc.getBoundingClientRect();
+				var maxRight = $(window).width();
+				var right = position.left + dropdownBox.width;
+				if (right > maxRight -10)
+					this.$.dropdown.horizontalOffset = maxRight - right - 10;
+				else
+					this.$.dropdown.horizontalOffset = 0;
+				
+				$dropdown.css({
+					marginLeft: 0,
+					visibility: "visible",
+					display: "none"
+				});
 			}
 		});
 	</script>
