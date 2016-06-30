@@ -119,6 +119,11 @@
 				left: self.marginLeft,
 				right: self.marginRight
 			};
+			var minMargin 	= self.minMargin || {};
+			if (minMargin.bottom > margin.bottom)
+				margin.bottom = minMargin.bottom;
+			if (minMargin.left > margin.left)
+				margin.left = minMargin.left;
 			self.tinyViewActive = false;
 			if (self.tinyViewSize && chartBox.height <= self.tinyViewSize){
 				margin.left = margin.right = margin.bottom = 0;
@@ -248,6 +253,34 @@
 			var _y = self._yG = self._yG || svg.append("g");
 				_y.attr("class", "y axis")
 				.call(yAxis)
+
+
+				if (!self.tinyViewActive){
+					self.minMargin  = self.minMargin || {};
+					var xTickNode 	= svg.select(".x.axis .tick").node();
+					var yTickNode 	= svg.select(".y.axis .tick").node();
+					if(xTickNode && yTickNode){
+						var tickHeight 	= xTickNode.getBoundingClientRect().height;
+						var tickWidth 	= yTickNode.getBoundingClientRect().width;
+						var doReRender 	= false;
+						if (tickHeight > self.margin.bottom){
+							self.minMargin.bottom = tickHeight + 5;
+							doReRender 	= true;
+						}
+						if (tickWidth > self.margin.left){
+							self.minMargin.left = tickWidth + 5;
+							doReRender 	= true;
+						}
+
+						if (self.minMargin.bottom > tickHeight + 5)
+							self.minMargin.bottom = tickHeight + 5;
+						if (self.minMargin.left > tickWidth + 5)
+							self.minMargin.left = tickWidth + 5;
+
+						if (doReRender)
+							self.reRender();
+					}
+				}
 
 			if (self.yLegend && !self.tinyViewActive) {
 				_y.legend = _y.legend = _y.legend || _y.append("text");
