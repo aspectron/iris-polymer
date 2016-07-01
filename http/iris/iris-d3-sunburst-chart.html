@@ -73,6 +73,7 @@
 				value: 20
 			},
 			noLegend: Boolean,
+			skipNodeFiltering: Boolean,
 			data: Array,
 			title: {
 				type: String,
@@ -175,10 +176,12 @@
 				.style("opacity", 0);
 
 			// For efficiency, filter nodes to keep only those large enough to see.
-			var nodes = partition.nodes(data)
-				.filter(function(d) {
+			var nodes = partition.nodes(data);
+			if(!self.skipNodeFiltering){
+				nodes.filter(function(d) {
 					return (d.dx > 0.005); // 0.005 radians = 0.29 degrees
 				})
+			}
 			svg.selectAll("path").remove()
 
 			var color = self.color || 'name';
