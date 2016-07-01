@@ -46,6 +46,7 @@
 			if (this.overlapPanel.isPlaceholder){
 				var el = document.createElement("iris-overlap-panel");
 				document.body.appendChild(el);
+				this.overlapPanel = el;
 			}
 			if (title === false)
 				return this.overlapPanel.close();
