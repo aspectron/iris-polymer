@@ -52,13 +52,11 @@
                 };
             },
             _blockUI: function(){
-                console.log("_blockUI", this.blockUi)
                 if (this.blockUi)
                     IRIS.OverlapPanel(this.blockUiText);
             },
             _unblockUI: function(){
                 IRIS.OverlapPanel(false);
-                console.log("_unblockUI", this.blockUi)
             },
             connect: function(){
                 var self = this;
