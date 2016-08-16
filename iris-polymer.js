@@ -44,9 +44,12 @@ function IRIS_Polymer(core, options) {
 		var depsComponetsPath = path.join(__dirname,'/bower_components/');
 		var componetsPath = path.join(__dirname,'/http/iris/');
 		var scriptsPath   = path.join(__dirname,'/http/scripts/');
+		var cssPath   = path.join(__dirname,'/http/css/');
+		var imagesPath   = path.join(__dirname,'/http/images/');
 
 		if (combiner && combiner.addHttpFolders) {
 			combiner.addHttpFolders([
+				cssPath,
 				scriptsPath,
 				componetsPath,
 				depsComponetsPath
@@ -77,6 +80,8 @@ function IRIS_Polymer(core, options) {
 
 		app.use('/deps', ServeStatic(depsComponetsPath));
 		app.use('/IRIS/scripts', ServeStatic(scriptsPath));
+		app.use('/IRIS/css', ServeStatic(cssPath));
+		app.use('/IRIS/images', ServeStatic(imagesPath));
 	    app.use('/IRIS', ServeStatic(componetsPath));
 	}
 }
