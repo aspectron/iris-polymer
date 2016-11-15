@@ -1,3 +1,6 @@
+<link rel="import" href="/deps/paper-item/paper-item.html">
+<link rel="import" href="/deps/paper-menu-button/paper-menu-button.html">
+
 <dom-module id="iris-tags-input">
 	<style>
 		:host {display: block;}
@@ -155,7 +158,6 @@
 		},
 		onContainerTap: function(e){
 			var self = this;
-			console.log("onContainerTap", e)
 			if(e.target.icon == self.removeIcon){
 				self.removeItem(e.target.dataTag)
 				return;
