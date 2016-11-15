@@ -94,7 +94,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 		</template>
 	</paper-input-container>
 	<paper-dialog id="dialog" class="iris-date-picker-dialog" modal on-iron-overlay-closed="dismissDialog">
-		<iris-date-picker id="picker" date="{{_date}}" min-date="{{minDate}}" max-date="{{maxDate}}"></iris-date-picker>
+		<iris-date-picker id="picker" date="{{_date}}" min-date="{{minDate}}" max-date="{{maxDate}}" disabled-dates="[[disabledDates]]"></iris-date-picker>
 		<div class="buttons">
 			<!--paper-button dialog-dismiss>Cancel</paper-button-->
 			<paper-button on-click="dismissDialog">Close</paper-button>
@@ -176,7 +176,17 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 				},
 				_input3: {
 					type: String
-				}
+				},
+				/*
+				/* "2016:11:17"  => single date
+				/* "*:*:13" => 13 of each month on every year
+				/* "*:3:10-*:4:15" => every year from march 10th to april 15th
+				/* "*:3:10,*:4:15" => every year from march to april, 10th to 15th dates will be disabled
+				/*/
+				disabledDates:{
+		          type: Array,
+		          value: []
+		        }
 			},
 
 			behaviors: [
@@ -198,6 +208,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 				this._getDOMInputElements();
 				this._enableDateConstraints();
 				this._attached = true;
+				Polymer.dom(document.body).appendChild(this.$.dialog)
 				this.updateFields();
 			},
 

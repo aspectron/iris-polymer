@@ -233,6 +233,16 @@
           },
           observer: '_dateChanged'
         },
+        /*
+        /* "2016:11:17"  => single date
+        /* "*:*:13" => 13 of each month on every year
+        /* "*:3:10-*:4:15" => every year from march 10th to april 15th
+        /* "*:3:10,*:4:15" => every year from march to april, 10th to 15th dates will be disabled
+        /*/
+        disabledDates:{
+          type: Array,
+          value: []
+        },
         /**
          * The current locale
          */
@@ -399,7 +409,56 @@
         return cssClass;
       },
       _isDisabled: function(day, date) {
-        return !day || !this._withinValidRange(date);
+        var disabled = !day || !this._withinValidRange(date);
+        if(disabled)
+          return disabled;
+        var i = 0, d, d2, dates = this.disabledDates;
+        while(dates[i]){
+          if(dates[i].indexOf(",") > 0){
+            d = dates[i].split(",")[0].split(":");
+            d2 = dates[i].split(",")[1].split(":");
+            if(
+              (d[0] == "*" || date.getFullYear() >= parseInt(d[0], 10) ) &&
+              (d[1] == "*" || date.getMonth()+1 >= parseInt(d[1], 10) ) && 
+              (d[2] == "*" || date.getDate() >= parseInt(d[2], 10) ) && 
+              (d2[0] == "*" || date.getFullYear() <= parseInt(d2[0], 10) ) &&
+              (d2[1] == "*" || date.getMonth()+1 <= parseInt(d2[1], 10) ) && 
+              (d2[2] == "*" || date.getDate() <= parseInt(d2[2], 10) ) ) {
+                return true;
+            }
+          }else if(dates[i].indexOf("-") > 0){
+            d = dates[i].split("-")[0].split(":");
+            d2 = dates[i].split("-")[1].split(":");
+            if(d[0] == "*")
+              d[0] = date.getFullYear();
+            if(d[1] == "*")
+              d[1] = date.getMonth()+1;
+            if(d[2] == "*")
+              d[2] = date.getDate();
+
+            if(d2[0] == "*")
+              d2[0] = date.getFullYear();
+            if(d2[1] == "*")
+              d2[1] = date.getMonth()+1;
+            if(d2[2] == "*")
+              d2[2] = date.getDate();
+
+            d = new Date(d[0], d[1]-1, d[2], 0, 0, 0);
+            d2 = new Date(d2[0], d2[1]-1, d2[2], 0, 0, 0);
+            if(date >= d && date <= d2) {
+                return true;
+            }
+          }else{
+            d = dates[i].split(":");
+            if(
+              (d[0] == "*" || date.getFullYear() == d[0] ) &&
+              (d[1] == "*" || date.getMonth()+1 == d[1] ) && 
+              (d[2] == "*" || date.getDate() == d[2]) ){
+                return true;
+            }
+          }
+          i++;
+        }
       },
       _getMonthClass: function(name, month) {
         return name + ' month-' + month.year + '-' + month.month;
@@ -606,7 +665,9 @@
         this._updateSelection();
       },
       _tapDay: function(event) {
-        if (!this._withinValidRange(event.model.item.date)) {
+        if(!event.model.item.date)
+          return false
+        if (this._isDisabled(event.model.item.date.getDate(), event.model.item.date) /*|| !this._withinValidRange(event.model.item.date)*/) {
           return false;
         }
         this.date = event.model.item.date;

@@ -164,7 +164,7 @@ styling:
         on-iron-select="_pageSelected">
         <neon-animatable id="chooseDate">
           <iris-calendar id="calendar" locale="{{locale}}" date="{{date}}"
-            min-date="{{minDate}}" max-date="{{maxDate}}">
+            min-date="{{minDate}}" max-date="{{maxDate}}" disabled-dates="[[disabledDates]]">
           </iris-calendar>
         </neon-animatable>
         <neon-animatable id="chooseYear">
@@ -256,6 +256,16 @@ styling:
         _minYear: {
           type: Number,
           computed: '_getFullYear(minDate)'
+        },
+        /*
+        /* "2016:11:17"  => single date
+        /* "*:*:13" => 13 of each month on every year
+        /* "*:3:10-*:4:15" => every year from march 10th to april 15th
+        /* "*:3:10,*:4:15" => every year from march to april, 10th to 15th dates will be disabled
+        /*/
+        disabledDates:{
+          type: Array,
+          value:[]
         }
       },
       behaviors: [
