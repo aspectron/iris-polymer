@@ -1,0 +1,48 @@
+<link rel="stylesheet" type="text/css" href="/IRIS/css/notify.css" />
+
+<script type="text/javascript" src="/IRIS/scripts/notify.js"></script>
+<script>
+
+	$.notify.addStyle('iris', {
+		html:
+			"<div>" +
+			"<div class='image'></div>" +
+			"<div class='close'></div>" +
+			"<div class='text-wrapper'>" +
+			"<div class='title' data-notify-html='title'/>" +
+			"<div class='text' data-notify-html='text'/>" +
+			"</div>" +
+			"</div>",
+		classes: {
+			blue: {
+				"color": "#fafafa !important",
+				"background-color": "rgba(12,33,88,0.9)",
+				"border": "1px solid #fff",
+				"font-family": "Open Sans"
+			},
+			red: {
+				"color": "#fafafa !important",
+				"background-color": "rgba(160,0,0,0.9)",
+				"border": "1px solid #fff",
+				"font-family": "Open Sans"
+			}
+		}
+	});		
+
+	$.notify.defaults({ globalPosition : 'bottom left', className : 'blue', style : 'iris', autoHide : false, autoHideDelay : 3000 })
+
+	IRIS.notify = function(o) {
+		$.notify(o, o);
+	}
+
+	IRIS.info = function(o) {
+		$.notify(o, o);
+	}
+
+	IRIS.error = function(o) {
+		o.className = 'red';
+		$.notify(o, o);
+	}
+
+</script>
+
