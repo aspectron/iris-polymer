@@ -133,7 +133,8 @@
 			},
 			verticalanimation: Boolean,
 			skipLocationHash: Boolean,
-			skipHashUpdation: Boolean
+			skipHashUpdation: Boolean,
+			theme: String
 		},
 		listeners:{
 			'pages-ready': 'onPagesReady',
@@ -148,7 +149,7 @@
 			self.classList.add('vertical');
 
 			self.tabsAdded = true;
-			IRIS.loadTheme('theme1.html');
+			self.theme && IRIS.loadTheme(self.theme);
 			self.toggleClass('loading', false, document.body);
 		},
 		getLocationHash: function(){
