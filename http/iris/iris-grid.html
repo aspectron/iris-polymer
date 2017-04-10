@@ -266,6 +266,9 @@ window.IRIS.IRISGridFieldBehavior = {
 		self.toggleClass('iris-grid-field', true);
 		self.$.irisFormDialog = self.$.irisFormDialog || self.querySelector('iris-form-dialog');
 		self.$.formDialog = self.$.irisFormDialog? self.$.irisFormDialog.$.formDialog : self.$.formDialog || self.querySelector('#formDialog');
+		//console.log("self.$.formDialog111", self.$.formDialog)
+
+		
 		self.$.gridFieldHeader = self.querySelector('iris-grid-field-header');
 		self.$.grid = self.querySelector('iris-grid');
 
@@ -278,6 +281,9 @@ window.IRIS.IRISGridFieldBehavior = {
 		});
 
 		if(self.$.formDialog){
+			self.async(function(){
+				$(document.body).append(self.$.irisFormDialog);
+			}, 300)
 			self.listen(self.$.formDialog, "keyup", "onFormInputKeyUp");
 		}
 
@@ -351,6 +357,7 @@ window.IRIS.IRISGridFieldBehavior = {
 	},
 	edit: function(data, index){
 		var self = this;
+		//console.log("self.$.formDialog", self.$.formDialog)
 		if(!self.$.formDialog)
 			return;
 		self.set('formData', _.extend({}, data));
