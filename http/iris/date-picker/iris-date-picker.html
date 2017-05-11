@@ -6,9 +6,11 @@
 <link rel="import" href="/deps/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="/deps/iron-resizable-behavior/iron-resizable-behavior.html">
 <link rel="import" href="/deps/iron-selector/iron-selector.html">
+<link rel="import" href="/deps/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="iris-calendar.html">
 <link rel="import" href="iris-date-picker-dialog-style.html">
 <link rel="import" href="iris-year-list.html">
+<link rel="import" href="iris-clock-selector.html">
 
 <!--
 Material Design [Pickers](http://www.google.com/design/spec/components/pickers.html)
@@ -54,9 +56,8 @@ styling:
 </style>
 
 <dom-module id="iris-date-picker">
-  <style include="iron-flex"></style>
   <template>
-    <style>
+    <style include="iron-flex">
       :host {
         -webkit-touch-callout: none;
         -webkit-user-select: none;
@@ -73,7 +74,7 @@ styling:
       /** Landscape ******************/
       #datePicker {
         width: 512px;
-        height: 248px;
+        height: 304px;
         @apply(--layout-horizontal);
       }
       #heading {
@@ -95,7 +96,6 @@ styling:
       }
       :host([narrow]) #heading {
         width: auto;
-        height: 96px;
         padding: 16px 24px;
       }
 
@@ -129,9 +129,18 @@ styling:
         font-size: 16px;
         @apply(--iris-date-picker-heading-date);
       }
-      #heading:not(.pg-chooseYear) .year,
-      #heading.pg-chooseYear .date {
+      #heading .year,
+      #heading .date,
+      #heading .hour,
+      #heading .minute{
         color: var(--light-primary-color);
+        cursor:pointer;
+      }
+      #heading.pg-chooseYear .year,
+      #heading.pg-chooseDate .date,
+      #heading.pg-chooseHours .hour,
+      #heading.pg-chooseMinutes .minute {
+        color: var(--text-primary-color);
       }
 
       /** Calendar/Year picker ********/
@@ -142,48 +151,136 @@ styling:
         @apply(--layout-flex);
         width: auto;
         background: var(--default-background-color);
+        position:relative;
       }
       #calendar {
         --iris-calendar: {
           @apply(--iris-date-picker-calendar);
         }
       }
+      #heading .time-holder{
+        margin-top:10px;
+      }
+      :host([narrow]) #heading .time-holder {
+        margin-top: 6px;
+      }
+      #heading .time{
+        margin-right:5px;
+        @apply(--paper-font-display2);
+      }
+      :host([narrow]) #heading .time {
+        @apply(--paper-font-display3);
+      }
+      :host([narrow]) #timePicker #heading .time {
+        font-size: 60px;
+        letter-spacing: .1ex !important;
+      }
+      :host([narrow]) #heading .period {
+        margin-left: 12px;
+        margin-top: 12px;
+      }
+      .clockArea {
+        padding: 20px;
+      }
+      :host([narrow]) .clockArea {
+        padding: 16px;
+        @apply(--iris-time-picker-clock);
+      }
+      .clock{width:100%;height:100%;}
+      neon-animatable{@apply(--layout-fit)}
+      .time-holder, .time-holder .time{@apply(--layout-horizontal)}
+      .time-holder .period{@apply(--paper-font-subhead);font-size:20px;font-weight: 600;position:relative;min-width:28px}
+      .time-holder .period div{cursor:pointer;opacity:0; z-index:1; transition: all 0.2s ease;position:absolute;right:0px;bottom:3px}
+      .time-holder .period div.iron-selected{opacity:1;z-index:0}
     </style>
     <iron-media-query query="{{_getMediaQuery(forceNarrow, responsiveWidth)}}" query-matches="{{_queryMatches}}"></iron-media-query>
     <div id="datePicker">
       <div id="heading" class$="{{_getHeadingClass('heading-content', _selectedPage)}}">
-        <div class="year" on-tap="_tapHeadingYear">{{dateFormat(date, 'YYYY', locale)}}</div>
-        <div class="date" on-tap="_tapHeadingDate">
+        <div class="year" hidden$="[[!showDate]]" on-tap="_tapHeadingYear">{{dateFormat(date, 'YYYY', locale)}}</div>
+        <div class="date" hidden$="[[!showDate]]" on-tap="_tapHeadingDate">
           <template is="dom-repeat" items="{{_splitHeadingDate(date, headingFormat, locale)}}">
             <span>{{item}}</span>
           </template>
+        </div>
+        <div class="time-holder" hidden$="[[!showTime]]">
+          <div class="time">
+            <div name="hours" class="hour" on-tap="_tapHeadingHours">{{hour12}}</div>
+            <div class="sep">:</div>
+            <div name="minutes" class="minute" on-tap="_tapHeadingMinutes">{{_zeroPad(minute, 2)}}</div>
+          </div>
+          <iron-selector class="period" attr-for-selected="name" selected="{{period}}">
+            <div name="AM">AM</div>
+            <div name="PM">PM</div>
+          </iron-selector>
         </div>
       </div>
       <neon-animated-pages id="pages" selected="{{_selectedPage}}" attr-for-selected="id"
         entry-animation="fade-in-animation" exit-animation="fade-out-animation"
         on-iron-select="_pageSelected">
         <neon-animatable id="chooseDate">
-          <iris-calendar id="calendar" locale="{{locale}}" date="{{date}}"
+          <iris-calendar id="calendar" locale="{{locale}}" date="{{tplDate}}"
             min-date="{{minDate}}" max-date="{{maxDate}}" disabled-dates="[[disabledDates]]">
           </iris-calendar>
         </neon-animatable>
         <neon-animatable id="chooseYear">
-          <iris-year-list id="yearList" date="{{date}}" on-tap="_tapHeadingDate" min="[[_minYear]]" max="[[_maxYear]]"></iris-year-list>
+          <iris-year-list id="yearList" date="{{tplDate}}" on-tap="_tapHeadingDate" min="[[_minYear]]" max="[[_maxYear]]"></iris-year-list>
+        </neon-animatable>
+        <neon-animatable class="clockArea" id="chooseHours">
+          <iris-clock-selector class="clock" id="hourClock" count="12" step="1"
+            on-iris-clock-transition-end="onHourClockAnimationEnd"
+            on-iris-clock-selected="onHourClockSelected"
+            animated="[[animated]]" selected="{{hour12}}"></iris-clock-selector> 
+        </neon-animatable>
+        <neon-animatable class="clockArea" id="chooseMinutes">
+          <iris-clock-selector class="clock" id="minuteClock" count="60" step="5"
+            animated="[[animated]]" use-zero zero-pad selected="{{minute}}"></iris-clock-selector> 
         </neon-animatable>
       </neon-animated-pages>
     </div>
   </template>
   <script>
-
+  (function() {
+    function warn() {
+      if (window.console) {
+        console.warn.apply(console, arguments);
+      }
+    }
     Polymer({
       is: 'iris-date-picker',
       properties: {
+        /**
+         * Show Date component
+         */
+        showDate: {
+          notify: true,
+          type: Boolean,
+          value: true
+        },
+        /**
+         * Show Time component
+         */
+        showTime: {
+          notify: true,
+          type: Boolean,
+          value: false
+        },
+        /**
+         * Show Time, but hide Date component
+         */
+        showTimeOnly: {
+          type: Boolean,
+          value: false
+        },
         /**
          * The selected date (YYYY-MM-DD)
          */
         date: {
           type: Date,
-          notify: true
+          notify: true,
+          observer: "onDateChanged"
+        },
+        tplDate:{
+          type: Date
         },
         /**
          * Maximum screen width at which the picker uses a vertical layout
@@ -266,7 +363,50 @@ styling:
         disabledDates:{
           type: Array,
           value:[]
-        }
+        },
+
+        /**
+         * Whether or not to animate the clock hand between selections
+         */
+        animated: {
+          type: Boolean,
+          value: false
+        },
+        /**
+         * The current 24-hour value (0-24)
+         */
+        hour: {
+          type: Number,
+          observer: '_hourChanged',
+          notify: true,
+          value: 0
+        },
+        /**
+         * The current 12-hour value (0-12)
+         */
+        hour12: {
+          type: Number,
+          notify: true,
+          observer: '_hour12Changed'
+        },
+        /**
+         * The current minute (0-59)
+         */
+        minute: {
+          type: Number,
+          notify: true,
+          observer: '_minuteChanged',
+          value: 0
+        },
+        /**
+         * The current period ('AM', 'PM')
+         */
+        period: {
+          type: String,
+          notify: true,
+          observer: '_periodChanged',
+          value: 'AM'
+        },
       },
       behaviors: [
         Polymer.IronResizableBehavior
@@ -274,10 +414,36 @@ styling:
       listeners: {
         'iron-resize': '_resizeHandler'
       },
+      observers:["onTplDateChanged(tplDate, hour, minute)"],
+      onDateChanged: function(){
+        var date = this.date;
+        var d = new Date(date+"");
+        this.hour = d.getHours();
+        this.minute = d.getMinutes();
+        this.tplDate = d;
+        //console.log("onDateChanged: tplDate", this.tplDate)
+      },
+      onTplDateChanged: function(){
+        var newDate = new Date(this.tplDate+"");
+        newDate.setHours(this.hour, this.minute, 0, 0);
+        //console.log("onTplDateChanged: tplDate", this.tplDate, this.date)
+        if(newDate+"" == this.date+"")
+          return
+
+        this.date = newDate;
+      },
       ready: function() {
         this.today = this.$.calendar.today;
         this.isTouch = 'ontouchstart' in window;
         this._selectPage('chooseDate');
+      },
+      attached: function() {
+        Polymer.IronResizableBehavior.attached.call(this)
+        if(this.showTimeOnly){
+          this.set("showDate", false);
+          this.set("showTime", true);
+          this._selectPage("chooseHours")
+        }
       },
       dateFormat: function() {
         return this.$.calendar.dateFormat.apply(this.$.calendar, arguments);
@@ -326,7 +492,7 @@ styling:
         this._resizeHandler();
       },
       _resizeHandler: function() {
-        if (this._resizing) {
+        /*if (this._resizing) {
           return;
         }
         this._resizing = true;
@@ -334,7 +500,89 @@ styling:
         this._resizing = false;
 
         this.updateStyles();
+        */
+
+        if (!this.offsetWidth || this._resizing) {
+            return;
+        }
+        this.debounce("_resizeHandler", function(){
+          this.updateStyles();
+          this.async(function() {
+            this._resizing = true;
+            this.$.calendar.notifyResize();
+            this.$.pages._notifyPageResize();
+            this._resizing = false;
+          }.bind(this));
+        }.bind(this), 10)
+        
+      },
+      /********* TIME *******/
+      _twelveHour: function(hour) {
+        return hour % 12 || 12;
+      },
+      _hour12Changed: function(hour12) {
+        var add = (this.period === 'PM' ? 12 : 0);
+        this.hour = ((hour12 % 12) + add) % 24;
+      },
+      _hourChanged: function(hour, oldValue) {
+        hour = parseInt(hour);
+        if (isNaN(hour) && !hour) {
+          return;
+        }
+        if (isNaN(hour)) {
+          warn('Invalid number:', hour);
+          this.hour = oldValue;
+          return;
+        }
+        hour = parseFloat(hour) % 24;
+        this.hour = hour;
+        this.hour12 = this._twelveHour(hour);
+        this.period = ['PM', 'AM'][+(hour < 12)];
+      },
+      _minuteChanged: function(minute) {
+        minute = parseFloat(minute) % 60;
+        this.minute = minute;
+      },
+      _periodChanged: function(period) {
+        if (isNaN(parseInt(this.hour)) || isNaN(parseInt(this.minute))) {
+          return;
+        }
+        if (period === 'AM' &&  this.hour >= 12) {
+          this.hour -= 12;
+        } else if (period === 'PM' && this.hour < 12) {
+          this.hour += 12;
+        }
+      },
+      _tapHeadingHours: function() {
+        if (this.$.pages.selected !== 'chooseHours') {
+          this._selectPage('chooseHours');
+        }
+      },
+      _tapHeadingMinutes: function() {
+        if (this.$.pages.selected !== 'chooseMinutes') {
+          this._selectPage('chooseMinutes');
+        }
+      },
+      _zeroPad: function(value, length) {
+        if (value === undefined || isNaN(value) || isNaN(length)) {
+          return;
+        }
+        return ('0' + value).substr(-length);
+      },
+      onHourClockAnimationEnd: function(){
+        this.selectMinutesPanel(100);
+      },
+      onHourClockSelected: function(){
+        if(this.animated)
+          return
+        this.selectMinutesPanel(600);
+      },
+      selectMinutesPanel: function(delay){
+        this.async(function() {
+          this._tapHeadingMinutes();
+        }.bind(this), delay);
       }
     });
+  })();
   </script>
 </dom-module>

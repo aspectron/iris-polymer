@@ -24,7 +24,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 
 <dom-module id="iris-date-input">
 <template>
-	<style>
+	<style include="iris-date-picker-dialog-style">
 		:host {
 			display: inline-block;
 		}
@@ -51,50 +51,82 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
         	#dialog #picker::shadow #heading{height: auto; @apply(--layout-horizontal);}
         	#dialog #picker::shadow #heading .date{line-height: 1; font-size: 20px; @apply(--layout-flex); margin-left: 15px;}
       	}
+      	[hide-date] .date-cp,
+      	[hide-time] .time-cp{display:none}
 	</style>
 
 	<paper-input-container 
 		id="container"
 		disabled$="[[disabled]]"
 		invalid="[[invalid]]"
+		hide-date$="[[!showDate]]"
+		hide-time$="[[!showTime]]"
 		always-float-label>
 
 		<label hidden$="[[!label]]">[[label]]</label>
 
 		<iris-date-validator></iris-date-validator>
-		<input 
+		<input
+			class="date-cp"
 			is="iron-input"
 			type="text"
 			id="dateInputOne"
 			bind-value="{{_input1}}"
 			allowed-pattern="[0-9]+"
 			required
+			on-blur="_computeDate"
 		/>
-		<span class="separator">/</span>
-		<input 
+		<span class="separator date-cp">/</span>
+		<input
+			class="date-cp"
 			is="iron-input"
 			type="text"
 			id="dateInputTwo"
 			bind-value="{{_input2}}"
 			allowed-pattern="[0-9]+" 
 			required
+			on-blur="_computeDate"
 		/>
-		<span class="separator">/</span>
-		<input 
+		<span class="separator date-cp">/</span>
+		<input
+			class="date-cp"
 			is="iron-input"
 			type="text"
 			id="dateInputThree"
 			bind-value="{{_input3}}"
 			allowed-pattern="[0-9]+"
 			required
-		/>   
+			on-blur="_computeDate"
+		/>
+		<span class="separator date-cp"> </span>
+		<input
+			class="time-cp"
+			is="iron-input"
+			type="text"
+			id="dateInput4th"
+			bind-value="{{_input4}}"
+			allowed-pattern="[0-9]+"
+			required
+			on-blur="_computeDate"
+		/>
+		<span class="separator time-cp">:</span>
+		<input
+			class="time-cp"
+			is="iron-input"
+			type="text"
+			id="dateInput5th"
+			bind-value="{{_input5}}"
+			allowed-pattern="[0-9]+"
+			required
+			on-blur="_computeDate"
+		/>
 		<paper-icon-button suffix icon="[[pickerIcon]]" hidden$="[[hidePicker]]" on-click="openPicker"></paper-icon-button>
 		<template is="dom-if" if="[[errorMessage]]">
 			<paper-input-error id="error">[[errorMessage]]</paper-input-error>
 		</template>
 	</paper-input-container>
 	<paper-dialog id="dialog" class="iris-date-picker-dialog" modal on-iron-overlay-closed="dismissDialog">
-		<iris-date-picker id="picker" date="{{_date}}" min-date="{{minDate}}" max-date="{{maxDate}}" disabled-dates="[[disabledDates]]"></iris-date-picker>
+		<iris-date-picker show-date="{{showDate}}" show-time="{{showTime}}" show-time-only="[[showTimeOnly]]" id="picker" date="{{_date}}" min-date="{{minDate}}" max-date="{{maxDate}}" disabled-dates="[[disabledDates]]"></iris-date-picker>
 		<div class="buttons">
 			<!--paper-button dialog-dismiss>Cancel</paper-button-->
 			<paper-button on-click="dismissDialog">Close</paper-button>
@@ -117,6 +149,18 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 					type: String,
 					value: "editor:insert-invitation"
 				},
+				/**
+		         * Show Date component
+		         */
+		        showDate: Boolean,
+		        /**
+		         * Show Time component
+		         */
+		        showTime: Boolean,
+		        /**
+		         * Show Time, but hide Date component
+		         */
+		        showTimeOnly: Boolean,
 				/**
 				* Input label
 				*/
@@ -177,6 +221,12 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 				_input3: {
 					type: String
 				},
+				_input4: {
+					type: String
+				},
+				_input5: {
+					type: String
+				},
 				/*
 				/* "2016:11:17"  => single date
 				/* "*:*:13" => 13 of each month on every year
@@ -195,7 +245,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			],
 
 			observers: [
-				'_computeDate(_input1, _input2, _input3)',
+				//'_computeDate(_input1, _input2, _input3, _input4, _input5)',
 				'_onValueChanged(value)',
 				'_onDateChanged(_date)',
 				'_enableDateConstraints(minDate)',
@@ -242,16 +292,13 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 				this.cancelDebouncer('_onDateChanged');
 				if (this.value && this.value instanceof Date) {
 					if (!this._date || !(this._date instanceof Date) || this._date.getTime() != this.value.getTime()){
-						this.set('_date', new Date(this.value));
+						this.set('_date', new Date(this.value+""));
 					}
 				}else{
-					//this.debounce('_onValueChanged', function(){
-						var date = new Date(this.value);
-						//console.log("new Date(this.value)", this.value, this.value && this._isValidDate(date))
-						if (this.value && this._isValidDate(date)) {
-							this.set('value', date);
-						};
-					//}, 100)
+					var date = new Date(this.value);
+					if (this.value && this._isValidDate(date)) {
+						this.set('value', date);
+					};
 				}
 				if (this.value !== null && this.value !== undefined) {
 					this.validate(this.value);
@@ -260,13 +307,14 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			},
 
 			_onDateChanged: function(){
-				this.debounce('_onDateChanged', function(){
-					//console.log("this._date", this._date)
-					//console.log("sssss:", this.value, this._date, this.value.getTime(), this._date.getTime());
-					if (this._date && this._isValidDate(this._date)){//!this.value || !(this.value instanceof Date) || this.value.getTime() != this._date.getTime()){
-						this.set('value', new Date(this._date));
-					}
-				}, 100);
+				if (!this._date || !this._isValidDate(this._date))
+					return
+				var d1 = new Date(this._date+"");
+				var d2 = new Date(this.value+"");
+				if(d1+"" == d2+"")
+					return
+
+				this.set('value', new Date(this._date));
 			},
 
 			/** 
@@ -280,17 +328,19 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			},
 
 			_extractDateParts: function(date) {
-				var year, month, day;
+				var YYYY, MM, DD, hh, mm;
 
 				if(!this._isValidDate(date)) {
 					//console.warn('date is not good: ' + date + ' - can\'t populate inputs');
 				} else {
-					year = "" + date.getFullYear();
-					month = ("0" + (date.getMonth() + 1)).slice(-2);
-					day = ("0" + date.getDate()).slice(-2);
+					YYYY = "" + date.getFullYear();
+					MM = ("0" + (date.getMonth() + 1)).slice(-2);
+					DD = ("0" + date.getDate()).slice(-2);
+					hh = ("0" + date.getHours()).slice(-2);
+					mm = ("0" + date.getMinutes()).slice(-2);
 				}
 
-				return {YYYY: year, MM: month, DD: day};
+				return {YYYY: YYYY, MM: MM, DD: DD, hh: hh, mm:mm};
 			}, 
 
 			_isValidDate: function(date) {
@@ -308,7 +358,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 
 			_splitDateFormat: function(dateFormat) {
 				if(this._isValidDateFormat(dateFormat)) {
-					return dateFormat.split('/');
+					return dateFormat.split('/').concat(["hh", "mm"]);
 				}
 
 				throw new Error('invalid format: ' + dateFormat + '(valid format are "YYYY/MM/DD" or "DD/MM/YYYY"');
@@ -329,13 +379,13 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 
 				switch(format) {
 					case 'YYYY':
-					this._setInputProperties(selector, 'YYYY', 4, 4);
+						this._setInputProperties(selector, 'YYYY', 4, 4);
 					break;
 					case 'MM':
-					this._setInputProperties(selector, 'MM', 2, 2);
-					break;
 					case 'DD':
-					this._setInputProperties(selector, 'DD', 2, 2);
+					case 'hh':
+					case 'mm':
+						this._setInputProperties(selector, format, 2, 2);
 					break;
 					default:
 					throw new Error('format not supported: ' + format);
@@ -362,13 +412,13 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			/**
 			* Called when inputs change
 			*/
-			_computeDate: function(_input1, _input2, _input3) {
+			_computeDate: function() {
 				var date = this._extractInputsValueBeforeValidate();
 
-				if (!date.day && !date.month && !date.year) {
+				if (!date.DD && !date.MM && !date.YYYY) {
 					this._setSelectedDate(null, false);
 				} else {
-					var selectedDate = date.year + '/' + date.month + '/' + date.day;  
+					var selectedDate = date.YYYY + '/' + date.MM + '/' + date.DD +" "+date.hh + ':' + date.mm +":00";  
 					var isValidDate = this._mkValidation(selectedDate);              
 					//this._setPaperInputContainerState(selectedDate, isValidDate);
 					this._setSelectedDate(selectedDate, isValidDate);
@@ -394,22 +444,17 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			},
 
 			_mkKey: function(format) {
-
 				switch(format) {
-					case 'DD':
-					key = 'day';
-					break;
-					case 'MM':
-					key = 'month';
-					break;
 					case 'YYYY':
-					key = 'year';
+					case 'MM':
+					case 'DD':
+					case 'hh':
+					case 'mm':
+						return format;
 					break;
 					default:
 					throw new Error('format not supported: ', format);
 				}
-
-				return key;
 			},
 
 			_setSelectedDate: function(date, valid) {
@@ -429,7 +474,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			},
 
 			_extraValidation: function(date) {
-				var selectedDate = new Date(date).setHours(0,0,0,0);
+				var selectedDate = new Date(date+"").setHours(0,0,0,0);
 				isValidMaxDate = this.hasMaxDate ? (selectedDate <= this.maxDate.setHours(0,0,0,0)) : true;
 				isValidMinDate = this.hasMinDate ? (selectedDate >= this.minDate.setHours(0,0,0,0)) : true;
 
@@ -470,24 +515,29 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			if(date instanceof Date) {
 				list = this._extractDatePartsToList(date);
 			} else {
-				list = date.split('/');
+				var parts = date.split(' ')
+				list = parts[0].split("/");
+				if(parts[1])
+					list = list.concat(parts[1].split(":"));
 			}
 
-			o = {
-				day: list[2],
-				month: list[1],
-				year: list[0]
-			};
-
-			return o;
+			return {
+				YYYY: list[0],
+				MM: list[1],
+				DD: list[2],
+				hh: list[3],
+				mm: list[4],
+			}
 		},
 
 		_extractDatePartsToList: function(date) {
-			var year = "" + date.getFullYear();
-			var month = ("0" + (date.getMonth() + 1)).slice(-2);
-			var day = ("0" + date.getDate()).slice(-2);
+			var YYYY = "" + date.getFullYear();
+			var MM = ("0" + (date.getMonth() + 1)).slice(-2);
+			var DD = ("0" + date.getDate()).slice(-2);
+			var hh = ("0" + date.getHours()).slice(-2);
+			var mm = ("0" + date.getMinutes()).slice(-2);
 
-			return [year, month, day];
+			return [YYYY, MM, DD, hh, mm];
 		}, 
 		_validateYear: function(year) {
 			return year.match(/^[0-9]{4}$/) !== null;
@@ -519,9 +569,9 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			} else {
 				var date = this._buildDateObject(value);
 
-				return this._validateYear(date.year) && 
-				this._validateMonth(date.month) && 
-				this._validateDay(date.day, date.month, date.year);
+				return this._validateYear(date.YYYY) && 
+				this._validateMonth(date.MM) && 
+				this._validateDay(date.DD, date.MM, date.YYYY);
 			}
 		}
 	});
