@@ -126,7 +126,9 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 		</template>
 	</paper-input-container>
 	<paper-dialog id="dialog" class="iris-date-picker-dialog" modal on-iron-overlay-closed="dismissDialog">
-		<iris-date-picker show-date="{{showDate}}" show-time="{{showTime}}" show-time-only="[[showTimeOnly]]" id="picker" date="{{_date}}" min-date="{{minDate}}" max-date="{{maxDate}}" disabled-dates="[[disabledDates]]"></iris-date-picker>
+		<iris-date-picker show-date="{{showDate}}" show-time="{{showTime}}" show-time-only="[[showTimeOnly]]" id="picker" date="{{_date}}" min-date="{{minDate}}" max-date="{{maxDate}}" disabled-dates="[[disabledDates]]"
+		on-iris-calendar-select="onCalendarSelect"
+		></iris-date-picker>
 		<div class="buttons">
 			<!--paper-button dialog-dismiss>Cancel</paper-button-->
 			<paper-button on-click="dismissDialog">Close</paper-button>
@@ -149,6 +151,10 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 					type: String,
 					value: "editor:insert-invitation"
 				},
+				/*
+		        * Auto Close popup on selection
+		        */
+		        autoClose:Boolean,
 				/**
 		         * Show Date component
 		         */
@@ -251,6 +257,12 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 				'_enableDateConstraints(minDate)',
 				'_enableDateConstraints(maxDate)'
 			],
+
+			onCalendarSelect: function(){
+				if(!this.autoClose || this.showTime)
+					return;
+				this.dismissDialog();
+			},
 
 			attached: function() {
 				this.dateValidator = new Polymer.IronMeta({type: 'validator'}).byKey(this.validator);

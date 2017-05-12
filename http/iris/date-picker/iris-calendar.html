@@ -671,6 +671,7 @@
           return false;
         }
         this.date = event.model.item.date;
+        this.fire("iris-calendar-select", {date:this.date})
       },
       _isValidDate: function(date) {
         return date && date.getTime && !isNaN(date.getTime());
