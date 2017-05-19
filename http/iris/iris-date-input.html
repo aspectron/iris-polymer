@@ -37,7 +37,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			text-align: center;
 			min-width: 50px;
 		}
-		#container::shadow .label-and-input-container{
+		#container::shadow .label-and-input-container, #container::shadow #labelAndInputContainer{
 			@apply(--layout-horizontal);
 		}
 		#dialog{z-index: 10}
@@ -63,10 +63,11 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 		hide-time$="[[!showTime]]"
 		always-float-label>
 
-		<label hidden$="[[!label]]">[[label]]</label>
+		<label slot="label" hidden$="[[!label]]">[[label]]</label>
 
 		<iris-date-validator></iris-date-validator>
 		<input
+			slot="input"
 			class="date-cp"
 			is="iron-input"
 			type="text"
@@ -76,8 +77,9 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			required
 			on-blur="_computeDate"
 		/>
-		<span class="separator date-cp">/</span>
+		<span slot="input" class="separator date-cp">/</span>
 		<input
+			slot="input"
 			class="date-cp"
 			is="iron-input"
 			type="text"
@@ -87,8 +89,9 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			required
 			on-blur="_computeDate"
 		/>
-		<span class="separator date-cp">/</span>
+		<span slot="input" class="separator date-cp">/</span>
 		<input
+			slot="input"
 			class="date-cp"
 			is="iron-input"
 			type="text"
@@ -98,8 +101,9 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			required
 			on-blur="_computeDate"
 		/>
-		<span class="separator date-cp"> </span>
+		<span slot="input" class="separator date-cp"> </span>
 		<input
+			slot="input"
 			class="time-cp"
 			is="iron-input"
 			type="text"
@@ -109,8 +113,9 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			required
 			on-blur="_computeDate"
 		/>
-		<span class="separator time-cp">:</span>
+		<span slot="input" class="separator time-cp">:</span>
 		<input
+			slot="input"
 			class="time-cp"
 			is="iron-input"
 			type="text"
@@ -120,7 +125,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			required
 			on-blur="_computeDate"
 		/>
-		<paper-icon-button suffix icon="[[pickerIcon]]" hidden$="[[hidePicker]]" on-click="openPicker"></paper-icon-button>
+		<paper-icon-button slot="suffix" suffix icon="[[pickerIcon]]" hidden$="[[hidePicker]]" on-click="openPicker"></paper-icon-button>
 		<template is="dom-if" if="[[errorMessage]]">
 			<paper-input-error id="error">[[errorMessage]]</paper-input-error>
 		</template>
