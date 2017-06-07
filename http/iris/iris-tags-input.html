@@ -1,21 +1,24 @@
 <link rel="import" href="/deps/paper-item/paper-item.html">
+<link rel="import" href="/deps/paper-menu/paper-menu.html">
 <link rel="import" href="/deps/paper-menu-button/paper-menu-button.html">
 
 <dom-module id="iris-tags-input">
 	<style>
-		:host {display: block;}
-		input::-webkit-input-placeholder {color: var(--paper-input-container-color, --secondary-text-color);}
-		input:-moz-placeholder {color: var(--paper-input-container-color, --secondary-text-color);}
-		input::-moz-placeholder {color: var(--paper-input-container-color, --secondary-text-color);}
-		input:-ms-input-placeholder {color: var(--paper-input-container-color, --secondary-text-color);}
+		:host{display:block;outline:none}
+		:host(:focus){outline:none;}
+		input::-webkit-input-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
+		input:-moz-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
+		input::-moz-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
+		input:-ms-input-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
 		.tag{padding-left:5px; border:1px #CCC solid; background-color: #DDD; display: inline-block; margin-bottom: 3px;}
 		.tag iron-icon{margin-left: 5px;}
 		input#input{display: none}
-		paper-menu-button{display: block; padding: 4px 0px;}
-		paper-menu-button ::content #dropdown{display: block; width1: 100%}
+		paper-menu-button{display: block; padding: 0px 0px;}
+		paper-menu-button ::content #dropdown{display: block; width1: 100%; min-width:100px}
 		paper-menu-button ::content paper-item.iron-selected{display: none};
-		.tag-container{min-height: 27px;}
-		.input-holder {
+		paper-menu-button ::content paper-item{cursor:pointer;}
+		.tag-container{min-height: 27px;cursor:pointer;}
+		.input-holder{
 	        position: relative; /* to make a stacking context */
 	        outline: none;
 	        box-shadow: none;
@@ -25,25 +28,26 @@
 	        border: none;
 	        color: var(--paper-input-container-input-color, --primary-text-color);
 	        -webkit-appearance: none;
-
 	        @apply(--paper-font-subhead);
 	        @apply(--paper-input-container-input);
-	     }
+	    }
+	    #dump{max-width:400px; overflow:auto}
 	</style>
 	<template>
+		<!--div id="dump">{{toJSON(items)}}</div-->
 		<paper-input-container no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]" auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
-			<content select="[prefix]"></content>
-			<label hidden$="[[!label]]">[[label]]</label>
-			<div class="input-holder">
-				<!--div>{{toJSON(value)}}</div-->
+			<content slot="prefix" select="[prefix]"></content>
+			<label slot="label" hidden$="[[!label]]">[[label]]</label>
+			<div slot="input" class="input-holder" id="inputHolder">
+				
 				<div class="tag-container" on-tap="onContainerTap">
 					<template is="dom-repeat" items="[[value]]">
 						<span class="tag">[[getItemTextById(item, items)]]<iron-icon data-tag="[[item]]" icon="[[removeIcon]]"></iron-icon></span>
 					</template>
 				</div>
 				<paper-menu-button vertical-align="[[verticalAlign]]" opened="{{dropdownOpened}}">
-					<span class="dropdown-trigger"></span>
-					<div class="dropdown-content" >
+					<span slot="dropdown-trigger" class="dropdown-trigger"></span>
+					<div slot="dropdown-content" class="dropdown-content" id="dropdownContent" >
 						<template is="dom-if" if="[[allSelected]]">
 							<paper-item>[[noItemText]]</paper-item>
 						</template>
@@ -79,7 +83,7 @@
 					autocapitalize$="[[autocapitalize]]"
 					autocorrect$="[[autocorrect]]">
 			</div>
-			<content select="[suffix]"></content>
+			<content slot="suffix" select="[suffix]"></content>
 			<template is="dom-if" if="[[errorMessage]]">
 				<paper-input-error>[[errorMessage]]</paper-input-error>
 			</template>
@@ -106,7 +110,8 @@
 				value: 'top'
 			},
 			dropdownOpened:{
-				type:Boolean
+				type:Boolean,
+				observer:"onDropdownOpenedChanged"
 			},
 			value:{
 				type:Array,
@@ -119,7 +124,8 @@
 			},
 			items:{
 				type: Array,
-				value:[]
+				value:[],
+				notify: true
 			},
 			allSelected:{
 				type: Boolean
@@ -155,6 +161,14 @@
 					//self.set('value', [value]);
 				//}
 			}).bind(menu)
+
+			this.updateDropdownStyle();
+		},
+		onDropdownOpenedChanged: function(){
+			this.updateDropdownStyle();
+		},
+		updateDropdownStyle: function(){
+			this.$.dropdownContent.style.minWidth = this.$.inputHolder.getBoundingClientRect().width+"px";
 		},
 		onContainerTap: function(e){
 			var self = this;
@@ -183,7 +197,7 @@
 
 			var menu = self.$.dropdownMenu;
 			menu.selectedValues = validIds;
-			menu._updateSelected();
+			menu._updateSelected && menu._updateSelected();
 			self.debounce('onValueChange', function(){
 				if (items.length && validIds.join(',') != value.join(',')){
 					self.set('value', validIds)
@@ -192,7 +206,7 @@
 			self.debounce('onValueChange2', function(){
 				self.fire('change', self.value);
 				self.set('_value', self.value.join(','));
-				self.set('allSelected', (menu.selectedValues.length == items.length));
+				self.set('allSelected', items.length && (menu.selectedValues.length == items.length));
 			}, 300);
 		},
 		removeItem: function(id){
