@@ -13,11 +13,11 @@
 				<iron-icon icon="translate"></iron-icon>
 				<span>[[languagetitle]]</span>
 			</div>
-			<paper-menu class="dropdown-content" selected="{{selected}}" attr-for-selected="value">
+			<paper-listbox class="dropdown-content" selected="{{selected}}" attr-for-selected="value">
 				<template is="dom-repeat" items="{{language.list}}">
 					<paper-item value="[[item.id]]">[[item.name]]</paper-item>
 				</template>
-			</paper-menu>
+			</paper-listbox>
 		</paper-menu-button>
 	</template>
 	<script>

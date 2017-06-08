@@ -1,39 +1,39 @@
 <link rel="import" href="/deps/paper-item/paper-item.html">
-<link rel="import" href="/deps/paper-menu/paper-menu.html">
+<link rel="import" href="/deps/paper-listbox/paper-listbox.html">
 <link rel="import" href="/deps/paper-menu-button/paper-menu-button.html">
 
 <dom-module id="iris-tags-input">
-	<style>
-		:host{display:block;outline:none}
-		:host(:focus){outline:none;}
-		input::-webkit-input-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
-		input:-moz-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
-		input::-moz-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
-		input:-ms-input-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
-		.tag{padding-left:5px; border:1px #CCC solid; background-color: #DDD; display: inline-block; margin-bottom: 3px;}
-		.tag iron-icon{margin-left: 5px;}
-		input#input{display: none}
-		paper-menu-button{display: block; padding: 0px 0px;}
-		paper-menu-button ::content #dropdown{display: block; width1: 100%; min-width:100px}
-		paper-menu-button ::content paper-item.iron-selected{display: none};
-		paper-menu-button ::content paper-item{cursor:pointer;}
-		.tag-container{min-height: 27px;cursor:pointer;}
-		.input-holder{
-	        position: relative; /* to make a stacking context */
-	        outline: none;
-	        box-shadow: none;
-	        padding: 0;
-	        width: 100%;
-	        background: transparent;
-	        border: none;
-	        color: var(--paper-input-container-input-color, --primary-text-color);
-	        -webkit-appearance: none;
-	        @apply(--paper-font-subhead);
-	        @apply(--paper-input-container-input);
-	    }
-	    #dump{max-width:400px; overflow:auto}
-	</style>
 	<template>
+		<style>
+			:host{display:block;outline:none}
+			:host(:focus){outline:none;}
+			input::-webkit-input-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
+			input:-moz-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
+			input::-moz-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
+			input:-ms-input-placeholder{color: var(--paper-input-container-color, --secondary-text-color);}
+			.tag{padding-left:5px; border:1px #CCC solid; background-color: #DDD; display: inline-block; margin-bottom: 3px;}
+			.tag iron-icon{margin-left: 5px;}
+			input#input{display: none}
+			paper-menu-button{display: block; padding: 0px 0px;}
+			paper-menu-button ::content #dropdown{display: block; width1: 100%; min-width:100px}
+			paper-menu-button ::content paper-item.iron-selected{display: none};
+			paper-menu-button ::content paper-item{cursor:pointer;}
+			.tag-container{min-height: 27px;cursor:pointer;}
+			.input-holder{
+		        position: relative; /* to make a stacking context */
+		        outline: none;
+		        box-shadow: none;
+		        padding: 0;
+		        width: 100%;
+		        background: transparent;
+		        border: none;
+		        color: var(--paper-input-container-input-color, --primary-text-color);
+		        -webkit-appearance: none;
+		        @apply(--paper-font-subhead);
+		        @apply(--paper-input-container-input);
+		    }
+		    #dump{max-width:400px; overflow:auto}
+		</style>
 		<!--div id="dump">{{toJSON(items)}}</div-->
 		<paper-input-container no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]" auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
 			<content slot="prefix" select="[prefix]"></content>
@@ -51,11 +51,11 @@
 						<template is="dom-if" if="[[allSelected]]">
 							<paper-item>[[noItemText]]</paper-item>
 						</template>
-						<paper-menu id="dropdownMenu" selected="[[value]]" attr-for-selected="dataid" multi>
+						<paper-listbox id="dropdownMenu" selected="[[value]]" attr-for-selected="dataid" multi>
 							<template is="dom-repeat" items="[[items]]">
 								<paper-item dataid="[[getMenuItemId(item, items)]]">[[getMenuItemText(item, items)]]</paper-item>
 							</template>
-						</paper-menu>
+						</paper-listbox>
 					</div>
 				</paper-menu-button>
 				<input is="iron-input" id="input"
@@ -199,13 +199,13 @@
 			menu.selectedValues = validIds;
 			menu._updateSelected && menu._updateSelected();
 			self.debounce('onValueChange', function(){
-				if (items.length && validIds.join(',') != value.join(',')){
+				if (items.length && validIds.join(',') != (value || []).join(',')){
 					self.set('value', validIds)
 				}
 			}, 100);
 			self.debounce('onValueChange2', function(){
 				self.fire('change', self.value);
-				self.set('_value', self.value.join(','));
+				self.set('_value', (self.value || []).join(','));
 				self.set('allSelected', items.length && (menu.selectedValues.length == items.length));
 			}, 300);
 		},

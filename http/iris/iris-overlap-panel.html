@@ -1,19 +1,19 @@
 <dom-module id="iris-overlap-panel">
-	<style>
-		paper-dialog{
-			border: 1px solid #777;
-			padding:50px;
-		}
-		.title{margin:0px;padding:0px 20px;}
-		.icon{margin-right:25px;-webkit-animation: rotate 2s linear infinite;animation: rotate 2s linear infinite;-webkit-transform-origin: center center;transform-origin: center center;width:50px;height:50px;}
-		.icon circle{-webkit-animation: dash 1.5s ease-in-out infinite;animation: dash 1.5s ease-in-out infinite;stroke-linecap: round;stroke-dasharray: 90,10;stroke: #0057e7;}
-		@-webkit-keyframes rotate {100% {-webkit-transform: rotate(360deg);}}
-		@keyframes rotate {100% {transform: rotate(360deg);}}
-		@-webkit-keyframes dash {0% {stroke-dasharray: 1,200;stroke-dashoffset: 0;}50% {stroke-dasharray: 89,200;stroke-dashoffset: -35;}100% {stroke-dasharray: 89,200;stroke-dashoffset: -124;}}
-		@keyframes dash {0% {stroke-dasharray: 1,200;stroke-dashoffset: 0;}50% {stroke-dasharray: 89,200;stroke-dashoffset: -35;}100% {stroke-dasharray: 89,200;stroke-dashoffset: -124;}}
-		.content{@apply(--layout-horizontal);@apply(--layout-center);margin-bottom:0px;margin-top:0px;padding:0px;}
-	</style>
 	<template>
+		<style>
+			paper-dialog{
+				border: 1px solid #777;
+				padding:50px;
+			}
+			.title{margin:0px;padding:0px 20px;}
+			.icon{margin-right:25px;-webkit-animation: rotate 2s linear infinite;animation: rotate 2s linear infinite;-webkit-transform-origin: center center;transform-origin: center center;width:50px;height:50px;}
+			.icon circle{-webkit-animation: dash 1.5s ease-in-out infinite;animation: dash 1.5s ease-in-out infinite;stroke-linecap: round;stroke-dasharray: 90,10;stroke: #0057e7;}
+			@-webkit-keyframes rotate {100% {-webkit-transform: rotate(360deg);}}
+			@keyframes rotate {100% {transform: rotate(360deg);}}
+			@-webkit-keyframes dash {0% {stroke-dasharray: 1,200;stroke-dashoffset: 0;}50% {stroke-dasharray: 89,200;stroke-dashoffset: -35;}100% {stroke-dasharray: 89,200;stroke-dashoffset: -124;}}
+			@keyframes dash {0% {stroke-dasharray: 1,200;stroke-dashoffset: 0;}50% {stroke-dasharray: 89,200;stroke-dashoffset: -35;}100% {stroke-dasharray: 89,200;stroke-dashoffset: -124;}}
+			.content{@apply(--layout-horizontal);@apply(--layout-center);margin-bottom:0px;margin-top:0px;padding:0px;}
+		</style>
 		<paper-dialog id="dialodBox" modal class$="[[cls]]" notitle$="[[!title]]" opened="{{opened}}">
 			<div class="content">
 				<span>

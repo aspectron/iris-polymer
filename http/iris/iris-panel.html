@@ -9,7 +9,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="/deps/iron-icons/iron-icons.html" />
 <link rel="import" href="/deps/iron-collapse/iron-collapse.html">
 <link rel="import" href="/deps/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="/deps/paper-menu/paper-menu.html">
+<link rel="import" href="/deps/paper-listbox/paper-listbox.html">
 <link rel="import" href="/deps/paper-item/paper-item.html">
 <link rel="import" href="/deps/paper-toolbar/paper-toolbar.html">
 <link rel="import" href="/deps/neon-animation/neon-animation.html" />
@@ -282,22 +282,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	<template>
 		<paper-toolbar id="header" hidden$="[[noheader]]">
 			<span class="title" on-click="onHeaderClick">[[caption]]</span>
-			<!--<core-menu-button id="menuButton" hidden?="{{!menuitems.length && !menuListeners.length}}">
-				<paper-icon-button icon="menu" id="menuBtn" on-tap="{{onMenuBtnClick}}"></core-icon-button>
-					<iris-dropdown layered class="dropdown floatingmenu">
-						<core-menu valueattr="key" on-core-activate="{{onMenuSelection}}">
-							<template repeat="{{item in menuitems}}">
-								<paper-item key="{{item.key}}">{{item.value}}</paper-item>
-							</template>
-						</core-menu>
-					</iris-dropdown>
-			</core-menu-button>-->
 			<iris-dropdown hideexpandicon="true" icon="menu" id="menu" hidden$="[[menuitems.length]]">
-				<paper-menu class="dropdown floatingmenu">
+				<paper-listbox class="dropdown floatingmenu">
 					<template is="dom-repeat" items="[[menuitems]]">
 						<paper-item on-click="onMenuSelection" data-id="[[item.key]]">[[item.value]]</paper-item>
 					</template>
-				</paper-menu>
+				</paper-listbox>
 			</iris-dropdown>
 			<paper-icon-button icon="settings" id="settingsBtn" hidden$="[[!settingsBtn]]" on-click="onSettingBtnClick"></paper-icon-button>
 			<paper-icon-button icon="refresh" id="refreshBtn"></paper-icon-button>
