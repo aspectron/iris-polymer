@@ -50,7 +50,8 @@
     "paper-listbox": "PolymerElements/paper-listbox#^2.0.0",
     "paper-toggle-button": "PolymerElements/paper-toggle-button#^2.0.0",
     "google-map": "GoogleWebComponents/google-map#>=1.0.0",
-    "google-youtube": "GoogleWebComponents/google-youtube#>=1.0.0"
+    "google-youtube": "GoogleWebComponents/google-youtube#>=1.0.0",
+    "web-animations": "web-animations/web-animations-js"
   },
   "resolutions": {
     "webcomponentsjs": "^v1.0.0",
