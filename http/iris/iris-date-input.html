@@ -7,6 +7,7 @@
 <link rel="import" href="/deps/iron-form-element-behavior/iron-form-element-behavior.html">
 <link rel="import" href="/deps/iron-validator-behavior/iron-validator-behavior.html">
 <link rel="import" href="/IRIS/date-picker/iris-date-picker.html">
+<link rel="import" href="/IRIS/iris-input-container.html">
 
 <!--
 Simple inputs to validate date instead of using a calendar. 2 formats available: YYYY/MM/DD and DD/MM/YYYY.
@@ -27,6 +28,10 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 	<style include="iris-date-picker-dialog-style">
 		:host {
 			display: inline-block;
+
+			--paper-input-container-label-input-container:{
+				@apply(--layout-horizontal);
+			}
 		}
 		input[is="iron-input"] {
 			font: inherit;
@@ -37,9 +42,11 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 			text-align: center;
 			min-width: 50px;
 		}
+
 		#container::shadow .label-and-input-container, #container::shadow #labelAndInputContainer{
 			@apply(--layout-horizontal);
 		}
+
 		#dialog{z-index: 10}
 		@media (max-width: 659px){
         	#dialog{left: 0px; right: 0px; margin:0px; position: fixed;}
@@ -55,7 +62,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
       	[hide-time] .time-cp{display:none}
 	</style>
 
-	<paper-input-container 
+	<iris-input-container 
 		id="container"
 		disabled$="[[disabled]]"
 		invalid="[[invalid]]"
@@ -129,7 +136,7 @@ IMPORTANT: takes a local date as input and send back a local date. Make utc conv
 		<template is="dom-if" if="[[errorMessage]]">
 			<paper-input-error id="error">[[errorMessage]]</paper-input-error>
 		</template>
-	</paper-input-container>
+	</iris-input-container>
 	<paper-dialog id="dialog" class="iris-date-picker-dialog" modal on-iron-overlay-closed="dismissDialog">
 		<iris-date-picker show-date="{{showDate}}" show-time="{{showTime}}" show-time-only="[[showTimeOnly]]" id="picker" date="{{_date}}" min-date="{{minDate}}" max-date="{{maxDate}}" disabled-dates="[[disabledDates]]"
 		on-iris-calendar-select="onCalendarSelect"
