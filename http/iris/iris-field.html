@@ -1,0 +1,557 @@
+<link rel="import" href="/deps/paper-input/paper-input.html" />
+<link rel="import" href="/deps/paper-icon-button/paper-icon-button.html" />
+<dom-module id="iris-field">
+	<template>
+		<style>
+			:host { display: block;}
+			.wrapper {padding: 4px 6px 4px 6px; font-size: 14px; white-space: nowrap;}
+			.title { font-size: 14px; }
+			.value { color: #025975; }
+			.suffix { color: #025975; padding-left:5px; }
+			.dropdown-trigger iron-icon{width: 12px; height: 12px;}
+			#editor::shadow .tigger{min-height: 10px;}
+			iris-overlap-edit-field{padding-bottom:0px;}
+			iris-overlap-edit-field[disabled]{cursor:default;}
+			[is-editable] .dropdown-trigger>.title{color:#0003C4}
+			/*#editor::shadow .dropdown-content : {overflow:hidden;}*/
+			#editor::shadow .no-overflow { overflow: hidden; }
+			.editor-error { border: 1px solid red; }
+			#editor::shadow paper-input.editor-error::shadow label { color: red; }
+			.dropdown-content{
+				--paper-input-container:{
+					padding-bottom:0px;
+				}
+				--paper-input-container-input:{
+					padding:0px 5px;
+				}
+			}
+		</style>
+		<div class='wrapper' is-editable$="[[_isEditable(editable)]]">
+			<iris-overlap-edit-field horizontal-align="[[editorHAlign]]" id="editor" disabled$="[[_isDisabled(editable)]]">
+				<span slot="dropdown-trigger" class="dropdown-trigger">
+					<span class='title'>[[title]]<span>[[titleSuffix]]</span></span><span class='value'>[[_V(value)]]</span><span class="units" hidden$="[[!showUnits]]">[[_getUnits(format)]]</span><span class="suffix" hidden$="[[!suffix]]">[[suffix]]</span>
+					<iron-icon icon="arrow-drop-down" hidden$="[[!editable]]"></iron-icon>
+				</span>
+				<template is="dom-if" if="[[_isBoolField(format, type)]]">
+					<div slot="dropdown-content" class="dropdown-content bg-color no-overflow">
+						<paper-radio-group selected="{{_value}}" attr-for-selected="value">
+							<paper-radio-button name="a" value="1">[[getBooleanText(1)]]</paper-radio-button>
+							<paper-radio-button name="b" value="0">[[getBooleanText(0)]]</paper-radio-button>
+						</paper-radio-group>
+						<paper-icon-button icon="close" slot="suffix" close on-click="cancelSetting"></paper-icon-button>
+						<paper-icon-button icon="done" slot="suffix" on-click="saveSetting"></paper-icon-button>
+					</div>
+				</template>
+				<template is="dom-if" if="[[_isRadioField(format)]]">
+					<div slot="dropdown-content" class="dropdown-content bg-color no-overflow">
+						<paper-radio-group selected="{{_value}}" attr-for-selected="value">
+							<template is="dom-repeat" items="[[_radio]]">
+								<paper-radio-button name="[[item.name]]" value="[[item.value]]">[[item.name]]</paper-radio-button>
+							</template>
+						</paper-radio-group>
+						<paper-icon-button icon="close" slot="suffix" close on-click="cancelSetting"></paper-icon-button>
+						<paper-icon-button icon="done" slot="suffix" on-click="saveSetting"></paper-icon-button>
+					</div>
+				</template>
+				<template is="dom-if" if="[[_isEditField(format, type)]]">
+					<paper-input
+						id="paper"
+						slot="dropdown-content"
+						class="dropdown-content"
+						value="{{_value}}"
+						allowed-pattern="[[allowedPattern]]" 
+						required$="[[required]]"
+						label="[[_title]]"
+						no-label-float$="[[!errorState]]"
+						on-keydown="checkForEnter"
+						floatingLabel$="[[errorState]]"
+						>
+						<paper-icon-button icon="close" slot="suffix" close on-click="cancelSetting"></paper-icon-button>
+						<paper-icon-button icon="done" slot="suffix" on-click="saveSetting"></paper-icon-button>
+					</paper-input>
+				</template>
+			</iris-overlap-edit-field>
+		</div>
+	</template>
+	<script>
+		Object.defineProperty(Number.prototype, 'toFileSize', {
+		    value: function(a, asNumber){
+		        var b,c,d;
+		        var r = (
+		            a=a?[1e3,'k','B']:[1024,'K','iB'],
+		            b=Math,
+		            c=b.log,
+		            d=c(this)/c(a[0])|0,this/b.pow(a[0],d)
+		        ).toFixed(2)
+
+		        if(!asNumber){
+		            r += ' '+(d?(a[1]+'MGTPEZY')[--d]+a[2]:'Bytes');
+		        }
+		        return r;
+		    },
+		    writable:false,
+		    enumerable:false
+		});
+		Object.defineProperty(String.prototype, 'parseFileSize', {
+		    value: function() {
+				var scale = 'BKMGTPEZY';
+				var s = this;
+			    var b = s.search(/[a-zA-Z]/ig);
+			    var c = b < 0 ? ['B'] : s.toUpperCase().substring(b).split('');
+			    var d = c.shift();
+			    var e = c.shift();
+			    var n = e == 'I' ? 1024 : 1000;
+			    var i = scale.indexOf(d);
+			    if(i < 0)
+			    	return undefined;
+			    var v = eval('parseFloat('+(b < 0 ? s : s.substring(0,b))+')' );
+			    v *= (i?Math.pow(n,i):1);
+			    return Math.round(v);
+			},
+		    writable:false,
+		    enumerable:false
+		});
+		Object.defineProperty(Number.prototype, 'toHashMetric', {
+		    value: function(precision, unit, commas) {
+
+				var l = [
+					[1e24, 'Y'],
+					[1e21, 'Z'],
+					[1e18, 'E'],
+					[1e15, 'P'],
+					[1e12, 'T'],
+					[1e9, 'G'],
+					[1e6, 'M'],
+					[1e3, 'k']
+				];
+
+				var i = 0;
+				if(unit) {
+					while(i < l.length-1 && unit != l[i][1])
+						i++;
+
+				}
+				else {
+					while(i < l.length-1 && (this) < l[i][0])
+						i++;
+					unit = l[i][1];
+				}
+
+				var v = this / l[i][0];
+				
+				precision = _.isUndefined(precision) ? 2 : parseInt(precision);
+				if(commas) {
+					var parts = v.toFixed(precision).toString().split('.');
+				    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+				    return parts.join('.') + ' ' + unit;
+				}
+				else {
+					return v.toFixed(precision) + ' ' + unit;
+				}
+		    },
+		    writable:false,
+		    enumerable:false
+		});
+		Object.defineProperty(Number.prototype, 'toSia', {
+		    value: function(precision, suffix, c) {
+
+				var l = [
+					[1e36, 'TS'],
+					[1e33, 'GS'],
+					[1e30, 'MS'],
+					[1e27, 'KS'],
+					[1e24, 'SC'],
+					[1e21, 'mS'],
+					[1e18, 'uS'],
+					[1e15, 'nS'],
+					[1e12, 'pS'],
+					[1e9, 'H']
+				];
+
+				var i = 0;
+				if(suffix) {
+					while(i < l.length-1 && suffix != l[i][1])
+						i++;
+
+				}
+				else {
+					while(i < l.length-1 && (this) < l[i][0])
+						i++;
+					suffix = l[i][1];
+				}
+
+				var v = this / l[i][0];
+				precision = _.isUndefined(precision) ? 2 : parseInt(precision);
+				if(c) {
+					var parts = v.toFixed(precision).toString().split('.');
+				    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+				    if(parts[1]) parts[1] = parts[1].replace(/0*$/,'');
+				    return (parts[1] && parts[1].length ? parts.join('.') : parts[0]) + ' ' + suffix;
+				}
+				else {
+					return v.toFixed(precision).replace(/0*$/,'').replace(/\.$/,'') + ' ' + suffix;
+				}
+		    },
+		    writable:false,
+		    enumerable:false
+		});
+
+		Object.defineProperty(String.prototype, 'parseSia', {
+		    value: function() {
+				var siaScale = {
+				    "TS" : 1e36,
+				    "GS" : 1e33,
+				    "MS" : 1e30,
+				    "KS" : 1e27,
+				    "SC" : 1e24,
+				    "mS" : 1e21,
+				    "uS" : 1e18,
+				    "nS" : 1e15,
+				    "pS" : 1e12,
+				    "H" : 1e9
+				}
+				var s = this;
+			    var i = s.search(/[a-zA-Z]/ig);
+			    var p = i<0?[s,'SC']:[s.substring(0,i),s.substring(i)];
+			    var v = bigInt(Math.round(parseFloat(p[0])*1e8));
+			    if(p[1]) {
+			        var e = siaScale[p[1]];
+			        if(!e)
+			        	return undefined;
+			        v = v.multiply(e);
+			    }
+			    return v.divide(1e8).toString();
+			},
+		    writable:false,
+		    enumerable:false
+		});
+
+		Polymer({
+			is : 'iris-field',
+			properties : {
+				editable: {
+					type: String,
+					value: false,
+					//observer: "onEditableChanged"
+				},
+				editorHAlign:{type: String, value: "left"},
+				allowedPattern: String,
+				required: Boolean,
+				commas: Boolean,
+				title : { type : String },
+				value : { type : String },
+				_value: { type : String },
+				suffix : { type : String },
+				unit : { type : String },
+				precision : { type : Number, value : null },
+				type : { type : String, value : null, observer:"onTypeChanged"},
+				format : { type : String, value : null },
+				op: {type: String, value: "setting"},
+				boolText:{type:String, value:"True/False"},
+				radioValues : {type:String},
+				_radio : {type:Array},
+				titleSuffix:{type: String, value: ": "},
+				errorState: { type : Boolean, value : false },
+				//errorLabel: { type : String }
+				_label: { type : String },
+				showUnits : { type : Boolean, value : false },
+				rpc: Object
+			},
+			observers:["onValueChanged(value)"],
+			/*_getLabel : function(es, el) {
+				console.log("_getLabel",es,el)
+				return es ? el : this.title;
+			},*/
+			ready : function() {
+				var self = this;
+				this._title = this.title;
+
+				if(this.radioValues) {
+					var radio = [ ]
+					var items = this.radioValues.split('|');
+					_.each(items, function(item) {
+						var parts = item.split(':')
+						radio.push({
+							value : parts.shift(),
+							name : parts.shift()
+						})
+					})
+
+					this.set("_radio", radio);
+				}
+			},
+			onTypeChanged: function(){
+				if(this.type === Number){
+					this.set("allowedPattern", "[0-9]");
+				}
+			},
+			onValueChanged: function(){
+				if (this._isSiaCoinField() || this._isTimeField() || this._isFileSize())
+					this.set("_value", this._V(this.value));
+				else
+					this.set("_value", this.value);
+			},
+			_getUnits: function(u, suffix) {
+				//suffix = suffix || '';
+				if(_.contains(['h','hbb','htb'],u))
+					return ' [SC] ';
+				if(u == 'file-size-si')
+					return ' [Bytes - Metric: TB, GB, KB...] ';
+				if(u == 'file-size')
+					return ' [Bytes - Binary: TiB, GiB, KiB...] ';
+				return '';
+			},
+			_isBoolField: function(format, type){
+				return this.format == "bool" || this.type === Boolean;
+			},
+			_isRadioField: function(format) {
+				return this.format == "radio";
+			},
+			_isEditField : function(format, type) {
+				return !this._isBoolField(format, type) && !this._isRadioField(format);
+			},
+			_isFileSize: function(){
+				var f = (this.format || "").toLowerCase();
+				return f == "file-size" || f == "file-size-si";
+			},
+			_isSiaCoinField: function(){
+				var f = (this.format || "").toLowerCase();
+				return f == "h" || f == "sc" || f == "hbb" || f == "htb";
+			},
+			_isSC: function(){
+				var f = (this.format || "").toLowerCase();
+				return f == "sc";
+			},
+			_isHBB: function(){
+				var f = (this.format || "").toLowerCase();
+				return f == "hbb";
+			},
+			_isHTB: function(){
+				var f = (this.format || "").toLowerCase();
+				return f == "htb";
+			},
+			_isTimeField : function() {
+				var f = (this.format || "").toLowerCase();
+				return f == "days" || f == "hrs";
+			},
+			_isEditable: function(editable){
+				return !!editable;
+			},
+			_isDisabled: function(){
+				return !this.editable;
+			},
+			_C : function(v, precision) {
+				var parts = parseFloat(v).toFixed(parseInt(precision)).toString().split('.');
+			    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+			    return parts.join('.');
+			},
+			_SC : function(_v, precision) {
+				return parseFloat(_v).toSia(precision || 0, false, true);
+			},
+			_HBB : function(_v, precision) {
+				return parseFloat(bigInt(_v).multiply(4320).multiply(1e12).toString()).toSia(precision || 4, false, true);
+			},
+			_HTB : function(_v, precision) {
+				return parseFloat(bigInt(_v).multiply(1e12).toString()).toSia(precision || 4, false, true);
+			},
+			_V : function(v) {
+				var self = this;
+				//console.log(self.title,v,typeof v, self.type)
+				if (self._isBoolField() || _.isBoolean(v)) {
+					if (v === "")
+						return "N/A";
+
+					return self.getBooleanText(!!v);
+				}
+				else
+				if(self._isRadioField()) {
+					return self.getRadioText(v);
+				}
+				else
+				if(!_.isNumber(v) && v == '') {
+					return 'N/A';
+				}
+
+				if(_.isUndefined(v) || v == 'N/A') {
+					return 'N/A';
+				}
+				var precision = 0;
+				if(!_.isUndefined(self.precision))
+					precision = parseInt(self.precision);
+				if(!self.format){
+					if(self.commas)
+						return self._C(v, precision);
+					else if(precision)
+						return parseFloat(v).toFixed(precision);
+					else if(self.valueLength)
+						return parseFloat(v).toPrecision(parseInt(self.valueLength));
+				}
+					
+
+				var format = self.format ? self.format.toLowerCase() : null;
+				var n = {
+					k: '<%=_T("Thousand")%>',
+					M: '<%=_T("Million")%>',
+					G: '<%=_T("Billion")%>',
+					T: '<%=_T("Trillion")%>',
+					P: '<%=_T("Quadrillion")%>',
+					E: '<%=_T("Quintillion")%>',
+					Z: '<%=_T("Sextillion")%>',
+					Y: '<%=_T("Septillion")%>'
+				}
+				switch(format) {
+					case 'cs': return self._C(v);
+					case 'fiat': return self._C(v, 2);
+					case 'btc': return self._C(v, 8);
+					case 'sc': return self._SC(v*1e24, self.precision);
+					case 'h': return self._SC(v, self.precision);
+					case 'hbb': return self._HBB(v, self.precision);
+					case 'htb': return self._HTB(v, self.precision);
+					case 'int': return self._C(parseInt(v));
+					case 'days': return Math.round(v / 6 / 24);
+					case 'hrs': return Math.round(v / 6);
+					case "large-number":
+						v = parseFloat(v).toHashMetric(self.precision, self.unit, self.commas);
+						_.find(n, function(name, key){
+							if (v.indexOf(key) > 0) {
+								v = v.replace(key, " "+name);
+								return true;
+							}
+						});
+						return v;
+					break;
+					case 'file-size-si': return parseFloat(v).toFileSize(true);
+					case 'file-size': return parseFloat(v).toFileSize();
+					case 'hash-rate': return parseFloat(v).toHashMetric(self.precision, self.unit, self.commas) + "H/s";
+					case 'difficulty': return parseFloat(v).toHashMetric(self.precision, self.unit, self.commas) + "H";
+
+					default: {
+						if(self.precision)
+							return parseFloat(v).toFixed(parseInt(self.precision));
+						
+						return v;
+					}
+				}
+				
+			},
+			getBooleanText: function(v) {
+				var boolText = this.boolText.split("/");
+				return v ? boolText[0] : boolText[1];
+			},
+			getRadioText: function(v){
+				if(this._isRadioField()) {
+					var o = _.find(this._radio, function(item) {
+						if(item.value == v)
+							return true;
+						return false;
+					})
+					return o ? o.name : "ERROR";
+				}
+			},
+			checkForEnter: function(e) {
+				if(e.keyCode === 13)
+					this.saveSetting();
+				else
+				if(this.errorState)
+					this.hideError();
+			},
+			showError: function(err) {
+				var self = this;
+				if(!self._isEditField()) {
+					IRIS.Alert({title: '<%=_T("Error")%>', text: err })
+				}
+				else {
+					self.set("errorState",true);
+					self.set("_title",err);
+					Polymer.dom(self.root).querySelector("#paper").toggleClass("editor-error", true);
+				}
+			},
+			hideError: function(err) {
+				var self = this;
+				if(!self._isEditField()) {
+				}
+				else {				
+					self.set("errorState",false);
+					self.set("_title",this.title);
+					Polymer.dom(this.root).querySelector("#paper").toggleClass("editor-error", false);
+				}
+			},
+			cancelSetting: function(){
+				this.hideError();
+				this.$.editor.close();
+				this.onValueChanged();
+			},
+			saveSetting: function(){
+				var self = this;
+
+				self.$.editor.toggleClass("saving", true);
+				var value = self._value;
+				if (self._isBoolField())
+					value = value == "1";
+				else if (self._isFileSize() ){
+					value = value.parseFileSize();
+
+					if (_.isUndefined(value) || _.isNaN(value)){
+						self.showError('<%=_T("Invalid Value")%>')
+						return;
+					}
+				}
+				else if (self._isSiaCoinField() ){
+					value = value.parseSia();
+					if (_.isUndefined(value) || _.isNaN(value)){
+						self.showError('<%=_T("Invalid Value")%>')
+						return;
+					}
+
+					if(self._isHBB()) {
+						value = bigInt(Math.round(value*1000)).divide(1e15).divide(4320).toString();
+					}
+					else
+					if(self._isHTB()) {
+						value = bigInt(Math.round(value*1000)).divide(1e15).toString();
+					}
+					else
+					if(self._isSC()) {
+						value /= 1e24;
+					}
+				}
+				else if(self._isTimeField()) {
+					var f = (this.format || "").toLowerCase();
+
+					if(f == 'days')
+						value = Math.round(value * 24 * 6);
+					else
+					if(f == 'hrs')
+						value = Math.round(value * 6);
+				}
+
+
+				this.rpc.dispatch({
+					op:self.op,
+					name: self.editable,
+					value: value
+				}, function(err, r){
+					//console.log(arguments);
+					self.$.editor.toggleClass("saving", false);
+
+					if(err) {
+						if(_.isString(err) && err.match(/no such stream/))
+							err = '<%= _T("Error: Not Connected to Node") %>';
+						//self.showError(err.error ? err.error.toString() : err.toString());
+						var text = err.error ? err.error.toString() : err.toString();
+						if(App.isDemo)
+							IRIS.info({ title : "DEMO", text : text, autoHide : App.isDemo });
+						else
+							IRIS.error({ title : "Error", text : text, autoHide : App.isDemo });
+
+						return;
+					}
+
+					self.set("value", r.value);
+					self.fire(self.is+"-value-changed", {value: r.value, editable:self.editable, field: self});
+					self.$.editor.close();
+				})
+			}
+		})
+	</script>
+</dom-module>

@@ -1,19 +1,21 @@
+<link rel="import" href="/deps/paper-styles/element-styles/paper-material-styles.html" />
+
 <dom-module id="iris-overlap-edit-field">
 	<template>
-		<style include="app-style">
+		<style include="app-style paper-material-styles">
 			:host {display: inline-block;position: relative;padding-bottom: 2px;}
 			:host([block]){display: block;}
 			.tigger{min-height: 30px; min-width: 30px; cursor: pointer;}
 			.tigger[disabled]{cursor:default;}
 			#dropdown{display:block;}
-			#dropdown::shadow #contentWrapper .dropdown-content{max-width:none !important;}
-			#dropdown::shadow #contentWrapper.iron-dropdown > *{max-height: 200px !important;box-shadow: 2px 2px 2px 3px #DDD;}
-			#dropdown::shadow paper-input{background-color: transparent;}
-			#dropdown::shadow paper-input::shadow paper-input-container,
-			#dropdown::shadow .bg-color{background-color: #FFF; padding-bottom:2px;}
+			#dropdown .dropdown-content{
+				background:#FFF;max-width:none !important;
+				max-height: 200px !important;
+				@apply --paper-material-elevation-3;
+			}
 		</style>
 		<div class="tigger" on-tap="open" id="trigger" disabled$="[[disabled]]">
-			<content select=".dropdown-trigger"></content>
+			<slot name="dropdown-trigger"></slot>
 		</div>
 		<iron-dropdown id="dropdown"
 			vertical-align="[[verticalAlign]]"
@@ -23,7 +25,9 @@
 			open-animation-config="[[openAnimationConfig]]"
 			close-animation-config="[[closeAnimationConfig]]"
 			>
-			<content select=".dropdown-content"></content>
+			<div class="dropdown-content" slot="dropdown-content">
+				<slot name="dropdown-content"></slot>
+			</div>
 		</iron-dropdown>
 	</template>
 	<script>
@@ -93,7 +97,7 @@
 					marginLeft: -1000,
 					minHeight: 1
 				});
-				var dc = this.$.dropdown.$.contentWrapper.querySelector(".dropdown-content");
+				var dc = this.$.dropdown.querySelector(".dropdown-content");
 				var position = $dropdown.position();
 				var dropdownBox = dc.getBoundingClientRect();
 				var maxRight = $(window).width();
