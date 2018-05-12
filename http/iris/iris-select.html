@@ -526,7 +526,7 @@
 				if (push)
 					selected.push(value);
 
-				this.selected = selected;
+				this.updateSelected(selected);
 			},
 			getSelected: function(){
 				if(!this.selected)
@@ -534,6 +534,12 @@
 				if(!_.isArray(this.selected))
 					return [this.selected]
 				return this.selected
+			},
+			updateSelected: function(selected){
+				if(this.multiple)
+					this.selected = selected;
+				else
+					this.selected = selected.length? selected[0] : "";
 			},
 			onSelectedChanged:function(){
 				if(!this.$input)
@@ -566,7 +572,7 @@
 					});
 				}
 
-				this.$el.toggleClass("is-dirty", !!this.selected.length)
+				this.$el.toggleClass("is-dirty", !!selected.length)
 			},
 			buildList: function(){
 				var self = this;
@@ -589,8 +595,7 @@
 						selected[selected.length] = v;
 					}
 				})
-
-				this.selected = selected;
+				this.updateSelected(selected);
 
 				if(selectedUpdated && this.$input)
 					this.$input.val(this.getSelected().join(",")).trigger("change").trigger("changed");
