@@ -141,19 +141,19 @@
 			:host(.inline-list-items) .iris-select-list .item:not(.hide){
 			  display:inline-block;
 			  padding:0px 5px;min-height:20px;background-color:#ececec;
-			  margin:2px 2px 2px;
+			  margin:2px 4px;
 			}
 			:host(.inline-list-items) .iris-select-list .item.is-selected{background-color:#767676;color:#FFF}
 			:host(.inline-list-items) .iris-select-list .item:hover{
 				background-color:#d2d2d2;color:rgba(0,0,0,.87);
 			}
-			:host(.inline-list-items) #dropdownContent{padding:0px 5px;min-height:100px}
+			:host(.inline-list-items) #dropdownContent{padding:0px 0px;min-height:100px}
 			:host(.hide-selected) .iris-select-list .item.iron-selected{display:none;}
 		</style>
 		<div id="content" class="iris-select">
 			<div class="iris-select-holder" id="display"></div>
 			<!--div>selected:[[selected]]</div-->
-			<paper-menu-button vertical-align="[[verticalAlign]]" opened="{{dropdownOpened}}">
+			<paper-menu-button id="menuButton" restore-focus-on-close="[[restoreFocusOnClose]]" vertical-align="[[verticalAlign]]" opened="{{dropdownOpened}}">
 				<span slot="dropdown-trigger" class="dropdown-trigger"></span>
 				<div slot="dropdown-content" class="dropdown-content iris-select-list" id="dropdownContent" >
 					<template is="dom-if" if="[[allSelected]]">
@@ -176,6 +176,7 @@
 				</div>
 			</paper-menu-button>
 			<input class="iris-select-input" name$="[[_inputName(this.inputName)]]" />
+			<a id="focusEl"></a>
 		</div>
 	</template>
 	<script>
@@ -223,11 +224,13 @@
 				listItems:{
 					type: Array,
 					value: []
-				}
+				},
+				restoreFocusOnClose:{type: Boolean, value: false}
 			},
 			observers:[
 				"onSelectedChanged(selected, selected.*)",
-				"onItemsChanged(items, items.*)"
+				"onItemsChanged(items, items.*)",
+				"onDropDownOpenedChanged(dropdownOpened)"
 			],
 			ready : function() {
 				this.$el = $(this.$.content);
@@ -284,11 +287,11 @@
 					if(e.which == 13 || (value && e.key.toLowerCase() == "tab"))
 						e.preventDefault();
 				})
-				self.$inputBox.on("blur.iris-select", function(e){
-					self.onInputBlur(e);
-				})
 				self.$inputBox.on("focus.iris-select", function(e){
 					self.onInputFocus(e);
+				})
+				self.$inputBox.on("blur.iris-select", (e)=>{
+					this.closeList(200);
 				})
 
 				if($el.hasClass('iris-select--floating-label')){
@@ -361,9 +364,6 @@
 			onHiddenInputBlur: function(){
 
 			},
-			onInputBlur: function(){
-				/*this.$el.removeClass("is-focused")*/
-			},
 			onInputFocus: function(){
 				this.openList()
 			},
@@ -399,6 +399,7 @@
 			deleteCount:1,
 			onInputBoxKeyUp: function(e){
 				var self = this;
+				this.openList();
 				var value = self.$inputBox.val();
 				var key = e.key.toLowerCase();
 				//console.log("key:"+key+", value:"+value);
@@ -583,17 +584,33 @@
 					this.$input.val(this.getSelected().join(",")).trigger("change").trigger("changed");
 
 			},
-			onInputFocus:function(){
-				this.openList();
-			},
 			openList: function(){
-				this.$el.addClass("is-focused");
 				this.dropdownOpened = true;
+				if(this.setTimeoutId){
+					clearTimeout(this.setTimeoutId)
+					this.setTimeoutId = null;
+				}
 			},
-			closeList: function(){
-				this.$el.removeClass("is-focused");
-				this.resetInputBox(200);
-				this.dropdownOpened = false;
+			closeList: function(delay){
+				if(delay){
+					this.setTimeoutId = setTimeout(()=>{
+						this.resetInputBox(200);
+						this.dropdownOpened = false;
+						this.setTimeoutId = null;
+					}, delay);
+				}else{
+					this.resetInputBox(200);
+					this.dropdownOpened = false;
+				}
+			},
+			onDropDownOpenedChanged:function(){
+				if(!this.$el)
+					return;
+
+				var hasFocus = this.dropdownOpened;
+				if(!hasFocus && this.$inputBox)
+					hasFocus = this.$inputBox.is(":focus");
+				this.$el.toggleClass("is-focused", hasFocus);
 			}
 		})
 	</script>
