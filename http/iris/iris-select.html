@@ -225,6 +225,10 @@
 					type: Array,
 					value: []
 				},
+				minDropdownWidth:{
+					type: Number,
+					value: 100
+				},
 				restoreFocusOnClose:{type: Boolean, value: false}
 			},
 			observers:[
@@ -238,6 +242,15 @@
 			},
 			_inputName: function(name){
 				return name || "iris-select[]";
+			},
+			attached:function(){
+				this.onWindowResize();
+			},
+			onWindowResize:function(){
+				var width = this.getBoundingClientRect().width;
+				if(width < this.minDropdownWidth)
+					width = this.minDropdownWidth
+				this.$.dropdownContent.style.width = width+"px";
 			},
 			filterNewValue: function(v){
 				if(!v)
@@ -305,7 +318,6 @@
 				var self = this;
 				var $el 	= self.$el;
 				self.$display = $(this.$.display);
-				this.$list = $(this.$.dropdownContent);
 				
 				self.$input = $el.find(".iris-select-input");
 				self.initInput();
