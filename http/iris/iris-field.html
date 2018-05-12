@@ -258,7 +258,8 @@
 				//errorLabel: { type : String }
 				_label: { type : String },
 				showUnits : { type : Boolean, value : false },
-				rpc: Object
+				rpc: Object,
+				localSave:Boolean
 			},
 			observers:["onValueChanged(value)"],
 			/*_getLabel : function(es, el) {
@@ -526,6 +527,16 @@
 					else
 					if(f == 'hrs')
 						value = Math.round(value * 6);
+				}
+
+				if(this.processBeforeSave)
+					value = this.processBeforeSave(value, self.editable, this)
+
+				if(this.localSave){
+					self.set("value", value);
+					self.fire(self.is+"-value-changed", {value: value, editable:self.editable, field: self});
+					self.$.editor.close();
+					return
 				}
 
 
