@@ -3,13 +3,18 @@
 <dom-module id="iris-field">
 	<template>
 		<style>
-			:host { display: block;}
-			.wrapper {padding: 4px 6px 4px 6px; font-size: 14px; white-space: nowrap;}
-			.title { font-size: 14px; }
-			.value { color: #025975; }
-			.suffix { color: #025975; padding-left:5px; }
-			.dropdown-trigger iron-icon{width: 12px; height: 12px;}
-			#editor::shadow .tigger{min-height: 10px;}
+			:host { display: block;
+				--iris-overlap-edit-field-tigger:{
+					min-height: 10px;
+				}
+			}
+			.wrapper {padding: 4px 6px 4px 6px; font-size: 14px; white-space: nowrap;
+				@apply --iris-field-wrapper;
+			}
+			.title { font-size: 14px; @apply --iris-field-title;}
+			.value { color: #025975; @apply --iris-field-value;}
+			.suffix { color: #025975; padding-left:5px; @apply --iris-field-suffix;}
+			.dropdown-trigger iron-icon{width: 12px; height: 12px;@apply --iris-field-icon;}
 			iris-overlap-edit-field{padding-bottom:0px;}
 			iris-overlap-edit-field[disabled]{cursor:default;}
 			[is-editable] .dropdown-trigger>.title{color:#0003C4}

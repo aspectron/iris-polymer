@@ -5,7 +5,9 @@
 		<style include="app-style paper-material-styles">
 			:host {display: inline-block;position: relative;padding-bottom: 2px;}
 			:host([block]){display: block;}
-			.tigger{min-height: 30px; min-width: 30px; cursor: pointer;}
+			.tigger{min-height: 30px; min-width: 30px; cursor: pointer;
+				@apply --iris-overlap-edit-field-tigger;
+			}
 			.tigger[disabled]{cursor:default;}
 			#dropdown{display:block;}
 			#dropdown .dropdown-content{
