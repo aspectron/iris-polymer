@@ -19,12 +19,13 @@
 			iris-overlap-edit-field[disabled]{cursor:default;}
 			[is-editable] .dropdown-trigger>.title{color:#0003C4}
 			/*#editor::shadow .dropdown-content : {overflow:hidden;}*/
-			#editor::shadow .no-overflow { overflow: hidden; }
+			#editor .no-overflow { overflow: hidden; }
 			.editor-error { border: 1px solid red; }
 			#editor::shadow paper-input.editor-error::shadow label { color: red; }
 			.dropdown-content{
 				--paper-input-container:{
 					padding-bottom:0px;
+					padding:0px;
 				}
 				--paper-input-container-label:{
 					padding-left:5px;
@@ -258,7 +259,7 @@
 				op: {type: String, value: "setting"},
 				boolText:{type:String, value:"True/False"},
 				radioValues : {type:String},
-				_radio : {type:Array},
+				_radio : {type:Array, value:[]},
 				titleSuffix:{type: String, value: ": "},
 				errorState: { type : Boolean, value : false },
 				//errorLabel: { type : String }
@@ -273,9 +274,18 @@
 				return es ? el : this.title;
 			},*/
 			ready : function() {
-				var self = this;
+				this.init();
+			},
+			onTypeChanged: function(){
+				if(this.type === Number){
+					this.set("allowedPattern", "[0-9]");
+				}
+			},
+			init: function(){
+				if(this.__init)
+					return
+				this.__init = true;
 				this._title = this.title;
-
 				if(this.radioValues) {
 					var radio = [ ]
 					var items = this.radioValues.split('|');
@@ -290,12 +300,8 @@
 					this.set("_radio", radio);
 				}
 			},
-			onTypeChanged: function(){
-				if(this.type === Number){
-					this.set("allowedPattern", "[0-9]");
-				}
-			},
 			onValueChanged: function(){
+				this.init();
 				if (this._isSiaCoinField() || this._isTimeField() || this._isFileSize())
 					this.set("_value", this._V(this.value));
 				else
@@ -469,7 +475,8 @@
 			},
 			getRadioText: function(v){
 				if(this._isRadioField()) {
-					var o = _.find(this._radio, function(item) {
+					this.init();
+					var o = _.find(this.get("_radio"), function(item) {
 						if(item.value == v)
 							return true;
 						return false;
