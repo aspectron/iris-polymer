@@ -72,6 +72,7 @@
 				padding:0px 5px;
 				user-select:none;
 				height:26px;
+				@apply --iris-select-chip;
 			}
 			.iris-select .chip .chip-action{
 				border-radius:50%;
@@ -91,6 +92,7 @@
 			}
 			.iris-select .chip button:focus{
 				color:#FFF;
+				@apply --iris-select-chip-action-focus;
 			}
 			.iris-select .iris-select-holder .chip button::-moz-focus-inner{border:0px}
 			.iris-select-input{
@@ -128,7 +130,8 @@
 			          flex: 1;
 			    min-width:50px;outline-style: none;
 			    border: 0px solid #ddd;
-			    padding:2px 5px;margin: 0px;display:inline-block;font-size:16px;height:22px
+			    padding:2px 5px;margin: 0px;display:inline-block;font-size:16px;height:22px;
+			    @apply --iris-select-input;
 			}
 			.iris-select-inputbox:focus{outline-width: 0px;}
 			:host(.no-chips) .chip{border:0px;background-color:transparent;line-height:1;padding-left:0px;height:auto;}
@@ -252,6 +255,7 @@
 				if(width < this.minDropdownWidth)
 					width = this.minDropdownWidth
 				this.$.dropdownContent.style.width = width+"px";
+				this.$.menuButton.$.dropdown.notifyResize();
 			},
 			filterNewValue: function(v){
 				if(!v)
@@ -373,6 +377,13 @@
 				}
 				e.preventDefault();
 				this.openList();
+			},
+			focus: function(){
+				if(this.$inputBox){
+					this.$inputBox.focus();
+					return
+				}
+				this.$.display.focus();
 			},
 			onHiddenInputBlur: function(){
 
@@ -574,6 +585,10 @@
 				}
 
 				this.$el.toggleClass("is-dirty", !!selected.length)
+				this.onWindowResize();
+			},
+			getValueToItem:function(value){
+				return this._items[value]
 			},
 			buildList: function(){
 				var self = this;
