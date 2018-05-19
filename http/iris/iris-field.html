@@ -19,13 +19,12 @@
 			iris-overlap-edit-field[disabled]{cursor:default;}
 			[is-editable] .dropdown-trigger>.title{color:#0003C4}
 			/*#editor::shadow .dropdown-content : {overflow:hidden;}*/
-			#editor .no-overflow { overflow: hidden; }
+			#editor::shadow .no-overflow { overflow: hidden; }
 			.editor-error { border: 1px solid red; }
 			#editor::shadow paper-input.editor-error::shadow label { color: red; }
 			.dropdown-content{
 				--paper-input-container:{
 					padding-bottom:0px;
-					padding:0px;
 				}
 				--paper-input-container-label:{
 					padding-left:5px;
@@ -38,7 +37,7 @@
 		<div class='wrapper' is-editable$="[[_isEditable(editable)]]">
 			<iris-overlap-edit-field horizontal-align="[[editorHAlign]]" id="editor" disabled$="[[_isDisabled(editable)]]">
 				<span slot="dropdown-trigger" class="dropdown-trigger">
-					<span class='title'>[[title]]<span>[[titleSuffix]]</span></span><span class='value'>[[_V(value)]]</span><span class="units" hidden$="[[!showUnits]]">[[_getUnits(format)]]</span><span class="suffix" hidden$="[[!suffix]]">[[suffix]]</span>
+					<span class='title'>[[title]]<span>[[titleSuffix]]</span></span> <span class='value'>[[_V(value)]]</span><span class="units" hidden$="[[!showUnits]]">[[_getUnits(format)]]</span><span class="suffix" hidden$="[[!suffix]]">[[suffix]]</span>
 					<iron-icon icon="arrow-drop-down" hidden$="[[!editable]]"></iron-icon>
 				</span>
 				<template is="dom-if" if="[[_isBoolField(format, type)]]">
@@ -255,10 +254,11 @@
 				precision : { type : Number, value : null },
 				type : { type : String, value : null, observer:"onTypeChanged"},
 				format : { type : String, value : null },
+				zeroDefault : { type : String },
 				op: {type: String, value: "setting"},
 				boolText:{type:String, value:"True/False"},
 				radioValues : {type:String},
-				_radio : {type:Array, value:[]},
+				_radio : {type:Array},
 				titleSuffix:{type: String, value: ": "},
 				errorState: { type : Boolean, value : false },
 				//errorLabel: { type : String }
@@ -273,18 +273,9 @@
 				return es ? el : this.title;
 			},*/
 			ready : function() {
-				this.init();
-			},
-			onTypeChanged: function(){
-				if(this.type === Number){
-					this.set("allowedPattern", "[0-9]");
-				}
-			},
-			init: function(){
-				if(this.__init)
-					return
-				this.__init = true;
+				var self = this;
 				this._title = this.title;
+
 				if(this.radioValues) {
 					var radio = [ ]
 					var items = this.radioValues.split('|');
@@ -299,8 +290,12 @@
 					this.set("_radio", radio);
 				}
 			},
+			onTypeChanged: function(){
+				if(this.type === Number){
+					this.set("allowedPattern", "[0-9]");
+				}
+			},
 			onValueChanged: function(){
-				this.init();
 				if (this._isSiaCoinField() || this._isTimeField() || this._isFileSize())
 					this.set("_value", this._V(this.value));
 				else
@@ -415,6 +410,25 @@
 					Y: '<%=_T("Septillion")%>'
 				}
 				switch(format) {
+					case 'duration' : {
+					   	let hrs = Math.floor(v/60/60);
+						let min = Math.floor(v/60%60);
+						let sec = Math.floor(v%60);
+
+						if(!hrs && !min && !sec)
+						 	return (this.zeroDefault ? this.zeroDefault : self._C(v) );
+
+					   	let t = '';
+					   	// if(hrs) t += (hrs < 10 ? '0'+hrs : hrs) + ':';
+					   	// if(hrs || min) t += (min < 10 ? '0'+min : min) + ':';
+					   	// if(hrs || min || sec) t += (sec < 10 ? '0'+sec : sec) + '';
+
+					   	if(hrs) t += (hrs < 10 ? '0'+hrs : hrs) + ' h ';
+					   	if(hrs || min) t += (min < 10 ? '0'+min : min) + ' m ';
+					   	if(hrs || min || sec) t += (sec < 10 ? '0'+sec : sec) + ' s ';
+
+					   	return t;
+					} break;
 					case 'cs': return self._C(v);
 					case 'fiat': return self._C(v, 2);
 					case 'btc': return self._C(v, 8);
@@ -455,8 +469,7 @@
 			},
 			getRadioText: function(v){
 				if(this._isRadioField()) {
-					this.init();
-					var o = _.find(this.get("_radio"), function(item) {
+					var o = _.find(this._radio, function(item) {
 						if(item.value == v)
 							return true;
 						return false;
