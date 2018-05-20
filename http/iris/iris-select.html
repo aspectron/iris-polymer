@@ -527,7 +527,12 @@
 			resetInputBox: function(delay){
 				if(!this.$inputBox)
 					return
-				this.$inputBox.val("");
+				var selected = this.getSelected();
+				if(this.directEntry && selected[0] && this.matchDirectEntry(selected[0])){
+					this.$inputBox.val(selected[0]);
+				}else{
+					this.$inputBox.val("");
+				}
 				this.deleteCount = 1;
 				if(delay > 0)
 					this.debounce("filterList", ()=>{
@@ -578,6 +583,10 @@
 				this.$display.find(":not(input)").remove();
 				var displayItemTplFn = this.displayItemTplFn.bind(this)
 				var selected = this.getSelected();
+				if(this.$inputBox && this.directEntry && selected[0] && this.matchDirectEntry(selected[0])){
+					this.$inputBox.val(selected[0]);
+				}
+				/*
 				if(this.directEntry && this.matchDirectEntry(selected[0])){
 					var d ={};
 					d[this.valueKey] = selected[0];
@@ -590,6 +599,7 @@
 					else
 						this.$display.append($tpl);
 				}
+				*/
 				if(this.$inputBox){
 					$.each(selected, (index, value)=>{
 						if(!this._items[value])
