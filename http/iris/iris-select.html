@@ -465,7 +465,10 @@
 				var items = self.get("items");
 				var found = false
 				for(var i=0; i<items.length; i++){
-					if(items[i][this.textKey].toLowerCase() == valueLower || items[i][this.valueKey].toLowerCase() == valueLower){
+					if(items[i][this.textKey] == undefined || items[i][this.valueKey] == undefined)
+						continue;
+					if(	(items[i][this.textKey]+"").toLowerCase() == valueLower 
+						|| (items[i][this.valueKey]+"").toLowerCase() == valueLower){
 						found = items[i];
 						break
 					}
