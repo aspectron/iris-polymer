@@ -448,6 +448,8 @@
 				if(!filtered)
 					return;
 
+				var _value = filtered[this.valueKey];
+
 				e.preventDefault();
 				self.resetInputBox(0);
 
@@ -477,8 +479,8 @@
 				if(found){//if have entered value
 					v = found[this.valueKey];
 				}else{
-					if(this.directEntry && this.matchDirectEntry(valueLower)){
-						this.selected = valueLower;
+					if(this.directEntry && this.matchDirectEntry(_value)){
+						this.selected = _value;
 						return;
 					}
 					if(!this.allowNew)
