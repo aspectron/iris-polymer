@@ -235,6 +235,7 @@
 					type: Number,
 					value: 100
 				},
+				directEntry:Boolean,
 				restoreFocusOnClose:{type: Boolean, value: false}
 			},
 			observers:[
@@ -428,7 +429,6 @@
 				this.openList();
 				var value = self.$inputBox.val();
 				var key = e.key.toLowerCase();
-				//console.log("key:"+key+", value:"+value);
 				if(e.which != 13 && !(value && key == "tab")){
 					if(!value && key == "backspace"){
 						if(self.deleteCount >0)
@@ -474,6 +474,10 @@
 				if(found){//if have entered value
 					v = found[this.valueKey];
 				}else{
+					if(this.directEntry && this.matchDirectEntry(valueLower)){
+						this.selected = valueLower;
+						return;
+					}
 					if(!this.allowNew)
 						return
 					v = self.newPrefix+filtered[this.valueKey].replace(/,/g, "[COMMA]");
@@ -487,6 +491,9 @@
 				}
 				self.toggleValue(v);
 
+			},
+			matchDirectEntry: function(value){
+				return value && /^https?:\/\//.test(value);
 			},
 			filterList: function(value){
 				var self = this;
@@ -566,6 +573,18 @@
 				this.$display.find(":not(input)").remove();
 				var displayItemTplFn = this.displayItemTplFn.bind(this)
 				var selected = this.getSelected();
+				if(this.directEntry && this.matchDirectEntry(selected[0])){
+					var d ={};
+					d[this.valueKey] = selected[0];
+					d[this.textKey] = selected[0];
+					var $tpl = displayItemTplFn(d, this);
+					if(!$tpl)
+						return
+					if(this.$inputBox)
+						$($tpl).insertBefore(this.$inputBox);
+					else
+						this.$display.append($tpl);
+				}
 				if(this.$inputBox){
 					$.each(selected, (index, value)=>{
 						if(!this._items[value])
@@ -610,6 +629,10 @@
 				var selectedUpdated = false;
 				var selected = [];
 				$.each(this.getSelected(), (index, v)=>{
+					if(this.directEntry && this.matchDirectEntry(v)){
+						selected[selected.length] = v;
+						return;
+					}
 					if(!this._items[v]){
 						selectedUpdated = true;
 					}else{
