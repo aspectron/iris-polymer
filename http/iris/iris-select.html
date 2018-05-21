@@ -591,6 +591,8 @@
 				var selected = this.getSelected();
 				if(this.$inputBox && this.directEntry && selected[0] && this.matchDirectEntry(selected[0])){
 					this.$inputBox.val(selected[0]);
+				}else{
+					this.$inputBox.val("");
 				}
 				/*
 				if(this.directEntry && this.matchDirectEntry(selected[0])){
