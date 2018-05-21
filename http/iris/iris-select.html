@@ -235,6 +235,7 @@
 					type: Number,
 					value: 100
 				},
+				dontCloseList:Boolean,
 				directEntry:Boolean,
 				restoreFocusOnClose:{type: Boolean, value: false}
 			},
@@ -305,8 +306,10 @@
 				})
 				self.$inputBox.on("keydown.iris-select", function(e){
 					var value = self.$inputBox.val();
-					if(e.which == 13 || (value && e.key.toLowerCase() == "tab"))
-						e.preventDefault();
+					if(e.which == 13 || (value && e.key.toLowerCase() == "tab")){
+						if(!self.directEntry || !self.matchDirectEntry(value))
+							e.preventDefault();
+					}
 				})
 				self.$inputBox.on("focus.iris-select", function(e){
 					self.onInputFocus(e);
@@ -444,13 +447,16 @@
 					}, 200)
 					return
 				}
+
 				var filtered = self.filterNewValue(value);
 				if(!filtered)
 					return;
+				if(!this.dontCloseList)
+					this.closeList();
 
 				var _value = filtered[this.valueKey];
-
-				e.preventDefault();
+				if(!this.directEntry || !this.matchDirectEntry(_value))
+					e.preventDefault();
 				self.resetInputBox(0);
 
 				filtered[this.valueKey] = filtered[this.valueKey].replace(/[ ]{2,}/g, " ");
