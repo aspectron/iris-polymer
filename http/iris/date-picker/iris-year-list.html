@@ -109,11 +109,11 @@
             if (selectedPos !== this.scrollTop) {
               this._update();
               this.scrollTop = selectedPos;
-              this._refresh();
+              this.notifyResize();
             }
             if (this.scrollHeight - this.offsetHeight !== this.scrollTop) {
               this.scrollTop += (this._physicalAverage - this.offsetHeight) / 2;
-              this._refresh();
+              this.notifyResize();
             }
           }.bind(this.$.yearList));
         }
@@ -183,7 +183,7 @@
        * from a tapped item's event in the years list.
        */
       _tappedYearHandler: function(e) {
-        var yearItem = e.model.__data__.item;
+        var yearItem = e.model.item;
         var year = yearItem.year;
         if (this.selected !== year) {
           this.$.yearList.selectItem(yearItem);
